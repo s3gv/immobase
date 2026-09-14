@@ -36,7 +36,7 @@ services:
       APP_LOCALE: "${APP_LOCALE:-de}"
       IMMOBASE_REGION: "${IMMOBASE_REGION:-auto}"
       IMMOBASE_SOURCE_URL: "${IMMOBASE_SOURCE_URL:-https://github.com/s3gv/immobase}"
-      APP_VERSION: "${APP_VERSION:-0.1.0-dev}"
+      APP_VERSION: "${APP_VERSION:-1.0.0}"
       APP_COMMIT: "${APP_COMMIT:-unknown}"
       # Verschlüsselt die Anhänge des Mieterportals in der Datenbank. Fehlt
       # er, nimmt das Portal keine Dateien an — statt sie im Klartext

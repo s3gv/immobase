@@ -31,4 +31,10 @@ Findings against somebody else's ImmoBase installation belong to whoever runs it
 
 ## Supported versions
 
-ImmoBase is currently being rebuilt from scratch and has no release yet. Until the first release, only the default branch is supported.
+| Version | Supported |
+|---|---|
+| 1.x (latest release) | yes |
+| `main` | yes — fixes land here first |
+| older than the latest release | no — please update first |
+
+Security fixes are released as a new patch version of the current 1.x line. Updating is described in the [README](README.md#updating).
