@@ -14,6 +14,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: AGPL-3.0-or-later" src="https://img.shields.io/github/license/s3gv/immobase"></a>
+  <a href="https://github.com/s3gv/immobase/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/s3gv/immobase"></a>
   <a href="https://github.com/s3gv/immobase/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/s3gv/immobase/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/s3gv/immobase/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/s3gv/immobase"></a>
   <img alt="PHP 8.4" src="https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&amp;logoColor=white">
