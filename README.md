@@ -173,8 +173,9 @@ Nein. ImmoBase verwaltet Objekte, Mietverhältnisse, Kosten und Abrechnungen,
 ersetzt aber keine doppelte Buchführung und importiert keine Kontoauszüge.
 
 **Ist ImmoBase schon produktiv einsetzbar?**
-Die Funktionen oben sind umgesetzt und getestet. Ein erstes veröffentlichtes
-Release mit Versionsnummer steht noch aus.
+Ja. Version 1.0 enthält alle Funktionen oben, abgesichert durch mehr als 1.400
+automatisierte Tests, die bei jeder Änderung laufen. Die Plugin-Schnittstelle
+v1 bleibt innerhalb von 1.x stabil.
 
 ### Lizenz und Mitwirken
 
@@ -332,8 +333,9 @@ No. ImmoBase manages properties, tenancies, costs and statements, but it does
 not replace double-entry bookkeeping and does not import bank statements.
 
 **Is ImmoBase ready for production use?**
-The features listed above are implemented and tested. A first published
-release with a version number is still to come.
+Yes. Version 1.0 includes every feature listed above, backed by more than 1,400
+automated tests that run on every change. The plugin API v1 stays stable
+throughout 1.x.
 
 ### License and contributing
 
