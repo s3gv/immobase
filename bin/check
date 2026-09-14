@@ -4,8 +4,8 @@
 #
 # Einziger Einstiegspunkt für alle Prüfungen.
 #
-# Der Pre-Push-Hook ruft dieses Skript auf, und der GitHub-Workflow, der zum
-# Abschluss der Entwicklung dazukommt, wird dasselbe tun. Prüfungen gehören
+# Der Pre-Push-Hook ruft dieses Skript auf, und der GitHub-Workflow
+# (.github/workflows/ci.yml) tut dasselbe. Prüfungen gehören
 # deshalb hierher und nicht in eine YAML-Datei — sonst driften zwei
 # Definitionen derselben Regeln auseinander.
 #

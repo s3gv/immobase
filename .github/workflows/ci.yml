@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 s3gv
+#
+# Runs bin/check — the same script the pre-push hook runs.
+#
+# Every check lives in bin/check and nowhere else. This file only prepares
+# what the script expects: PHP with its extensions, the Composer dependencies,
+# the built stylesheet and a PostgreSQL database for the tests. Do not restate
+# individual checks here, or the two definitions drift apart.
+#
+# SECURITY: this workflow runs code from pull requests, so it only ever gets a
+# read-only token (`pull_request`, never `pull_request_target`) and no secrets.
+
+name: CI
+
+on:
+  push:
+    # The signature register holds no code; the CLA bot commits to it.
+    branches-ignore: [cla-signatures]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: bin/check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      database:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: immobase
+          POSTGRES_PASSWORD: immobase
+          POSTGRES_DB: immobase
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U immobase"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      # Pinned to commits, not tags. Full history: the publication hygiene
+      # check also looks at commit metadata.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: ctype, dom, gd, iconv, intl, mbstring, pdo_pgsql, posix, sodium, zip, zlib
+          coverage: none
+          tools: composer:v2
+
+      - name: Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Build the stylesheet
+        run: php bin/console tailwind:build
+
+      - name: Create the test database
+        run: |
+          php bin/console doctrine:database:create --env=test --if-not-exists --no-interaction
+          php bin/console doctrine:migrations:migrate --env=test --no-interaction
+
+      - name: bin/check
+        run: ./bin/check
