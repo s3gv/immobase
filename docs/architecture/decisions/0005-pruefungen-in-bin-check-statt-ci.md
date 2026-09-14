@@ -1,10 +1,10 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- SPDX-FileCopyrightText: 2026 s3gv -->
 
-# ADR 0005 — Alle Prüfungen in bin/check, vorerst ohne CI
+# ADR 0005 — Alle Prüfungen in bin/check, CI ruft nur dieses Skript
 
 - **Status:** Akzeptiert
-- **Datum:** 2026-09-09
+- **Datum:** 2026-09-09, ergänzt am 2026-09-14
 
 ## Kontext
 
@@ -29,5 +29,10 @@ umgangen.
   `--no-verify` umgeht ihn. Bis zum Public-Gang wird von Hand geprüft.
 - Der spätere Workflow ist ein Fünfzeiler, weil er nur `bin/check` aufruft.
   Prüfungen werden nie in YAML dupliziert.
+- **Nachtrag 2026-09-14:** Mit dem öffentlichen Repository ist der Workflow da
+  (`.github/workflows/ci.yml`). Er richtet PHP, Abhängigkeiten, Stylesheet und
+  Testdatenbank ein und ruft dann `bin/check` auf, für jeden Push und jeden
+  Pull Request. Fremde Pull Requests haben damit ein automatisches
+  Qualitätstor.
 - Der Hook muss schnell bleiben. Wird er unangenehm langsam, ist das ein Signal,
   die Testsuite zu straffen — nicht, den Hook zu überspringen.
