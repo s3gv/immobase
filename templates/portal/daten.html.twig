@@ -1,0 +1,54 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was über mich gespeichert ist.
+
+    Lesend — ändern ist ein Vorschlag, und den gibt es noch nicht. Bis dahin
+    steht unter der Tabelle, wohin man sich wendet.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {% if party is null %}
+        <p class="ib-muted">{{ 'portal.no_data'|trans }}</p>
+    {% else %}
+        {% set rows = [
+            ['portal.field.number'|trans, party.reference],
+            ['portal.field.name'|trans, party.displayName],
+            ['portal.field.kind'|trans, ('party.kind.' ~ party.kind)|trans]
+        ] %}
+
+        {% for address in party.addresses %}
+            {% set rows = rows|merge([['portal.field.address'|trans, address]]) %}
+        {% endfor %}
+
+        {% for email in party.emails %}
+            {% set rows = rows|merge([['portal.field.email'|trans, email]]) %}
+        {% endfor %}
+
+        {% for phone in party.phones %}
+            {% set rows = rows|merge([['portal.field.phone'|trans, phone]]) %}
+        {% endfor %}
+
+        {% if party.taxNumber %}
+            {% set rows = rows|merge([['portal.field.tax_number'|trans, party.taxNumber]]) %}
+        {% endif %}
+
+        {% include 'components/table.html.twig' with {
+            headers: ['user.review.field'|trans, 'user.review.value'|trans],
+            rows: rows, empty: ''
+        } only %}
+
+        {#
+            Ändern ist ein Vorschlag: der Knopf führt nicht in ein Formular,
+            das speichert, sondern in eines, das fragt.
+        #}
+        <div class="ib-index__actions">
+            <a class="ib-button" href="{{ path('app_portal_change', { type: 'stammdaten', id: party.id }) }}">
+                {{ 'portal.change.propose'|trans }}
+            </a>
+        </div>
+
+        <p class="ib-field__hint">{{ 'portal.change_hint'|trans }}</p>
+    {% endif %}
+{% endblock %}

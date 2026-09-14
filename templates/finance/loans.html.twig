@@ -1,0 +1,82 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Übersicht der Darlehen.
+
+    Gefiltert wird nach Objekt: ein Darlehen gehört einer Gemeinschaft, und
+    wer drei Häuser verwaltet, will die Schulden des einen sehen und nicht die
+    Summe aller.
+
+    Die Restschuld steht in der Tabelle, ist aber nicht sortierbar — sie wird
+    gerechnet und steht in keiner Spalte der Datenbank. Eine Sortierung, die
+    dort behauptet würde, sortierte nach etwas anderem als dem Angezeigten.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'finance.loan.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'finance.loan.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'finance.loan.subheading'|trans }}</p>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            { label: 'finance.loan.field.number'|trans, field: 'nummer' },
+            'finance.item.field.property'|trans,
+            { label: 'finance.loan.field.label'|trans, field: 'bezeichnung' },
+            { label: 'finance.loan.field.lender'|trans, field: 'bank' },
+            'finance.loan.field.amount'|trans,
+            'finance.loan.field.debt'|trans,
+            'finance.loan.field.payment'|trans,
+            'finance.loan.field.months_left'|trans
+        ],
+        rows: rows|map(row => {
+            cells: [
+                row.number,
+                row.property,
+                row.label,
+                row.lender,
+                row.amount|money,
+                row.running
+                    ? row.debt|money
+                    : 'finance.loan.not_running'|trans({'%day%': row.startsOn|date_local}),
+                row.payment|money,
+                'finance.loan.months_of'|trans({'%left%': row.left, '%count%': row.months})
+            ],
+            actions: [{ action: 'open', url: path('app_finance_loan_show', { number: row.number }) }]
+                |merge(is_granted('finance.edit')
+                    ? [{ action: 'edit', url: path('app_finance_loan_edit', { number: row.number }) }]
+                    : [])
+        }),
+        page: page,
+        action: path('app_finance_loan'),
+        url: url,
+        empty: (filter.isEmpty ? 'finance.loan.empty' : 'finance.loan.empty_filtered')|trans,
+        compact: true,
+        sort: sort,
+        sort_urls: sortUrls,
+        filter: filter,
+        properties: properties
+    } only %}
+        {% block actions %}
+            {% if is_granted('finance.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_finance_loan_new'), labelled: true
+                } only %}
+            {% endif %}
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'finance.loan.filter.search'|trans,
+                value: filter.search, placeholder: 'finance.loan.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'objekt', name: 'objekt', label: 'finance.item.field.property'|trans,
+                choices: properties|map(p => { value: p.id, label: p.oneLine }),
+                value: filter.propertyId, blank: 'finance.item.filter.all_properties'|trans
+            } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

@@ -1,0 +1,100 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der zweite Faktor — einmal für den Verwalterbereich, einmal fürs Portal.
+
+    Die drei Adressen kommen herein, statt hier zu stehen: derselbe Ablauf
+    hängt an zwei verschiedenen Routenbäumen, und ein Portalkonto darf die
+    Adressen des Verwalterbereichs nicht einmal aufrufen können.
+
+    Erwartet: user, recoveryCodesLeft, factor, factorMessage,
+              codesUrl, factorOffUrl, factorUrl
+#}
+{#
+    Der zweite Faktor auf der Kontoseite.
+
+    Drei Zustände: keiner eingerichtet, gerade beim Einrichten, eingerichtet.
+    Erwartet: user, recoveryCodesLeft
+    Optional: factor (Zwischenstand), factorMessage
+
+    Steht im Panel eines Abschnitts — die Überschrift kommt von dort.
+#}
+{% set pending = factor|default({ 'choice': '', 'secret': null }) %}
+{% set kind = user.secondFactor.kind.value %}
+
+    {% if factorMessage|default(null) %}
+        <p class="ib-flash ib-flash--{{ factorMessage starts with 'user.factor.error' ? 'error' : 'success' }}" role="alert">
+            {{ factorMessage|trans }}
+        </p>
+    {% endif %}
+
+    {% if kind != 'none' and pending.choice == '' %}
+        <p class="ib-field__hint">{{ 'user.factor.active'|trans({'%kind%': user.secondFactor.kind.labelKey|trans}) }}</p>
+        <p class="ib-field__hint">{{ 'user.recovery.left'|trans({'%count%': recoveryCodesLeft}) }}</p>
+
+        <form method="post" action="{{ codesUrl }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('account_recovery') }}">
+            {% include 'components/field.html.twig' with {
+                id: 'recovery_current', name: 'current', type: 'password',
+                label: 'user.field.current_password'|trans, required: true, autocomplete: 'current-password'
+            } only %}
+            <div class="ib-flow__actions">
+                <button class="ib-button ib-button--quiet" type="submit">{{ 'user.recovery.regenerate'|trans }}</button>
+            </div>
+        </form>
+
+        {# Abschalten verlangt einen gültigen Code — aus demselben Grund, aus
+           dem das Passwortändern das alte Passwort verlangt. #}
+        <form method="post" action="{{ factorOffUrl }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('account_factor_off') }}">
+            {% include 'components/field.html.twig' with {
+                id: 'off_code', name: 'code', label: 'user.factor.code'|trans,
+                hint: 'user.factor.off_hint'|trans, required: true, autocomplete: 'one-time-code'
+            } only %}
+            <div class="ib-flow__actions">
+                {% if kind == 'email' %}
+                    <button class="ib-button ib-button--quiet" type="submit" name="send" value="1" formnovalidate>
+                        {{ 'user.factor.send_code'|trans }}
+                    </button>
+                {% endif %}
+                <button class="ib-button ib-button--quiet" type="submit">{{ 'user.factor.turn_off'|trans }}</button>
+            </div>
+        </form>
+    {% else %}
+        <form method="post" action="{{ factorUrl }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('account_factor') }}">
+
+            {% if pending.choice == 'app' %}
+                <p class="ib-field__hint">{{ 'user.factor.app_hint'|trans }}</p>
+                <img class="ib-qr" src="{{ path('app_totp_qr') }}" alt="{{ 'user.factor.qr_alt'|trans }}" width="200" height="200">
+                <p class="ib-secret"><code>{{ pending.secret }}</code></p>
+            {% elseif pending.choice == 'email' %}
+                <p class="ib-field__hint">{{ 'user.factor.email_hint'|trans({'%email%': user.email.toString}) }}</p>
+            {% else %}
+                <p class="ib-field__hint">{{ 'user.factor.intro'|trans }}</p>
+            {% endif %}
+
+            {% if pending.choice != '' %}
+                {% include 'components/field.html.twig' with {
+                    id: 'factor_code', name: 'code', label: 'user.factor.code'|trans,
+                    required: true, autocomplete: 'one-time-code'
+                } only %}
+
+                <div class="ib-flow__actions">
+                    <button class="ib-button ib-button--quiet" type="submit" name="choose" value="restart" formnovalidate>
+                        {{ 'user.factor.other_way'|trans }}
+                    </button>
+                    <button class="ib-button" type="submit">{{ 'user.factor.confirm'|trans }}</button>
+                </div>
+            {% else %}
+                <div class="ib-flow__actions">
+                    <button class="ib-button ib-button--quiet" type="submit" name="choose" value="email">
+                        {{ 'user.factor.choose_email'|trans }}
+                    </button>
+                    <button class="ib-button" type="submit" name="choose" value="app">
+                        {{ 'user.factor.choose_app'|trans }}
+                    </button>
+                </div>
+            {% endif %}
+        </form>
+    {% endif %}

@@ -1,0 +1,41 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/unit/_detail.html.twig' %}
+{% set edit_step = 'eigentuemer' %}
+
+{% block panel %}
+    <p class="ib-field__hint">
+        {{ 'property.mea.unit_share'|trans }}: <strong>{{ unit.mea|share }}</strong>
+    </p>
+
+    {% include 'property/_balance.html.twig' with {
+        balance: balance, openPeriods: openPeriods, balanceDay: balanceDay
+    } only %}
+
+    {% if owners is empty %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'property.owner.none'|trans
+        } only %}
+    {% else %}
+        <ul class="ib-group__list">
+            {% for owner in owners %}
+                {#
+                    Der Zeitraum steht unter dem Namen und nur, wenn es einen
+                    gibt: „gehört schon immer und noch" ist der Normalfall und
+                    braucht keine Zeile.
+                #}
+                {% include 'components/list_row.html.twig' with {
+                    title: owner.brief ? owner.brief.displayName : owner.partyId,
+                    meta: [
+                        owner.brief ? owner.brief.address : '',
+                        owner.holding.from or owner.holding.to
+                            ? 'property.owner.held_from'|trans ~ ' ' ~ (owner.holding.from ? owner.holding.from|date_local : '—')
+                              ~ ' · ' ~ 'property.owner.held_to'|trans ~ ' ' ~ (owner.holding.to ? owner.holding.to|date_local : '—')
+                            : ''
+                    ]|filter(v => v)|join(' · '),
+                    trailing: owner.mea|share
+                } only %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}

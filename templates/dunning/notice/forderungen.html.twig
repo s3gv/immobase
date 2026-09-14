@@ -1,0 +1,33 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Welche Forderungen ins Schreiben gehören.
+
+    Vorbelegt sind alle offenen desselben Gläubigers — eine Frist, ein
+    Schreiben. Wer eine abwählt, schreibt über sie später noch einmal, und
+    das ist eine Entscheidung und kein Versehen.
+#}
+{% extends 'dunning/notice/_flow.html.twig' %}
+
+{% block fields %}
+    {% if errors.claims is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.claims|trans }}</p>
+    {% endif %}
+
+    <fieldset class="ib-fieldset">
+        <legend class="ib-field__label">{{ 'dunning.step.claims'|trans }}</legend>
+
+        {% for claim in claims|merge(alsoOpen) %}
+            <label class="ib-check">
+                <input type="checkbox" name="claims[]" value="{{ claim.id }}"
+                       {{ claim.id in claims|map(c => c.id) ? 'checked' : '' }}>
+                <span>
+                    {{ claim.subject }} — {{ claim.open|money }}
+                    <span class="ib-muted">
+                        {{ 'dunning.due_on'|trans }} {{ claim.arrears.dueOn|date_local }}
+                    </span>
+                </span>
+            </label>
+        {% endfor %}
+    </fieldset>
+{% endblock %}

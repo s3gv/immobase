@@ -1,0 +1,36 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was mit der Bank vereinbart ist.
+
+    Nur das. Was daraus folgt — Laufzeitende, Gesamtzins, der Plan Jahr für
+    Jahr — steht im Abschnitt daneben: was gespeichert ist und was gerechnet
+    wird, sind zwei Dinge, und wer sie auf eine Seite mischt, sucht später die
+    Quelle einer Zahl.
+
+    Rate und Laufzeit stehen beide da, aber eine von beiden ist gerechnet —
+    und sie sagt das auch.
+#}
+{% extends 'finance/loan/_detail.html.twig' %}
+{% set edit_step = 'konditionen' %}
+
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['finance.loan.field.amount'|trans, loan.amount|money],
+            ['finance.loan.field.rate_short'|trans, rate|decimal(false) ~ ' %'],
+            ['finance.loan.field.starts_on'|trans, loan.terms.startsOn|date_local],
+            [
+                'finance.loan.field.payment'|trans,
+                plan.first.payment|money ~ (loan.terms.payment ? '' : ' · ' ~ 'finance.loan.computed'|trans)
+            ],
+            [
+                'finance.loan.field.months_short'|trans,
+                'finance.loan.months_long'|trans({'%count%': plan.months})
+                    ~ (loan.terms.months ? '' : ' · ' ~ 'finance.loan.computed'|trans)
+            ]
+        ],
+        empty: ''
+    } only %}
+{% endblock %}

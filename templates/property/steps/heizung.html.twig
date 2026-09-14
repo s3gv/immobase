@@ -1,0 +1,32 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'components/select.html.twig' with {
+        id: 'heatingType', name: 'heatingType', label: 'property.heating.field.type'|trans,
+        choices: heatingTypes|map(t => { value: t.value, label: t.labelKey|trans }),
+        value: property.heating.type ? property.heating.type.value : '',
+        blank: 'property.yes_no.unknown'|trans
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'heatingSystem', name: 'heatingSystem', label: 'property.heating.field.system'|trans,
+        choices: heatingSystems|map(s => { value: s.value, label: s.labelKey|trans }),
+        value: property.heating.system ? property.heating.system.value : '',
+        blank: 'property.yes_no.unknown'|trans
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'hotWater', name: 'hotWater', label: 'property.heating.field.water'|trans,
+        choices: hotWaters|map(w => { value: w.value, label: w.labelKey|trans }),
+        value: property.heating.hotWater ? property.heating.hotWater.value : '',
+        blank: 'property.yes_no.unknown'|trans
+    } only %}
+
+    {# Der Hinweis erscheint erst, wenn beides zusammenkommt — vorher wäre er
+       eine Belehrung über einen Fall, der gar nicht vorliegt. #}
+    {% if property.heating.needsSplitBilling %}
+        <p class="ib-note">{{ 'property.heating.split_hint'|trans }}</p>
+    {% endif %}
+{% endblock %}

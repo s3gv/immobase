@@ -1,0 +1,50 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Vorschüsse — das, worüber tatsächlich beschlossen wird.
+
+    Oben die Bedingungen, darunter die Tabelle, die in der Versammlung auf dem
+    Tisch liegt: je Einheit der Jahresanteil und der Betrag je Zahlung.
+
+    Was die Versammlung daraus gemacht hat, steht im Schritt „Beschluss" —
+    er kommt zeitlich später, und dazwischen wird die Anwendung zugeklappt.
+
+    Jahresanteil und Rate gehen um wenige Cent auseinander. Das ist kein
+    Rechenfehler: ein Dauerauftrag ist jeden Monat derselbe Betrag, ein
+    Jahresanteil geht selten durch zwölf, und die Jahresabrechnung gleicht es
+    aus.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'components/select.html.twig' with {
+        id: 'interval', name: 'interval', label: 'billing.plan.terms.interval'|trans,
+        hint: 'billing.plan.terms.interval_hint'|trans,
+        choices: intervals|map(i => { value: i.value, label: i.labelKey|trans }),
+        value: plan.terms.interval.value
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'firstDueOn', name: 'firstDueOn', type: 'date',
+        label: 'billing.plan.terms.first_due'|trans,
+        hint: 'billing.plan.terms.first_due_hint'|trans,
+        value: plan.terms.firstDueOn|date('Y-m-d'), required: true
+    } only %}
+
+    <h3 class="ib-flow__title">{{ 'billing.plan.terms.table'|trans }}</h3>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: [
+            'billing.plan.terms.unit'|trans,
+            'billing.plan.terms.yearly'|trans,
+            'billing.plan.terms.each'|trans
+        ],
+        rows: proposal.documents|map(d => [
+            d.unitNumber ~ ' · ' ~ d.unitLabel,
+            d.yearly|money,
+            d.advance|money
+        ]),
+        empty: 'billing.plan.terms.nothing'|trans
+    } only %}
+{% endblock %}

@@ -1,0 +1,34 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% embed 'components/sections.html.twig' %}
+    {% block section_body %}
+        <form method="post" action="{{ path('app_account_password') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('account_password') }}">
+
+            {% include 'components/field.html.twig' with {
+                id: 'current', name: 'current', type: 'password',
+                label: 'user.field.current_password'|trans,
+                hint: 'user.field.current_password_hint'|trans,
+                required: true, autocomplete: 'current-password'
+            } only %}
+            {% include 'components/field.html.twig' with {
+                id: 'password', name: 'password', type: 'password',
+                label: 'user.field.password'|trans, required: true, autocomplete: 'new-password'
+            } only %}
+            {% include 'components/field.html.twig' with {
+                id: 'repeated', name: 'repeated', type: 'password',
+                label: 'user.field.password_repeat'|trans, required: true, autocomplete: 'new-password'
+            } only %}
+
+            {# Die Regeln stehen da, bevor jemand tippt — nicht erst als
+               Fehlermeldung danach. #}
+            <ul class="ib-rules">
+                {% for rule in rules %}<li>{{ rule|trans }}</li>{% endfor %}
+            </ul>
+
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'user.account.change_password'|trans }}</button>
+            </div>
+        </form>
+    {% endblock %}
+{% endembed %}

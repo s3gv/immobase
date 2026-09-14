@@ -1,0 +1,95 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein beschlossener Budgetplan.
+
+    Derselbe Rahmen wie im Ablauf, auf dem letzten Schritt — wer gerade noch
+    geprüft hat, findet dieselbe Seite wieder, nur ohne Knöpfe.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <p class="ib-preview__who">
+        <strong>{{ budget.measure.label }}</strong><br>
+        {{ budget.measure.kind.labelKey|trans }} · {{ 'billing.budget.pdf.from_year'|trans }} {{ budget.measure.firstYear }}
+    </p>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['billing.budget.pdf.need_sum'|trans, need|money],
+            ['billing.budget.pdf.from_reserve'|trans, budget.funding.reserve|money],
+            ['billing.budget.pdf.levy'|trans, budget.funding.levy|money],
+            ['billing.budget.pdf.saving'|trans, budget.funding.saving|money],
+            ['billing.budget.pdf.loan'|trans, budget.funding.loan|money]
+        ],
+        empty: ''
+    } only %}
+
+    {#
+        Was von der Maßnahme bezahlt ist.
+
+        Die Gegenrichtung zur Sonderumlage: dort steht, was hereinkam, hier,
+        was hinausging. Beides trägt die Nummer desselben Beschlusses, und
+        erst zusammen beantworten sie die Frage, die ein Eigentümer stellt —
+        ist das Geld für das ausgegeben worden, wofür es beschlossen wurde.
+
+        Leer, solange niemand eine Rechnung zugeordnet hat: dann steht hier
+        nichts, statt einer Null, die nach „nichts passiert" aussieht.
+    #}
+    {% if spent is not empty %}
+        <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.budget.spent.heading'|trans }}</h3>
+
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'billing.budget.spent.year'|trans,
+                'billing.budget.spent.item'|trans,
+                'billing.budget.spent.amount'|trans
+            ],
+            rows: spent|map(c => [
+                c.fiscalYear,
+                c.itemNumber ~ ' · ' ~ c.kindLabel,
+                c.amount|money
+            ]),
+            empty: ''
+        } only %}
+
+        <p class="ib-field__hint">
+            {{ 'billing.budget.spent.sum'|trans({
+                '%spent%': spentTotal|money,
+                '%need%': need|money
+            }) }}
+        </p>
+    {% endif %}
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.budget.share.heading'|trans }}</h3>
+    {% include 'billing/_budget_preview.html.twig' with { proposal: proposal } only %}
+
+    {% if budget.resolution.isRecorded %}
+        <p class="ib-preview__settled">
+            {{ 'billing.budget.pdf.decided'|trans({
+                '%day%': budget.resolution.decidedOn|date_local,
+                '%outcome%': budget.resolution.outcome
+            }) }}
+        </p>
+    {% endif %}
+
+    <div class="ib-flow__actions">
+        <a class="ib-button ib-button--quiet" href="{{ path('app_billing_budget') }}">{{ 'flow.cancel'|trans }}</a>
+
+        {% if is_granted('billing.edit') and correctable %}
+            <form method="post" action="{{ path('app_billing_budget_correct', { id: budget.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+                <button class="ib-button ib-button--quiet" type="submit">
+                    {{ 'billing.budget.correct'|trans }}
+                </button>
+            </form>
+        {% endif %}
+
+        <a class="ib-button" href="{{ path('app_billing_budget_pdf', { id: budget.id }) }}">
+            {{ 'billing.budget.download'|trans }}
+        </a>
+    </div>
+{% endblock %}

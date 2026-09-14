@@ -1,0 +1,24 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was bisher zusammenkam.
+
+    Steht unter dem Formular, damit sichtbar ist, dass jeder Schritt schon
+    gespeichert hat — und damit niemand denselben Monat zweimal einträgt.
+#}
+{% embed 'components/card.html.twig' with { title: 'dunning.gathered'|trans, gathered: gathered } only %}
+    {% block body %}
+        {% include 'components/table.html.twig' with {
+            headers: [
+                'dunning.field.subject'|trans,
+                'dunning.due_on'|trans,
+                'dunning.default_from'|trans,
+                'dunning.open'|trans
+            ],
+            rows: gathered|map(c => [
+                c.subject, c.arrears.dueOn|date_local, c.arrears.beginsOn|date_local, c.open|money
+            ]),
+            empty: 'dunning.no_claims'|trans
+        } only %}
+    {% endblock %}
+{% endembed %}

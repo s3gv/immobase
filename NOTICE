@@ -1,0 +1,56 @@
+ImmoBase
+Copyright (c) 2026 s3gv
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program. If not, see <https://www.gnu.org/licenses/>.
+
+The full license text is in the file LICENSE.
+
+
+THIRD-PARTY MATERIAL INCLUDED IN THIS REPOSITORY
+------------------------------------------------
+
+CLA.md and CLA-CORPORATE.md are adapted from the Harmony Contributor License
+Agreements (HA-CLA-I and HA-CLA-E, Version 1.0, July 4 2011) by Project
+Harmony, https://www.harmonyagreements.org/. The Harmony agreements are
+licensed under a Creative Commons Attribution 3.0 Unported License,
+https://creativecommons.org/licenses/by/3.0/.
+
+The user interface icons in assets/images/icons/ (except github.svg) are taken
+from Lucide, https://lucide.dev, licensed under the ISC License. They have been
+stripped of width, height and class attributes and marked as decorative with
+aria-hidden and focusable; the paths are unchanged.
+
+assets/images/icons/github.svg is taken from Simple Icons,
+https://simpleicons.org, released under CC0 1.0. The GitHub logo is a trademark
+of GitHub, Inc.; it is used here solely to identify a link to a GitHub
+repository, which GitHub's brand guidelines permit.
+
+The state outlines in assets/images/regions/ are derived from the BKG VG2500
+dataset (Verwaltungsgebiete 1:2 500 000). The outlines have been reprojected to
+EPSG:25832 (UTM zone 32N), heavily simplified and converted to SVG; they are
+not suitable for any cartographic purpose.
+
+  © BKG (2026) dl-de/by-2-0, Datenquellen:
+  https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_vg_nuts.pdf
+
+  BKG: https://www.bkg.bund.de
+  dl-de/by-2-0: https://www.govdata.de/dl-de/by-2-0
+
+The same list of third-party material is generated into assets/attributions.json
+by tools/generate-attributions.php and shown to users inside the application. A
+test keeps both in step.
+
+CODE_OF_CONDUCT.md is adapted from the Contributor Covenant, version 2.1,
+https://www.contributor-covenant.org/version/2/1/code_of_conduct.html, which is
+licensed under a Creative Commons Attribution 4.0 International License,
+https://creativecommons.org/licenses/by/4.0/.

@@ -1,0 +1,96 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Einzelwirtschaftsplan, wie er beim Eigentümer ankommt.
+
+    Erst die Positionen mit Vorjahreswert, Planwert und Rechenweg, dann die
+    Zuführung zur Erhaltungsrücklage, dann der Vorschuss. Der Vorjahreswert
+    steht dabei, weil ein Plan „nach Grund und Höhe nachprüfbar" sein muss
+    — und eine Zahl allein ist das nie.
+
+    **Drei Spalten und nicht fünf.** Schlüssel, Rechenweg und Begründung
+    stehen unter dem Namen statt daneben — genau wie auf dem gedruckten Blatt.
+    Fünf Spalten passten in die Säule eines Ablaufs nicht hinein und wären
+    rechts abgeschnitten; abgeschnitten ist schlimmer als untereinander.
+
+    Erwartet nur Primitive: die Vorschau rechnet mit einem Vorschlag, die
+    Ansicht mit einem eingefrorenen Dokument. Hier laufen sie zusammen.
+
+    who, unit, lines, costs, reserve, yearly, advance, interval, firstDue
+    Optional: decision — der Beschluss als fertiger Satz
+#}
+<div class="ib-preview">
+    <p class="ib-preview__who">
+        <strong>{{ who }}</strong><br>
+        {{ unit }}
+    </p>
+
+    <div class="ib-table-scroll">
+        <table class="ib-table ib-table--compact ib-plan__sheet">
+            <thead>
+                <tr>
+                    <th>{{ 'billing.plan.row.kind'|trans }}</th>
+                    <th class="ib-table__number">{{ 'billing.plan.row.total'|trans }}</th>
+                    <th class="ib-table__number">{{ 'billing.plan.row.share'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                    <tr>
+                        <td>
+                            {{ line.isReserve ? line.kind.labelKey|trans : line.costKind }}
+                            {#
+                                Bei einer Zeile, die nichts plant, steht kein
+                                Schlüssel: geteilt wurde nichts, und „0 von 0" wäre
+                                eine Rechnung, die nie stattfand.
+                            #}
+                            {% if not line.isNothing %}
+                                <br><span class="ib-muted">
+                                    {{ line.distribution.key }} —
+                                    {{ line.distribution.explanation|trans }}:
+                                    {{ line.distribution.shareOf|decimal }} / {{ line.distribution.shareTotal|decimal }}
+                                    {%- if line.distribution.measure %} {{ ('finance.measure_symbol.' ~ line.distribution.measure)|trans }}{% endif %}
+                                </span>
+                            {% endif %}
+                            {% if line.reason %}
+                                <br><span class="ib-muted">{{ line.reason }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="ib-table__number">
+                            {{ line.total|money }}
+                            <br><span class="ib-muted">{{ 'billing.plan.row.previous_short'|trans({'%amount%': line.previous|money}) }}</span>
+                        </td>
+                        <td class="ib-table__number">{{ line.amount|money }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="2">{{ 'billing.plan.pdf.costs_sum'|trans }}</th>
+                    <th class="ib-table__number">{{ costs|money }}</th>
+                </tr>
+                <tr>
+                    <th colspan="2">{{ 'billing.plan.pdf.reserve_sum'|trans }}</th>
+                    <th class="ib-table__number">{{ reserve|money }}</th>
+                </tr>
+                <tr>
+                    <th colspan="2">{{ 'billing.plan.pdf.yearly'|trans }}</th>
+                    <th class="ib-table__number">{{ yearly|money }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    {#
+        Der Vorschuss ist keine Nachzahlung: er wird nicht rot. Was hier steht,
+        ist der Betrag, der ab dem ersten Fälligkeitstag gilt.
+    #}
+    <p class="ib-preview__result">
+        {{ interval }}: <strong>{{ advance|money }}</strong><br>
+        <span class="ib-muted">{{ 'billing.plan.pdf.first_due'|trans({'%day%': firstDue|date_local}) }}</span>
+    </p>
+
+    {% if decision|default('') %}
+        <p class="ib-preview__settled">{{ decision }}</p>
+    {% endif %}
+</div>

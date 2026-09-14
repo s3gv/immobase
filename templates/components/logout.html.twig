@@ -1,0 +1,16 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Abmelden — als Formular und nicht als Link.
+
+    Ein Link liesse sich von jeder fremden Seite aus aufrufen, als Bild oder
+    als Weiterleitung, und meldete den Besucher unbemerkt ab. Mit Token geht
+    das nur von hier.
+#}
+<form class="ib-account__form" method="post" action="{{ path('app_logout') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+    <button class="ib-account__action ib-account__action--button" type="submit">
+        {% include 'components/icon.html.twig' with { name: 'log-out' } %}
+        {{ 'login.logout'|trans }}
+    </button>
+</form>

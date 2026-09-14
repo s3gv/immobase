@@ -1,0 +1,20 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_detail.html.twig' %}
+{% set edit_step = 'einheiten' %}
+{#
+    Der Kasten ist hier breiter als bei den Formularen: sechs Spalten und die
+    Aktionen passen nicht in die 40rem, in denen sich ein Formular gut
+    ausfüllen lässt. Die Tabelle selbst ist so schmal wie möglich gehalten —
+    siehe _units.html.twig.
+#}
+{% set wide = true %}
+
+{% block panel %}
+    {% include 'property/_units.html.twig' with {
+        property: property, units: units,
+        may_edit: is_granted('properties.edit'), may_delete: is_granted('properties.delete')
+    } only %}
+
+    {% include 'property/_unit_confirms.html.twig' with { property: property, units: units } only %}
+{% endblock %}

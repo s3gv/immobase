@@ -1,0 +1,11 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'flow/flow.html.twig' %}
+
+{% block step_body %}
+    {% include 'components/textarea.html.twig' with {
+        id: 'note', name: 'note', label: 'party.field.note'|trans,
+        hint: 'party.field.note_hint'|trans,
+        value: draft.note, rows: 5, autofocus: true
+    } only %}
+{% endblock %}

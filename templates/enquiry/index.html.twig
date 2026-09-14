@@ -1,0 +1,97 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Anfragen aus dem Portal.
+
+    Dieselbe Gestalt wie jede andere Übersicht — oben die Kennzahlen, darunter
+    die Liste. Wer eine Übersicht in ImmoBase kennt, kennt alle.
+
+    Drei Kacheln: was auf uns wartet, was noch niemand gelesen hat, und wie
+    lange es im Schnitt bis zur ersten Antwort dauert. Die dritte ist die
+    einzige, die etwas über die Arbeit sagt und nicht über den Stapel — und
+    sie steht als Strich da, solange nie jemand geantwortet hat. Eine Null
+    wäre dort eine Behauptung.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'enquiry.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'enquiry.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'enquiry.subheading'|trans }}</p>
+
+    <div class="ib-stats">
+        {% include 'components/stat_tile.html.twig' with {
+            value: tally.open,
+            label: 'enquiry.tile.open'|trans,
+            tone: tally.open > 0 ? 'warning' : 'success'
+        } only %}
+
+        {% include 'components/stat_tile.html.twig' with {
+            value: tally.unread,
+            label: 'enquiry.tile.unread'|trans,
+            tone: tally.unread > 0 ? 'danger' : 'neutral'
+        } only %}
+
+        {% include 'components/stat_tile.html.twig' with {
+            value: tally.answeredSeconds is null
+                ? '—'
+                : 'enquiry.hours'|trans({'%count%': (tally.answeredSeconds / 3600)|round}),
+            label: 'enquiry.tile.answer_time'|trans({'%days%': windowDays}),
+            tone: 'neutral'
+        } only %}
+    </div>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            'enquiry.field.subject'|trans,
+            'enquiry.field.asker'|trans,
+            'enquiry.field.state'|trans,
+            'enquiry.field.assignee'|trans,
+            'enquiry.field.last_message'|trans
+        ],
+        rows: enquiries|map(enquiry => {
+            cells: [
+                (enquiry.isUnreadByStaff ? '● ' : '') ~ enquiry.subject,
+                askers[enquiry.id]|default('—'),
+                ('portal.state.' ~ enquiry.state.value)|trans,
+                enquiry.assigneeUserId ? colleagues[enquiry.assigneeUserId]|default('—') : '—',
+                enquiry.lastMessageAt|datetime_local
+            ],
+            actions: [{ action: 'open', url: path('app_enquiry_step', {
+                id: enquiry.id, step: 'gespraech'
+            }) }]
+        }),
+        page: page,
+        action: path('app_enquiry'),
+        url: url,
+        empty: 'enquiry.empty'|trans,
+        filter: filter,
+        colleagues: colleagues
+    } only %}
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'enquiry.filter.search'|trans,
+                value: filter.search, placeholder: 'enquiry.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'zustand', name: 'zustand', label: 'enquiry.field.state'|trans,
+                choices: [
+                    { value: 'open', label: 'portal.state.open'|trans },
+                    { value: 'answered', label: 'portal.state.answered'|trans },
+                    { value: 'done', label: 'portal.state.done'|trans },
+                    { value: 'unread', label: 'enquiry.filter.unread'|trans }
+                ],
+                value: filter.unreadOnly ? 'unread' : (filter.state ? filter.state.value : ''),
+                blank: 'enquiry.filter.all_states'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'bearbeiter', name: 'bearbeiter', label: 'enquiry.field.assignee'|trans,
+                choices: colleagues|keys|map(id => { value: id, label: colleagues[id] }),
+                value: filter.assigneeUserId, blank: 'enquiry.filter.anyone'|trans
+            } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

@@ -1,0 +1,116 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Übersicht.
+
+    Oben eine Kachel über die volle Breite mit allem, was auf einen Menschen
+    wartet — sie ist der Grund, warum man diese Seite ansieht.
+
+    Gruppiert nach Herkunft der Arbeit: was von selbst entstanden ist, was
+    abläuft, was angefangen wurde, was fehlt. Innerhalb einer Gruppe steht das
+    Dringendste oben.
+
+    Ist nichts offen, sieht das gut aus: ein Satz, kein leerer Kasten. Der
+    gute Fall ist der häufige.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'nav.dashboard'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    {#
+        Links die Begrüßung, rechts die Uhr — beide groß und mit Luft um sich
+        herum. Das ist das Erste, was jemand sieht, und es soll nicht
+        aussehen wie eine Überschrift, sondern wie eine Ankunft.
+
+        Kein Datum darunter: es steht schon am Heute-Strich des Zeitstrahls,
+        und zweimal dasselbe an derselben Stelle ist einmal zu viel.
+
+        Die Uhr zeigt Stunden und Minuten — Sekunden sind auf einer Übersicht
+        Unruhe und keine Auskunft. Gerendert wird sie vom Server, damit sie
+        ohne JavaScript nicht leer ist; das Skript stellt sie danach nach.
+    #}
+    {#
+        Der erste Bildschirm gehört der Begrüßung und dem Jahr. Was zu tun
+        ist, kommt danach — wer hereinkommt, soll nicht von einer Liste
+        empfangen werden.
+    #}
+    <div class="ib-hero">
+        <header class="ib-welcome">
+            <h1 class="ib-welcome__greeting">
+                <span class="ib-welcome__hello">{{ ('dashboard.greeting.' ~ greeting)|trans }}</span>
+                <span class="ib-welcome__name">{{ me.displayName|split(' ')|first }}</span>
+            </h1>
+            <p class="ib-clock" data-clock>
+                <time datetime="{{ timeline.today|date('H:i') }}">{{ timeline.today|date('H:i') }}</time>
+            </p>
+        </header>
+
+        {% include 'dashboard/timeline.html.twig' with { timeline: timeline } only %}
+    </div>
+
+    <section class="ib-card ib-todo">
+        <header class="ib-card__head">
+            <h2 class="ib-card__title">{{ 'todo.heading'|trans }}</h2>
+        </header>
+        <div class="ib-card__body">
+            {% if groups is empty %}
+                {% include 'components/empty_state.html.twig' with { message: 'todo.nothing'|trans } only %}
+            {% else %}
+                {% for group in groups %}
+                    <div class="ib-todo__group">
+                        <p class="ib-todo__kind">{{ group.kind.labelKey|trans }}</p>
+                        <ul class="ib-group__list">
+                            {% for todo in group.shown %}
+                                <li class="ib-row">
+                                    <span class="ib-row__dot ib-row__dot--{{ todo.urgency.value }}" aria-hidden="true"></span>
+                                    <span class="ib-row__body">
+                                        {% if todo.url %}
+                                            <a class="ib-row__title" href="{{ todo.url }}">{{ todo.labelKey|trans(todo.params) }}</a>
+                                        {% else %}
+                                            <span class="ib-row__title">{{ todo.labelKey|trans(todo.params) }}</span>
+                                        {% endif %}
+                                        {% if todo.dueOn %}
+                                            <span class="ib-row__meta">{{ 'todo.until'|trans({'%date%': todo.dueOn|date_local}) }}</span>
+                                        {% endif %}
+                                    </span>
+                                    <span class="ib-row__trailing">
+                                        {% if todo.hasAction %}
+                                            <a class="ib-button ib-button--quiet" href="{{ todo.actionUrl }}">
+                                                {{ todo.actionKey|trans }}
+                                            </a>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        {% if group.hidden > 0 %}
+                            <p class="ib-field__hint">{{ 'todo.more'|trans({'%count%': group.hidden}) }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </section>
+
+    {#
+        Darunter die Zahlen. Eine Gruppe, in der nichts steht, erscheint nicht
+        — ein leerer Abschnitt ist keine Auskunft, sondern eine Lücke, die nach
+        einem Fehler aussieht.
+    #}
+    {% for section in sections %}
+        <section class="ib-figures">
+            <h2 class="ib-figures__title">{{ section.group.labelKey|trans }}</h2>
+            <div class="ib-stats">
+                {% for figure in section.figures %}
+                    {% include 'components/stat_tile.html.twig' with {
+                        value: figure.value,
+                        label: figure.label ?: figure.labelKey|trans,
+                        tone: figure.tone,
+                        href: figure.url
+                    } only %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endfor %}
+{% endblock %}

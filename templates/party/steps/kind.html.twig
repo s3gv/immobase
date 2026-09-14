@@ -1,0 +1,31 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'flow/flow.html.twig' %}
+
+{% block step_body %}
+    <fieldset class="ib-choices">
+        <legend class="ib-field__label">{{ 'party.field.kind'|trans }}</legend>
+        {% for value in ['person', 'company'] %}
+            <label class="ib-choice">
+                <input type="radio" name="kind" value="{{ value }}"
+                       {{ draft.kind.value == value ? 'checked' : '' }}>
+                {{ ('party.kind.' ~ value)|trans }}
+            </label>
+        {% endfor %}
+    </fieldset>
+
+    <fieldset class="ib-choices{{ errors.roles is defined ? ' is-invalid' : '' }}">
+        <legend class="ib-field__label">{{ 'party.field.roles'|trans }}</legend>
+        <p class="ib-field__hint">{{ 'party.step.kind.roles_hint'|trans }}</p>
+        {% for role in roles %}
+            <label class="ib-choice">
+                <input type="checkbox" name="roles[]" value="{{ role.value }}"
+                       {{ role in draft.roles ? 'checked' : '' }}>
+                {{ role.labelKey|trans }}
+            </label>
+        {% endfor %}
+        {% if errors.roles is defined %}
+            <p class="ib-field__error" role="alert">{{ errors.roles|trans }}</p>
+        {% endif %}
+    </fieldset>
+{% endblock %}

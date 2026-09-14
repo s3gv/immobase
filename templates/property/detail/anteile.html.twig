@@ -1,0 +1,34 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Verteilung der Anteile über alle Einheiten — die Stelle, an der
+    auffällt, wenn die Summe nicht aufgeht.
+#}
+{% extends 'property/_detail.html.twig' %}
+{% set edit_step = 'anteile' %}
+
+{% block panel %}
+    <p class="ib-field__hint">
+        {{ 'property.mea.denominator'|trans }}: <strong>{{ property.shares.denominator.value }}</strong>
+    </p>
+
+    {% include 'property/_balance.html.twig' with { balance: balance } only %}
+
+    {% include 'components/table.html.twig' with {
+        headers: [
+            'property.unit.field.number'|trans,
+            'property.unit.field.label'|trans,
+            'property.mea.unit_share'|trans,
+            'property.unit.field.owners'|trans
+        ],
+        rows: units|map(row => [
+            row.unit.number,
+            row.unit.label,
+            row.unit.mea|share,
+            row.owners is empty
+                ? 'property.owner.none'|trans
+                : row.owners|map(o => (o.brief ? o.brief.displayName : '?') ~ ' (' ~ o.mea|share ~ ')')|join(', ')
+        ]),
+        empty: 'property.unit.empty'|trans
+    } only %}
+{% endblock %}

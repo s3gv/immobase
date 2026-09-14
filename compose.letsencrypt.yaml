@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 s3gv
+#
+# HTTPS direkt aus ImmoBase, mit einem Zertifikat von Let's Encrypt.
+#
+# Fuer Installationen ohne eigenen Reverse-Proxy: Caddy im Anwendungscontainer
+# holt das Zertifikat, erneuert es rechtzeitig und leitet http auf https um.
+# Dafuer muss die Domain auf diesen Rechner zeigen, und die Ports 80 und 443
+# muessen von aussen erreichbar sein — Let's Encrypt prueft ueber sie, dass
+# die Domain wirklich hierher gehoert.
+#
+# install.sh traegt diese Datei in COMPOSE_FILE ein; wer dort die HTTPS-Variante
+# waehlt, braucht sonst nichts zu tun. Zertifikate liegen im Volume caddy_data
+# und ueberstehen damit jedes Update.
+
+services:
+  app:
+    environment:
+      SERVER_NAME: "${IMMOBASE_DOMAIN}"
+      # Die Adresse bekommt Hinweise von Let's Encrypt, falls ein Zertifikat
+      # nicht erneuert werden kann.
+      CADDY_GLOBAL_OPTIONS: "email ${ACME_EMAIL}"
+      # Niemand steht davor: keiner Weiterleitung wird geglaubt.
+      TRUSTED_PROXIES: ""
+    # Port 80 kommt aus compose.yaml — install.sh setzt HTTP_PUBLISH=80. Hier
+    # nur, was dazukommt: ohne `!override`, das erst neuere Fassungen von
+    # Docker Compose verstehen.
+    ports:
+      - "443:443"
+      - "443:443/udp"

@@ -1,0 +1,26 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Rückfragen vor dem Löschen einer Einheit.
+
+    Getrennt von der Liste, weil jede ein eigenes <form> mitbringt: steht sie
+    innerhalb eines anderen Formulars, schließt der Parser das äußere, und
+    dessen Knöpfe hören auf zu wirken.
+
+    Erwartet: property, units
+#}
+{% if is_granted('properties.delete') %}
+    {% for row in units|filter(row => row.links is empty and row.unit.status.isActive) %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'unit-delete-' ~ row.unit.number,
+            title: 'property.unit.delete.title'|trans({'%label%': row.unit.label}),
+            body: 'property.unit.delete.body'|trans,
+            consequences: [
+                'property.unit.delete.consequence_owners'|trans({'%count%': row.owners|length}),
+                'property.unit.delete.consequence_number'|trans({'%number%': row.unit.number})
+            ],
+            url: path('app_unit_delete', { number: property.number, unit: row.unit.number }),
+            token: 'unit_delete_' ~ row.unit.number
+        } only %}
+    {% endfor %}
+{% endif %}

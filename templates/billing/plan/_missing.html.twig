@@ -1,0 +1,24 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was fehlt, bevor der Plan hinausgehen kann.
+
+    Solange eine Angabe fehlt, bleibt die Freigabe gesperrt: ein Plan, der eine
+    Lücke stillschweigend als Null verteilt, lässt die anderen Eigentümer
+    zahlen, ohne dass es jemandem auffällt — und das ein ganzes Jahr lang.
+
+    Erwartet: missing (Liste aus MissingFigure)
+#}
+{% if missing is not empty %}
+    <div class="ib-note ib-note--warning">
+        <p>{{ 'billing.missing.heading'|trans }}</p>
+        <ul class="ib-billing__pending">
+            {% for gap in missing %}
+                <li>
+                    {{ gap.unitLabel }}{% if gap.costKind %} · {{ gap.costKind }}{% endif %}
+                    — {{ gap.whatKey|trans }}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}

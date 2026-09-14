@@ -1,0 +1,116 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Beschluss — und mit ihm steht fest, wer zahlt.
+
+    Bei einer baulichen Veränderung sind die drei Angaben keine Nebensache:
+    aus abgegebenen Stimmen, Ja-Stimmen und den zustimmenden Einheiten folgt
+    nach § 21 WEG der Verteilerkreis. Die Stimmen werden getippt, weil das
+    Stimmprinzip in der Gemeinschaftsordnung steht; die Miteigentumsanteile
+    rechnet die Anwendung aus den Häkchen.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'billing/plan/_missing.html.twig' with { missing: proposal.missing } only %}
+
+    {% if not budget.stage.wasProposed %}
+        <div class="ib-note">
+            <p>{{ 'billing.budget.not_proposed'|trans }}</p>
+        </div>
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'decidedOn', name: 'decidedOn', type: 'date',
+        label: 'billing.budget.decision.day'|trans,
+        hint: 'billing.budget.decision.hint'|trans,
+        value: budget.resolution.decidedOn ? budget.resolution.decidedOn|date('Y-m-d') : ''
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'outcome', name: 'outcome', label: 'billing.budget.decision.outcome'|trans,
+        placeholder: 'billing.budget.decision.outcome_hint'|trans,
+        value: budget.resolution.outcome
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'decisionNumber', name: 'decisionNumber', label: 'billing.budget.decision.number'|trans,
+        placeholder: 'billing.budget.decision.number_hint'|trans,
+        value: budget.resolution.number
+    } only %}
+
+    {% if budget.measure.kind.asksAboutTheVote %}
+        <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.budget.vote.heading'|trans }}</h3>
+        <p class="ib-field__hint">{{ 'billing.budget.vote.hint'|trans }}</p>
+
+        <div class="ib-budget__group">
+            {% include 'components/field.html.twig' with {
+                id: 'votesCast', name: 'votesCast', type: 'number',
+                label: 'billing.budget.vote.cast'|trans,
+                value: budget.verdict.cast ?: ''
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'votesFor', name: 'votesFor', type: 'number',
+                label: 'billing.budget.vote.for'|trans,
+                value: budget.verdict.for ?: ''
+            } only %}
+        </div>
+    {% endif %}
+
+    {#
+        Die Häkchen braucht es in beiden Fällen: fehlt die qualifizierte
+        Mehrheit, sind sie der Verteilerkreis — und bei einer privilegierten
+        Maßnahme sind sie es ohnehin.
+    #}
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.budget.approvals.heading'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.budget.approvals.hint'|trans }}</p>
+
+    <div class="ib-budget__approvals">
+        {% for unit in units %}
+            <label class="ib-choice">
+                <input type="checkbox" name="agreed[]" value="{{ unit.id }}"
+                       {{ unit.id in approved ? 'checked' : '' }}>
+                {{ unit.number }} · {{ unit.label }}
+            </label>
+        {% endfor %}
+    </div>
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.budget.share.heading'|trans }}</h3>
+    {% include 'billing/_budget_preview.html.twig' with { proposal: proposal } only %}
+{% endblock %}
+
+{% block forward %}
+    <button class="ib-button ib-button--quiet" type="submit" name="direction" value="forward">
+        {{ 'billing.budget.decision.keep'|trans }}
+    </button>
+{% endblock %}
+
+{#
+    Der Knopf erscheint erst, wenn der Beschluss gespeichert ist.
+
+    Bei einer baulichen Veränderung folgt der Verteilerkreis aus dem
+    Abstimmungsergebnis. Ohne gezählte Stimmen stünde auf dem Schreiben eine
+    Mehrheit, die niemand gezählt hat — und die Eingaben oben sind erst
+    gespeichert, wenn jemand „Speichern" gedrückt hat.
+#}
+{% block outside_form %}
+    {% set counted = not budget.measure.kind.asksAboutTheVote or budget.verdict.wasCounted %}
+
+    {% if not counted %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'billing.budget.error.no_vote'|trans }}</p>
+        </div>
+    {% endif %}
+
+    {% if counted and proposal.missing is empty and proposal.shares is not empty %}
+        <form method="post" action="{{ path('app_billing_budget_release', { id: budget.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+
+            <p class="ib-field__hint">{{ 'billing.budget.release_hint'|trans }}</p>
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'billing.budget.release'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

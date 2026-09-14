@@ -1,0 +1,72 @@
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+
+    # Sitzungen liegen in var/ und nicht im /tmp des Containers: dort gingen
+    # sie mit jedem Neuerstellen verloren, und alle waeren abgemeldet.
+    # Hinter einem Reverse-Proxy: wem die Kopfzeilen mit Herkunft und Schema
+    # geglaubt werden. Leer heisst niemandem — siehe compose.yaml.
+    trusted_proxies: '%env(TRUSTED_PROXIES)%'
+    # Nur der eigene Name aus DEFAULT_URI (und localhost) — siehe TrustedHosts.
+    trusted_hosts: '%env(trusted_hosts:DEFAULT_URI)%'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-host']
+
+    # Was der Absender falsch gemacht hat, ist kein Fehler der Anwendung: ein
+    # Aufruf ohne Recht, eine Seite, die es nicht gibt, ein fremder Host. Im
+    # Log als Fehler waeren sie das Rauschen, in dem der echte untergeht —
+    # jeder Scanner im Netz erzeugte sie zu Hunderten.
+    exceptions:
+        Symfony\Component\HttpKernel\Exception\NotFoundHttpException: { log_level: info }
+        Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException: { log_level: info }
+        Symfony\Component\HttpKernel\Exception\BadRequestHttpException: { log_level: info }
+        Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException: { log_level: notice }
+
+    session:
+        handler_id: null
+        save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
+
+    #esi: true
+    #fragments: true
+
+    # Bremsen gegen Durchprobieren. Sie liegen im Cache und brauchen deshalb
+    # keinen eigenen Speicher: eine geleerte Bremse ist ärgerlich, aber kein
+    # Sicherheitsproblem — anders als eine, die die Anwendung aufhält.
+    #
+    # Die Anmeldung selbst steht nicht hier: dafür ist login_throttling in
+    # security.yaml zuständig, das Symfony mitbringt.
+    rate_limiter:
+        # "Passwort vergessen" je Adresse. Strenger, weil jeder Versuch eine
+        # E-Mail auslöst — sonst wird das Formular zum Werkzeug, um jemanden
+        # zuzumüllen.
+        password_reset:
+            policy: 'sliding_window'
+            limit: 3
+            interval: '60 minutes'
+
+        # Dasselbe je Absender. Die Grenze je Adresse allein liesse sich mit
+        # vielen Adressen umgehen, um Konten der Reihe nach zu bespielen.
+        password_reset_ip:
+            policy: 'sliding_window'
+            limit: 20
+            interval: '60 minutes'
+
+        # Code-Eingabe beim zweiten Faktor. Ohne sie wäre ein sechsstelliger
+        # Code in Minuten durchprobiert.
+        second_factor:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
+
+        # Codes per E-Mail je Konto. Wer das Passwort kennt, soll dem Opfer
+        # nicht beliebig viele Mails schicken und dabei jeden Code sofort
+        # wieder entwerten koennen.
+        second_factor_mail:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file

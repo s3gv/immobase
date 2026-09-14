@@ -1,0 +1,38 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Antwortfeld: Text, Emoji, Dateien.
+
+    Erwartet: id (eindeutig auf der Seite), name (Feldname), label,
+              retentionDays, maxFiles, maxMegabytes
+    Optional: value, required
+
+    **Der Hinweis auf die Frist steht über der Ablagefläche**, nicht darunter:
+    wer erst danach liest, wie lange seine Datei gespeichert wird, hat sie
+    schon abgelegt.
+
+    Die Emoji-Auswahl schreibt in das Textfeld. Kein Bilddienst, keine eigene
+    Zeichensammlung: der Text ist Unicode, die Datenbank kann es, fertig.
+#}
+{% include 'components/textarea.html.twig' with {
+    id: id, name: name, label: label, value: value|default(''),
+    required: required|default(false), rows: 5
+} only %}
+
+<div class="ib-emoji" data-emoji-for="{{ id }}">
+    <span class="ib-visually-hidden">{{ 'portal.emoji.label'|trans }}</span>
+    {% for sign in ['🙂', '👍', '🙏', '❓', '❗', '📄', '🔧', '🏠'] %}
+        <button class="ib-emoji__key" type="button" data-emoji="{{ sign }}">{{ sign }}</button>
+    {% endfor %}
+</div>
+
+<p class="ib-field__hint">
+    {{ 'portal.file.limits'|trans({'%files%': maxFiles, '%megabytes%': maxMegabytes}) }}
+    {{ 'portal.file.retention'|trans({'%count%': retentionDays}) }}
+</p>
+
+<div class="ib-dropzone" data-dropzone>
+    <label class="ib-dropzone__label" for="{{ id }}-files">{{ 'portal.file.choose'|trans }}</label>
+    <input class="ib-dropzone__input" id="{{ id }}-files" name="files[]" type="file" multiple>
+    <p class="ib-dropzone__hint" data-dropzone-list>{{ 'portal.file.drop'|trans }}</p>
+</div>

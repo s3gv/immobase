@@ -1,0 +1,39 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Einen eigenen Schlüssel anlegen.
+
+    Nur Bezeichnung und Objekt: die Grundlage ist immer „feste Anteile". Die
+    berechneten stehen schon im System, und die Erfassung ist der eine
+    Systemschlüssel — es bleibt nichts zu wählen, also wird nichts gefragt.
+#}
+{% extends 'finance/keys/_page.html.twig' %}
+
+{% block section_body %}
+    {% if is_granted('finance.edit') %}
+        <form method="post" action="{{ path('app_finance_key_add') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('finance_key') }}">
+
+            {% include 'components/field.html.twig' with {
+                id: 'name', name: 'name', label: 'finance.key.name'|trans, value: '', autofocus: true
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'property', name: 'property', label: 'finance.key.property'|trans,
+                choices: properties|map(p => { value: p.number, label: p.oneLine }),
+                value: '', blank: 'finance.key.choose_property'|trans
+            } only %}
+
+            <div class="ib-flow__actions">
+                <a class="ib-button ib-button--quiet" href="{{ path('app_finance_key') }}">
+                    {{ 'flow.cancel'|trans }}
+                </a>
+                <button class="ib-button" type="submit">{{ 'finance.key.add'|trans }}</button>
+            </div>
+        </form>
+    {% else %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.key.no_edit'|trans
+        } only %}
+    {% endif %}
+{% endblock %}

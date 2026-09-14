@@ -1,0 +1,31 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Dialog.
+
+    Erwartet: id (eindeutig auf der Seite), title
+    Optional: wide — für lange Inhalte: breiter Kasten, rollender Inhalt
+    Blöcke:   body — der Inhalt
+              actions — die Schaltflächen unten
+
+    Mit {% embed %} benutzen, damit die Blöcke gefüllt werden können.
+
+    Geöffnet wird er von jedem Element mit data-modal-open="<id>".
+#}
+<dialog class="ib-modal{{ wide|default(false) ? ' ib-modal--wide' : '' }}" id="{{ id }}" aria-labelledby="{{ id }}-title">
+    <div class="ib-modal__panel">
+        <h2 class="ib-modal__title" id="{{ id }}-title">{{ title }}</h2>
+
+        <div class="ib-modal__body">
+            {% block body %}{% endblock %}
+        </div>
+
+        <div class="ib-modal__actions">
+            {% block actions %}
+                <button class="ib-button ib-button--quiet" type="button" data-modal-close>
+                    {{ 'modal.close'|trans }}
+                </button>
+            {% endblock %}
+        </div>
+    </div>
+</dialog>

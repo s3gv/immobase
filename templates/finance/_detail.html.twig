@@ -1,0 +1,73 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Abschnitt der Kostenseite.
+
+    Dieselben Abschnitte wie im Ablauf, nur ist hier nichts ein Weg: man
+    springt, statt weiterzugehen.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <div class="ib-index__actions">
+        {% if is_granted('finance.edit') %}
+            {% include 'components/action.html.twig' with {
+                action: 'edit',
+                url: path('app_finance_item_edit', { number: item.number, step: edit_step|default('zuordnung') }),
+                labelled: true
+            } only %}
+        {% endif %}
+
+        {#
+            Beenden statt löschen, sobald ein Betrag daran hängt: die Position
+            kann Grundlage einer Abrechnung sein. Gelöscht wird nur, was nie
+            in Kraft war.
+        #}
+        {% if is_granted('finance.edit') %}
+            <button class="ib-button ib-button--quiet" type="button"
+                    data-modal-open="{{ item.isPast ? 'item-reopen' : 'item-end' }}">
+                {{ (item.isPast ? 'finance.item.reopen.label' : 'finance.item.end.label')|trans }}
+            </button>
+        {% endif %}
+
+        {% if is_granted('finance.delete') and item.years.isEmpty %}
+            <button class="ib-button ib-button--quiet" type="button" data-modal-open="item-delete">
+                {{ 'action.delete'|trans }}
+            </button>
+        {% endif %}
+    </div>
+
+    {% if item.isPast %}
+        <p class="ib-note ib-note--warning">
+            {{ 'finance.item.ended_on'|trans({'%date%': item.endsOn|date_local}) }}
+        </p>
+    {% endif %}
+
+    {% block panel %}{% endblock %}
+
+    {% if is_granted('finance.edit') %}
+        {% include 'components/confirm.html.twig' with {
+            id: item.isPast ? 'item-reopen' : 'item-end',
+            title: (item.isPast ? 'finance.item.reopen.title' : 'finance.item.end.title')|trans({
+                '%number%': item.number
+            }),
+            body: (item.isPast ? 'finance.item.reopen.body' : 'finance.item.end.body')|trans,
+            consequences: item.isPast ? [] : ['finance.item.end.consequence'|trans],
+            confirm_label: (item.isPast ? 'finance.item.reopen.label' : 'finance.item.end.label')|trans,
+            danger: false,
+            url: path('app_finance_item_end', { number: item.number }),
+            token: 'finance_item_end_' ~ item.number
+        } only %}
+    {% endif %}
+
+    {% if is_granted('finance.delete') and item.years.isEmpty %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'item-delete',
+            title: 'finance.item.delete.title'|trans({'%number%': item.number}),
+            body: 'finance.item.delete.body'|trans,
+            consequences: ['finance.item.delete.consequence_number'|trans({'%number%': item.number})],
+            url: path('app_finance_item_delete', { number: item.number }),
+            token: 'finance_item_delete_' ~ item.number
+        } only %}
+    {% endif %}
+{% endblock %}

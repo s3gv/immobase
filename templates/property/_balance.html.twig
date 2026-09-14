@@ -1,0 +1,59 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Stand der Verteilung: was verteilt ist gegen das, was verteilt sein
+    sollte.
+
+    Zeigt an und blockiert nie. Einheiten werden über Wochen erfasst, und eine
+    Sperre „erst wenn die Summe stimmt" hielte genau die Erfassung an, die zur
+    Summe führt. Sichtbar sein muss es trotzdem: eine Hausgeldabrechnung auf
+    940 von 1000 Anteilen ist falsch, und zwar leise.
+
+    Seit Eigentum einen Zeitraum hat, gilt die Bilanz **für einen Tag** —
+    heute. Nach einem Verkauf stehen zwei volle Anteile in der Liste, und an
+    keinem Tag sind es zwei. Ob es an jedem anderen Tag auch aufgeht, sagt
+    `openPeriods` daneben.
+
+    Erwartet: balance (MeaBalance)
+    Optional: openPeriods — Zeiträume, in denen es nicht aufgeht
+              balanceDay — der Stichtag, auf den sich die Bilanz bezieht.
+                           Nur wo es Zeiträume gibt: sonst wäre er Lärm.
+#}
+<p class="ib-note{{ balance.isComplete or balance.isUntouched ? '' : ' ib-note--warning' }}">
+    {{ balanceDay|default(null)
+        ? 'property.mea.distributed_on'|trans({'%day%': balanceDay|date_local})
+        : 'property.mea.distributed'|trans }}:
+    <strong>{{ balance.distributed.numerator|decimal(false) }}</strong>
+    {{ 'property.mea.of'|trans }} {{ balance.expected.numerator|decimal(false) }}
+
+    {% if balance.isUntouched %}
+        — {{ 'property.mea.untouched'|trans }}
+    {% elseif balance.isComplete %}
+        — {{ 'property.mea.complete'|trans }}
+    {% elseif balance.isShort %}
+        — {{ 'property.mea.short'|trans({'%missing%': balance.missing|share}) }}
+    {% else %}
+        — {{ 'property.mea.excess'|trans({'%excess%': balance.excess|share}) }}
+    {% endif %}
+</p>
+
+{#
+    Eine Verteilung, die heute aufgeht, kann im Mai eine Lücke gehabt haben —
+    und abgerechnet wird das vergangene Jahr. Deshalb steht hier, welche
+    Zeiträume nicht stimmen, statt nur des heutigen Stands.
+#}
+{% for period in openPeriods|default([]) %}
+    <p class="ib-note ib-note--warning">
+        {{ 'property.mea.period'|trans({
+            '%from%': period.from|date_local,
+            '%to%': period.to|date_local
+        }) }}:
+        <strong>{{ period.balance.distributed.numerator|decimal(false) }}</strong>
+        {{ 'property.mea.of'|trans }} {{ period.balance.expected.numerator|decimal(false) }}
+        {% if period.balance.isShort %}
+            — {{ 'property.mea.short'|trans({'%missing%': period.balance.missing|share}) }}
+        {% else %}
+            — {{ 'property.mea.excess'|trans({'%excess%': period.balance.excess|share}) }}
+        {% endif %}
+    </p>
+{% endfor %}

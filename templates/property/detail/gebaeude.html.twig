@@ -1,0 +1,23 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_detail.html.twig' %}
+{% set edit_step = 'gebaeude' %}
+
+{% block panel %}
+    {% set blank = 'property.none'|trans %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['property.field.year_built'|trans, property.building.yearBuilt ?: blank],
+            ['property.field.living_area'|trans, property.building.livingArea ? property.building.livingArea|decimal : blank],
+            ['property.field.commercial_area'|trans, property.building.commercialArea ? property.building.commercialArea|decimal : blank],
+            ['property.field.plot_area'|trans, property.building.plotArea ? property.building.plotArea|decimal : blank],
+            ['property.field.floors'|trans, property.building.floors ?: blank],
+            ['property.field.lift'|trans, property.building.hasLift is null
+                ? 'property.yes_no.unknown'|trans
+                : (property.building.hasLift ? 'property.yes_no.yes'|trans : 'property.yes_no.no'|trans)],
+            ['property.field.parking_spaces'|trans, property.building.parkingSpaces ?: blank]
+        ],
+        empty: ''
+    } only %}
+{% endblock %}

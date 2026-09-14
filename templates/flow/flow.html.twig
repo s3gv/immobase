@@ -1,0 +1,93 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der wiederverwendbare Multi-Step-Baustein.
+
+    Erwartet:
+      definition  FlowDefinition
+      state       FlowState
+      step        FlowStep (der aktuelle)
+      action      string   (Ziel-URL des Formulars)
+      heading     string   (Übersetzungsschlüssel der Überschrift)
+    Optional:
+      cancel      string   (Adresse, zu der Abbrechen führt; fehlt sie, gibt
+                            es keinen Abbrechen-Knopf)
+
+    Der Inhalt des aktuellen Schritts kommt über den Block `step_body`.
+    Links stehen die Schritte, rechts der aktuelle Schritt.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ step.labelKey|trans }} · {{ heading|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ heading|trans }}</h1>
+
+    <div class="ib-flow">
+        <nav class="ib-flow__steps" aria-label="{{ 'flow.steps'|trans }}">
+            <ol>
+                {% for candidate in definition.steps %}
+                    {% set is_current = candidate.key == step.key %}
+                    {% set is_visited = state.hasVisited(candidate.key) %}
+                    <li class="ib-flow__step{{ is_current ? ' is-current' : '' }}{{ is_visited and not is_current ? ' is-done' : '' }}">
+                        {% if is_visited and not is_current %}
+                            {#
+                                Ein Knopf im Formular, kein Link: sonst ginge
+                                verloren, was im aktuellen Schritt gerade
+                                getippt wurde. Über form= gehört er zum
+                                Formular, ohne darin zu stehen.
+                            #}
+                            <button type="submit" form="{{ definition.id }}" name="goto"
+                                    value="{{ candidate.key }}" formnovalidate>
+                                {{ candidate.labelKey|trans }}
+                            </button>
+                        {% else %}
+                            <span {{ is_current ? 'aria-current="step"' : '' }}>{{ candidate.labelKey|trans }}</span>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ol>
+        </nav>
+
+        <div class="ib-flow__panel">
+            <p class="ib-flow__position">
+                {{ 'flow.step_position'|trans({
+                    '%position%': definition.positionOf(step.key),
+                    '%count%': definition.stepCount
+                }) }}
+            </p>
+
+            <h2 class="ib-flow__title">{{ step.titleKey|trans }}</h2>
+            <p class="ib-flow__explanation">{{ step.explanationKey|trans }}</p>
+
+            <form method="post" action="{{ action }}" id="{{ definition.id }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('flow_' ~ definition.id) }}">
+
+                {% block step_body %}{% endblock %}
+
+                <div class="ib-flow__actions">
+                    {#
+                        Abbrechen führt weg, ohne zu speichern. Als Link und
+                        nicht als Knopf: er schickt nichts ab, und ein Knopf im
+                        Formular sähe aus, als täte er es doch.
+                    #}
+                    {% if cancel|default(null) %}
+                        <a class="ib-button ib-button--quiet" href="{{ cancel }}">{{ 'flow.cancel'|trans }}</a>
+                    {% endif %}
+
+                    {% if definition.previous(step.key) is not null %}
+                        {# formnovalidate: sonst blockiert die Browservalidierung des
+                           aktuellen Schritts das Zurückgehen und der Nutzer sitzt fest. #}
+                        <button class="ib-button ib-button--quiet" type="submit" name="direction" value="back" formnovalidate>
+                            {{ 'flow.back'|trans }}
+                        </button>
+                    {% endif %}
+
+                    <button class="ib-button" type="submit" name="direction" value="forward">
+                        {{ definition.isLast(step.key) ? 'flow.finish'|trans : 'flow.next'|trans }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wem das Darlehen gehört und wer es gegeben hat.
+
+    Das Objekt steht zuerst und lässt sich danach nicht mehr wechseln: ein
+    Darlehen der einen Gemeinschaft wäre bei der anderen eine fremde Schuld.
+#}
+{% extends 'finance/loan/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.basics is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.basics|trans }}</p>
+    {% endif %}
+
+    {% if loan %}
+        {% include 'components/field.html.twig' with {
+            id: 'property', name: 'property', label: 'finance.item.field.property'|trans,
+            hint: 'finance.loan.field.property_fixed'|trans,
+            value: properties|filter(p => p.id == loan.propertyId)|map(p => p.oneLine)|first|default(''),
+            readonly: true
+        } only %}
+    {% else %}
+        {% include 'components/select.html.twig' with {
+            id: 'propertyId', name: 'propertyId', label: 'finance.item.field.property'|trans,
+            choices: properties|map(p => { value: p.id, label: p.oneLine }),
+            value: posted ? submitted.propertyId|default('') : '',
+            blank: 'finance.item.choose_property'|trans
+        } only %}
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'label', name: 'label', label: 'finance.loan.field.label'|trans,
+        hint: 'finance.loan.field.label_hint'|trans,
+        value: posted ? submitted.label|default('') : (loan ? loan.label : '')
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'lender', name: 'lender', label: 'finance.loan.field.lender'|trans,
+        hint: 'finance.loan.field.lender_hint'|trans,
+        value: posted ? submitted.lender|default('') : (loan ? loan.lender : '')
+    } only %}
+
+    {% include 'components/textarea.html.twig' with {
+        id: 'note', name: 'note', label: 'finance.loan.field.note'|trans,
+        value: posted ? submitted.note|default('') : (loan ? loan.note : '')
+    } only %}
+{% endblock %}

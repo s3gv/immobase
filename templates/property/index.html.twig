@@ -1,0 +1,104 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Objektübersicht.
+
+    Entwürfe stehen mit in der Liste und tragen ihren Status: sie sind
+    angefangene Arbeit und gehören vor Augen, nicht aus dem Weg. Wer sie
+    ausblenden will, filtert.
+
+    Was jemand nicht darf, steht gar nicht erst da — ein Knopf, der
+    zuverlässig in eine Fehlermeldung führt, ist schlechter als keiner.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'property.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'property.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'property.subheading'|trans }}</p>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            'property.field.number'|trans,
+            'property.field.name'|trans,
+            'property.field.address'|trans,
+            'property.field.modes'|trans,
+            'property.field.units'|trans,
+            'property.field.status'|trans
+        ],
+        rows: properties|map(p => {
+            cells: [
+                p.number,
+                p.name,
+                p.address.oneLine ?: 'property.none'|trans,
+                p.modes.all|map(m => m.labelKey|trans)|join(', '),
+                units[p.id]|default(0),
+                p.status.labelKey|trans
+            ],
+            actions: [{ action: 'open', url: path('app_property_show', { number: p.number }) }]
+                |merge(is_granted('properties.edit')
+                    ? [{ action: 'edit', url: path('app_property_edit', { number: p.number }) }]
+                    : [])
+                |merge(is_granted('properties.delete')
+                    ? [{ action: 'delete', modal: 'property-delete-' ~ p.number }]
+                    : [])
+        }),
+        page: page,
+        action: path('app_property'),
+        url: url,
+        empty: 'property.empty'|trans ~ (filter.withPast ? '' : ' ' ~ 'index.past_hidden'|trans),
+        filter: filter,
+        modes: modes,
+        statuses: statuses,
+        properties: properties,
+        units: units
+    } only %}
+        {% block actions %}
+            {% if is_granted('properties.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_property_new'), labelled: true
+                } only %}
+            {% endif %}
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'property.filter.search'|trans,
+                value: filter.search, placeholder: 'property.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'art', name: 'art', label: 'property.field.modes'|trans,
+                choices: modes|map(m => { value: m.value, label: m.labelKey|trans }),
+                value: filter.mode ? filter.mode.value : '',
+                blank: 'property.filter.all_modes'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'status', name: 'status', label: 'property.field.status'|trans,
+                choices: statuses|map(s => { value: s.value, label: s.labelKey|trans }),
+                value: filter.status ? filter.status.value : '',
+                blank: 'property.filter.all_statuses'|trans
+            } only %}
+
+            {% include 'components/past_toggle.html.twig' with { shown: filter.withPast } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% if is_granted('properties.delete') %}
+        {% for p in properties %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'property-delete-' ~ p.number,
+                title: 'property.delete.title'|trans({'%name%': p.name}),
+                body: 'property.delete.body'|trans,
+                consequences: [
+                    'property.delete.consequence_units'|trans({'%count%': units[p.id]|default(0)}),
+                    'property.delete.consequence_number'|trans({'%number%': p.number})
+                ],
+                url: path('app_property_delete', { number: p.number }),
+                token: 'property_delete_' ~ p.number
+            } only %}
+        {% endfor %}
+    {% endif %}
+{% endblock %}

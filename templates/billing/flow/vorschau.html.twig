@@ -1,0 +1,89 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Vorschau: hier wird geprüft, nicht eingegeben.
+
+    Oben die Empfängerwahl, darunter genau das, was auf dem Schreiben stehen
+    wird. Wer hier freigibt, hat gesehen, was rausgeht.
+
+    Ein Schreiben zur Zeit — dieselbe Gestalt, in der die freigegebene
+    Abrechnung später angesehen wird. Alle untereinander wären bei einem
+    Objekt mit zwölf Einheiten eine Seite, die niemand prüft.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+{#
+    Breiter als ein Formular: fünf Spalten passen nicht in die 40rem, in
+    denen sich ein Formular gut ausfüllen lässt.
+#}
+{% set wide = true %}
+
+{% block before_form %}
+    {% if shown %}
+        {% include 'billing/_recipients.html.twig' with {
+            action: path('app_billing_statement_edit', { id: statement.id, step: current }),
+            value: shown.key,
+            choices: proposal.documents|map(d => {
+                value: d.key,
+                label: d.unitNumber ~ ' · ' ~ d.recipientLabel ~ ' · ' ~ d.kind.labelKey|trans
+                    ~ ' · ' ~ d.from|date_local ~ ' – ' ~ d.to|date_local
+            })
+        } only %}
+    {% endif %}
+{% endblock %}
+
+{% block fields %}
+    {% if proposal.missing is not empty %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'billing.missing.heading'|trans }}</p>
+            <ul class="ib-billing__pending">
+                {% for gap in proposal.missing %}
+                    <li>{{ gap.unitLabel }} · {{ gap.costKind }} — {{ gap.whatKey|trans }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if invoiceGaps is not empty %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'billing.einvoice.gaps_heading'|trans }}</p>
+            <ul class="ib-billing__pending">
+                {% for gap in invoiceGaps %}
+                    <li>{{ gap.label }} — {{ gap.missing|map(key => key|trans)|join(' ') }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if shown is null %}
+        <p class="ib-empty">{{ 'billing.recipient.none'|trans }}</p>
+    {% else %}
+        {% include 'billing/_preview.html.twig' with {
+            who: shown.recipientLabel,
+            unit: shown.unitNumber ~ ' · ' ~ shown.unitLabel,
+            kind: shown.kind.labelKey|trans,
+            from: shown.from, to: shown.to,
+            lines: shown.lines, advances: shown.advances,
+            costs: shown.costs, balance: shown.balance,
+            taxation: shown.letting.taxation, tax: shown.tax,
+            gross: shown.costs.plus(shown.tax), advancesTax: shown.advancesTax,
+            reserve: shown.kind.value == 'house_money' ? proposal.reserve : null
+        } only %}
+    {% endif %}
+{% endblock %}
+
+{% block forward %}{% endblock %}
+
+{% block outside_form %}
+    {% if proposal.documents is not empty and proposal.missing is empty and invoiceGaps is empty %}
+        {#
+            Freigegeben wird der ganze Lauf und nicht das angesehene Schreiben
+            — darum steht der Knopf unter der Auswahl und nicht in ihr.
+        #}
+        <form method="post" action="{{ path('app_billing_statement_release', { id: statement.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'billing.statement.release'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

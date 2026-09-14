@@ -1,0 +1,58 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Bewegung erfassen.
+
+    Der Stand ergibt sich daraus — es gibt keinen Kontodatensatz, den man
+    stattdessen korrigieren könnte.
+#}
+{% extends 'finance/reserve/_page.html.twig' %}
+
+{% block reserve_body %}
+    {% if is_granted('finance.edit') %}
+        <form method="post" action="{{ path('app_finance_reserve_book', { number: property.number }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('finance_reserve') }}">
+
+            {% include 'components/select.html.twig' with {
+                id: 'kind', name: 'kind', label: 'finance.reserve.field.kind'|trans,
+                choices: kinds|filter(k => k.isBookable)|map(k => { value: k.value, label: k.labelKey|trans }),
+                value: 'contribution'
+            } only %}
+
+            <div class="ib-entry__pair">
+                {% include 'components/field.html.twig' with {
+                    id: 'occurredOn', name: 'occurredOn', type: 'date',
+                    label: 'finance.reserve.field.occurred_on'|trans,
+                    value: 'now'|date('Y-m-d')
+                } only %}
+
+                {% include 'components/field.html.twig' with {
+                    id: 'amount', name: 'amount',
+                    label: 'finance.reserve.field.amount'|trans, value: ''
+                } only %}
+            </div>
+
+            {% include 'components/select.html.twig' with {
+                id: 'unitId', name: 'unitId', label: 'finance.reserve.field.unit'|trans,
+                hint: 'finance.reserve.field.unit_hint'|trans,
+                choices: units|map(u => { value: u.id, label: u.label }),
+                value: '', blank: 'finance.reserve.field.no_unit'|trans
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'note', name: 'note', label: 'finance.reserve.field.note'|trans, value: ''
+            } only %}
+
+            <div class="ib-flow__actions">
+                <a class="ib-button ib-button--quiet" href="{{ path('app_finance_reserve') }}">
+                    {{ 'flow.cancel'|trans }}
+                </a>
+                <button class="ib-button" type="submit">{{ 'finance.reserve.book'|trans }}</button>
+            </div>
+        </form>
+    {% else %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.reserve.no_edit'|trans
+        } only %}
+    {% endif %}
+{% endblock %}

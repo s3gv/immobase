@@ -1,0 +1,81 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Erinnerungen — anlegen, ansehen, wegnehmen.
+
+    Dieselbe Bauart wie der Taschenrechner daneben: <details>, damit Öffnen,
+    Schließen und Tastaturbedienung vom Browser kommen.
+
+    Eine Erinnerung gehört einem Menschen und keinem Datensatz. Was wichtig
+    ist, weiß die Anwendung nicht — der eine will an den Rückruf beim
+    Handwerker erinnert werden, der nächste an die Eigentümerversammlung.
+    Deshalb keine Zuweisung zu Objekt oder Partei, sondern eine freie Notiz:
+    wer eine Zuordnung braucht, schreibt sie hinein.
+
+    Ohne JavaScript bleibt es ein gewöhnliches Formular.
+#}
+<details class="ib-remind" data-reminder>
+    <summary class="ib-icon-button ib-remind__toggle" title="{{ 'reminder.heading'|trans }}">
+        <span class="ib-visually-hidden">{{ 'reminder.heading'|trans }}</span>
+        {% include 'components/icon.html.twig' with { name: 'calendar' } only %}
+        {% if reminders.next|length > 0 %}
+            <span class="ib-remind__dot" aria-hidden="true"></span>
+        {% endif %}
+    </summary>
+
+    <div class="ib-remind__panel">
+        <form method="post" action="{{ path('app_reminder_add') }}" class="ib-remind__form">
+            <input type="hidden" name="_token" value="{{ csrf_token('reminder') }}">
+            <input type="hidden" name="from" value="{{ app.request.requestUri }}">
+
+            {% include 'components/field.html.twig' with {
+                id: 'reminder-subject', name: 'subject',
+                label: 'reminder.field.subject'|trans, required: true
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'reminder-note', name: 'note', label: 'reminder.field.note'|trans
+            } only %}
+
+            <div class="ib-remind__when">
+                {% include 'components/field.html.twig' with {
+                    id: 'reminder-day', name: 'day', type: 'date',
+                    label: 'reminder.field.day'|trans, required: true,
+                    value: 'now'|date('Y-m-d')
+                } only %}
+                {% include 'components/field.html.twig' with {
+                    id: 'reminder-time', name: 'time', type: 'time',
+                    label: 'reminder.field.time'|trans, value: '09:00'
+                } only %}
+            </div>
+
+            <button class="ib-button ib-remind__save" type="submit">{{ 'reminder.action.add'|trans }}</button>
+        </form>
+
+        {#
+            Was ansteht — und der Weg, es wieder loszuwerden. Eine Erinnerung,
+            die man anlegen, aber nicht löschen kann, ist ein Tippfehler, der
+            ein Jahr lang auf dem Zeitstrahl steht.
+
+            Deshalb steht hier auch, was zuletzt fällig war: sonst würde eine
+            Erinnerung mit ihrem Termin unlöschbar — sie fiele aus dieser
+            Liste heraus, und der Zeitstrahl zeigt nur. Wer eine wegnimmt,
+            bekommt die nächstältere zu sehen; so ist jede erreichbar.
+        #}
+        <div class="ib-remind__next">
+            <p class="ib-remind__kind">{{ 'reminder.next'|trans }}</p>
+            {% if reminders.next is empty %}
+                <p class="ib-remind__empty">{{ 'reminder.none'|trans }}</p>
+            {% else %}
+                {% include 'components/reminder_rows.html.twig' with { rows: reminders.next, past: false } only %}
+            {% endif %}
+        </div>
+
+        {% if reminders.past is not empty %}
+            <div class="ib-remind__next">
+                <p class="ib-remind__kind">{{ 'reminder.past'|trans }}</p>
+                {% include 'components/reminder_rows.html.twig' with { rows: reminders.past, past: true } only %}
+            </div>
+        {% endif %}
+    </div>
+</details>

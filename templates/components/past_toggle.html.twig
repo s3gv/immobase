@@ -1,0 +1,16 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Schalter, der Vergangenes dazuholt.
+
+    Erwartet: shown — ob er gesetzt ist
+
+    Steht in jeder Filterzeile an derselben Stelle und heißt überall dasselbe.
+    Beim Öffnen zeigt eine Liste den laufenden Stand; wer die Geschichte
+    sucht, holt sie sich — und der geteilte Link zeigt beim Empfänger
+    dasselbe, weil der Schalter an der Adresse hängt.
+#}
+<label class="ib-field ib-field--check">
+    <input type="checkbox" name="vergangene" value="1" {{ shown ? 'checked' : '' }}>
+    <span>{{ 'index.show_past'|trans }}</span>
+</label>

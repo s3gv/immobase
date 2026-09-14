@@ -1,0 +1,31 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Zuführung zur Erhaltungsrücklage.
+
+    Ein eigener Schritt, obwohl es technisch nur eine weitere Zeile ist: über
+    sie wird nach § 28 Abs. 1 WEG getrennt beschlossen. Zwischen Müllabfuhr
+    und Versicherung gequetscht sähe sie aus wie eine Kostenart unter anderen.
+
+    Der heutige Stand steht daneben, weil die geplante Zuführung ohne ihn eine
+    Zahl ohne Maßstab ist.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    <div class="ib-stats">
+        {% include 'components/stat_tile.html.twig' with {
+            value: reserveBalance|money, label: 'billing.plan.reserve.balance'|trans
+        } only %}
+    </div>
+
+    {% if reserve %}
+        {% include 'billing/plan/_rows.html.twig' with {
+            rows: [reserve], kinds: kinds, keys: keys, removable: false
+        } only %}
+    {% else %}
+        <p class="ib-empty">{{ 'billing.plan.reserve.none'|trans }}</p>
+    {% endif %}
+
+    <p class="ib-field__hint">{{ 'billing.plan.reserve.hint'|trans }}</p>
+{% endblock %}

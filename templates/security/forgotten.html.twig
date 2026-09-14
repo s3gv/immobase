@@ -1,0 +1,48 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'login.forgotten'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block body %}
+    <main class="ib-login">
+        <div class="ib-login__panel">
+            <img class="ib-brand__mark ib-brand__mark--on-light" src="{{ asset('images/logo-on-light.svg') }}" alt="{{ 'app.name'|trans }}">
+            <img class="ib-brand__mark ib-brand__mark--on-dark" src="{{ asset('images/logo-on-dark.svg') }}" alt="{{ 'app.name'|trans }}">
+
+            <h1 class="ib-login__heading">{{ 'login.forgotten'|trans }}</h1>
+
+            {% include 'components/flashes.html.twig' %}
+
+            {#
+                Dieselbe Antwort für bekannte und unbekannte Adressen. Ein
+                "diese Adresse kennen wir nicht" wäre eine Auskunft darüber,
+                wer hier ein Konto hat.
+            #}
+            {% if sent %}
+                <p class="ib-flash ib-flash--success" role="status">{{ 'login.forgotten_sent'|trans }}</p>
+                <p class="ib-login__hint">{{ 'login.forgotten_hint'|trans }}</p>
+
+                <a class="ib-button ib-button--block" href="{{ path('app_login') }}">{{ 'user.link.to_login'|trans }}</a>
+            {% else %}
+                <p class="ib-login__hint">{{ 'login.forgotten_explanation'|trans }}</p>
+
+                <form method="post" action="{{ path('app_password_forgotten') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('password_forgotten') }}">
+
+                    {% include 'components/field.html.twig' with {
+                        id: 'email', name: 'email', type: 'email',
+                        label: 'login.email'|trans,
+                        required: true, autofocus: true, autocomplete: 'username'
+                    } only %}
+
+                    <button class="ib-button ib-button--block" type="submit">{{ 'login.forgotten_submit'|trans }}</button>
+                </form>
+
+                <p class="ib-login__foot">
+                    <a class="ib-linkish" href="{{ path('app_login') }}">{{ 'user.link.to_login'|trans }}</a>
+                </p>
+            {% endif %}
+        </div>
+    </main>
+{% endblock %}

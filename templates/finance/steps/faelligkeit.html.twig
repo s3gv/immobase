@@ -1,0 +1,40 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wann die Kosten anfallen.
+
+    Der Monat gehört nur zu jährlichen und einmaligen Positionen — bei
+    monatlich und vierteljährlich wäre er eine Angabe ohne Bedeutung.
+#}
+{% extends 'finance/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.due is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.due|trans }}</p>
+    {% endif %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'interval', name: 'interval', label: 'finance.item.field.interval'|trans,
+        choices: intervals|map(i => { value: i.value, label: i.labelKey|trans }),
+        value: posted ? submitted.interval|default('') : item.due.interval.value
+    } only %}
+
+    <div class="ib-entry__pair">
+        {% include 'components/field.html.twig' with {
+            id: 'dueDay', name: 'dueDay', type: 'number',
+            label: 'finance.item.field.due_day'|trans,
+            value: posted ? submitted.dueDay|default('') : item.due.day
+        } only %}
+
+        {% include 'components/select.html.twig' with {
+            id: 'dueMonth', name: 'dueMonth', label: 'finance.item.field.due_month'|trans,
+            choices: months|map(m => { value: m.value, label: m.label|trans }),
+            value: posted ? submitted.dueMonth|default('') : (item.due.month ?: ''),
+            blank: 'finance.item.no_month'|trans
+        } only %}
+    </div>
+
+    <p class="ib-field__hint">{{ 'finance.item.field.due_hint'|trans }}</p>
+{% endblock %}

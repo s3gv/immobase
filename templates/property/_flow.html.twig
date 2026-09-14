@@ -1,0 +1,52 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Schritt beim Anlegen oder Bearbeiten eines Objekts.
+
+    Dieselbe Gestalt wie „Mein Konto" und die Objektseite — links die
+    Schritte, rechts einer davon. Anders als beim Multi-Step-Baustein der
+    Stammdaten sind die Schritte hier Links: jeder hat schon gespeichert, es
+    geht also nichts verloren, wenn jemand springt.
+
+    Ein Schritt füllt den Block `fields`. Was ein eigenes <form> mitbringt,
+    gehört in `outside_form`.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {% if property and property.status.isDraft %}
+        <p class="ib-note">{{ 'property.draft.hint'|trans }}</p>
+    {% endif %}
+
+    <form method="post" action="{{ action }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('property_flow') }}">
+
+        {% block fields %}{% endblock %}
+
+        <div class="ib-flow__actions">
+            {# Abbrechen führt weg, ohne noch etwas zu speichern — das haben
+               die vorigen Schritte schon getan. #}
+            <a class="ib-button ib-button--quiet" href="{{ cancel }}">{{ 'flow.cancel'|trans }}</a>
+
+            {% if hasPrevious %}
+                {# formnovalidate: sonst hält die Browservalidierung des
+                   aktuellen Schritts das Zurückgehen auf. #}
+                <button class="ib-button ib-button--quiet" type="submit"
+                        name="direction" value="back" formnovalidate>
+                    {{ 'flow.back'|trans }}
+                </button>
+            {% endif %}
+
+            <button class="ib-button" type="submit" name="direction" value="forward">
+                {{ isLast ? 'flow.finish'|trans : 'flow.next'|trans }}
+            </button>
+        </div>
+    </form>
+
+    {#
+        Alles, was ein eigenes <form> mitbringt — Rückfragen etwa —, gehört
+        hierher und nicht in `fields`. Ein verschachteltes Formular schließt
+        in HTML das äußere, und dessen Knöpfe hören auf zu wirken.
+    #}
+    {% block outside_form %}{% endblock %}
+{% endblock %}

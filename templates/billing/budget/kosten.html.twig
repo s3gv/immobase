@@ -1,0 +1,39 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was die Maßnahme kostet.
+
+    Das Angebot des Handwerkers, die Planungskosten, der Puffer — jede Position
+    mit ihrem Jahr. Die Summe ist der Bedarf, und er ist die Zahl, die die
+    Finanzierung im nächsten Schritt decken muss.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% if positions is empty %}
+        <p class="ib-empty">{{ 'billing.budget.row.none'|trans }}</p>
+    {% else %}
+        {% include 'billing/budget/_rows.html.twig' with { rows: positions, years: years } only %}
+    {% endif %}
+
+    <p class="ib-flow__hint">
+        <button class="ib-button ib-button--quiet" type="submit" name="add" value="1" formnovalidate>
+            {{ 'billing.budget.row.add'|trans }}
+        </button>
+    </p>
+
+    <div class="ib-stats">
+        {% include 'components/stat_tile.html.twig' with {
+            value: need|money, label: 'billing.budget.pdf.need_sum'|trans
+        } only %}
+    </div>
+
+    {% if needPerYear|length > 1 %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: ['billing.budget.row.year'|trans, 'billing.budget.row.amount'|trans],
+            rows: needPerYear|keys|map(y => [y, needPerYear[y]|money]),
+            empty: ''
+        } only %}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,34 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Verteilung von Beträgen als liegende Balken.
+
+    Erwartet: rows — Liste von { label, amount (Money) }
+    Optional: empty — Text, wenn es nichts zu zeigen gibt
+
+    Liegend und nicht stehend: die Beschriftungen sind Kostenarten und
+    Objektnamen, und die stehen waagerecht lesbar nur neben dem Balken.
+
+    Kein Bild und keine Bibliothek — die Balken sind Kästen mit einer Breite.
+    Ein Diagramm, das ohne JavaScript nicht erscheint, ist auf einer Übersicht
+    schlechter als eine Tabelle. Der Betrag steht daneben: der Balken zeigt
+    das Verhältnis, die Zahl den Wert.
+#}
+{% if rows is empty %}
+    {% include 'components/empty_state.html.twig' with { message: empty|default('') } only %}
+{% else %}
+    {% set largest = rows|map(row => row.amount.cents)|reduce((a, b) => max(a, b), 0) %}
+
+    <ul class="ib-bars">
+        {% for row in rows %}
+            <li class="ib-bars__row">
+                <span class="ib-bars__label" title="{{ row.label }}">{{ row.label }}</span>
+                <span class="ib-bars__track">
+                    <span class="ib-bars__fill"
+                          style="width: {{ largest > 0 ? (row.amount.cents * 100 / largest)|round(1) : 0 }}%"></span>
+                </span>
+                <span class="ib-bars__value">{{ row.amount|money }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

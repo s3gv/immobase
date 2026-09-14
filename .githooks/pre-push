@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 s3gv
+
+set -e
+
+echo "Pre-Push: führe bin/check aus…"
+
+if ! ./bin/check; then
+    echo
+    echo "Push abgebrochen. Behebe die gemeldeten Probleme."
+    echo "Notfalls umgehbar mit --no-verify — aber dann prüft es niemand mehr."
+    exit 1
+fi

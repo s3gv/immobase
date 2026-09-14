@@ -1,0 +1,27 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Weitere Posten desselben Schuldners.
+
+    Schuldner und Gläubiger stehen fest und werden nicht noch einmal gefragt:
+    es ist dieselbe Sache, nur ein anderer Monat. Wer nichts einträgt und
+    „Weiter" drückt, hat eben nichts nachzutragen.
+#}
+{% extends 'dunning/claim/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'dunning/claim/_entry.html.twig' with { submitted: {}, hints: false } only %}
+{% endblock %}
+
+{% block forward %}
+    <button class="ib-button ib-button--quiet" type="submit" name="direction" value="add">
+        {{ 'dunning.add_another'|trans }}
+    </button>
+    <button class="ib-button" type="submit" name="direction" value="forward" formnovalidate>
+        {{ 'flow.next'|trans }}
+    </button>
+{% endblock %}
+
+{% block outside_form %}
+    {% include 'dunning/claim/_gathered.html.twig' with { gathered: gathered } only %}
+{% endblock %}

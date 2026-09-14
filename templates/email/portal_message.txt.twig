@@ -1,0 +1,17 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ohne Inhalt — mit Absicht.
+
+    Eine Mail ist unverschlüsselte Post. Was im Portal steht, bleibt im
+    Portal; hier steht nur, dass es etwas zu lesen gibt.
+#}
+{{ 'email.portal_message.greeting'|trans }}
+
+{{ 'email.portal_message.body'|trans({'%subject%': subject}) }}
+
+{{ link }}
+
+{{ 'email.portal_message.privacy'|trans }}
+
+{{ 'email.signature'|trans }}

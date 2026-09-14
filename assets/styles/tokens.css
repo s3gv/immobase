@@ -1,0 +1,125 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* SPDX-FileCopyrightText: 2026 s3gv */
+
+/*
+ * Alle Farben des Systems stehen hier und nur hier.
+ *
+ * Keine Komponente notiert jemals einen Farbwert direkt. Sonst lässt sich das
+ * zweite Theme nicht ändern, ohne jede Komponente anzufassen — und beim
+ * dritten wird es endgültig unmöglich.
+ *
+ * Die Werte sind aus den Entwürfen abgeleitet: kühles Blaugrau im hellen
+ * Theme, fast schwarzer Grund mit kräftigem Blau im dunklen.
+ */
+
+:root {
+    /* Flächen */
+    --ib-bg:            #f4f7fb;
+    --ib-surface:       #ffffff;
+    --ib-surface-muted: #eef2f8;
+    --ib-border:        #e2e8f2;
+
+    /* Text */
+    --ib-text:          #101828;
+    --ib-text-muted:    #667085;
+    --ib-text-inverted: #ffffff;
+
+    /* Akzent */
+    --ib-accent:        #1f6feb;
+    --ib-accent-hover:  #1a5fd0;
+    --ib-accent-soft:   #e8f0fe;
+
+    /* Signale */
+    --ib-success:       #12a150;
+    --ib-warning:       #d99000;
+    --ib-danger:        #d92d20;
+    /*
+     * Der gefüllte Warnknopf hat in beiden Themes denselben Ton. --ib-danger
+     * ist für Text und Symbole gedacht und wechselt deshalb mit dem Theme;
+     * als Knopffläche trägt der helle Ton des dunklen Themes weiße Schrift
+     * nur mit 3,35:1. Dieser Ton kommt auf 4,99:1 gegen Weiß und hebt sich
+     * mit 3,76:1 noch vom dunklen Grund ab.
+     */
+    --ib-danger-solid:  #d0342c;
+    /* Hinweisfähnchen liegen bewusst auf umgekehrtem Grund: sie sollen sich
+       von der Fläche abheben, auf der sie erscheinen. */
+    --ib-tooltip-bg:    #111827;
+    --ib-tooltip-text:  #f8fafc;
+
+    /* Hintergrundkarte */
+    --ib-map-stroke:    #1f6feb;
+    --ib-map-opacity:   0.28;
+    --ib-map-filter:    blur(0.5px);
+
+    /* Grundfläche: ein sehr flacher Verlauf statt einer toten Fläche. */
+    --ib-bg-gradient:   radial-gradient(120% 90% at 70% 10%, #eaf1fb 0%, #f4f7fb 55%, #eef2f8 100%);
+    --ib-sidebar-bg:    color-mix(in srgb, #ffffff 82%, transparent);
+
+    /*
+     * Zwei Stufen für die Navigation. Beide erfüllen WCAG AA (4,5:1) auf der
+     * Seitenleiste — gemessen, nicht geschätzt. Deckkraft ist dafür bewusst
+     * nicht das Mittel: 40 Prozent Deckkraft ergaben 1,70:1.
+     */
+    /* Der Pfeil der Auswahlfelder — in der data:-URI gibt es kein currentColor. */
+    --ib-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23667085' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+
+    --ib-nav-text:      #475467;   /* 7,56:1 — anwählbare Einträge */
+    --ib-nav-text-off:  #5b6678;   /* 5,71:1 — noch nicht verfügbar */
+
+    /* Form */
+    --ib-radius:        0.5rem;
+    --ib-radius-lg:     0.875rem;
+
+    /* Typografie */
+    --ib-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+    --ib-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+[data-theme="dark"] {
+    --ib-bg:            #07090d;
+    --ib-surface:       #0e1218;
+    --ib-surface-muted: #141a22;
+    --ib-border:        #1e2731;
+
+    --ib-text:          #e7edf5;
+    --ib-text-muted:    #8b98a8;
+    --ib-text-inverted: #07090d;
+
+    --ib-accent:        #2f81f7;
+    --ib-accent-hover:  #4a94f8;
+    --ib-accent-soft:   #10233d;
+
+    --ib-success:       #2ea043;
+    --ib-warning:       #d29922;
+    --ib-danger:        #f85149;
+    --ib-tooltip-bg:    #e6edf6;
+    --ib-tooltip-text:  #0e1218;
+
+    /* Im dunklen Theme braucht der Umriss mehr Deckkraft, um überhaupt
+       sichtbar zu sein. Deshalb steht sie in den Tokens. */
+    /*
+     * Im dunklen Theme leuchtet der Umriss statt nur durchzuscheinen — das ist
+     * der Unterschied zwischen "da ist irgendwo eine Linie" und dem Eindruck
+     * aus dem Entwurf. Der Schein kommt aus einem drop-shadow in derselben
+     * Farbe, nicht aus mehr Deckkraft.
+     */
+    --ib-map-stroke:    #2f81f7;
+    --ib-map-opacity:   0.55;
+    --ib-map-filter:    drop-shadow(0 0 24px currentColor) drop-shadow(0 0 60px currentColor);
+
+    --ib-bg-gradient:   radial-gradient(120% 90% at 70% 10%, #0d1420 0%, #080b12 55%, #06080c 100%);
+
+    /*
+     * Die Seitenleiste bekommt im dunklen Theme einen leichten Verlauf mit
+     * Blaustich statt einer toten Fläche — sonst wirkt sie neben dem
+     * leuchtenden Hintergrund flach.
+     */
+    --ib-sidebar-bg:    linear-gradient(180deg, #131c2b 0%, #0d1522 45%, #0a1018 100%);
+
+    /* Der Pfeil der Auswahlfelder — in der data:-URI gibt es kein currentColor. */
+    --ib-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238b98a8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+
+    --ib-nav-text:      #aab6c6;   /* 8,31:1 */
+    --ib-nav-text-off:  #8b98a8;   /* 5,82:1 */
+}

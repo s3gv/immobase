@@ -1,0 +1,24 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Abgelaufen, verbraucht oder erfunden — dieselbe Seite für alle drei Fälle.
+
+    Ein Unterschied in Text oder Statuscode wäre eine Auskunft darüber, welche
+    Konten es gibt und welche Links einmal gültig waren.
+#}
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="ib-shell ib-shell--bare">
+        <main class="ib-content">
+            <h1 class="ib-heading">{{ 'user.link.expired'|trans }}</h1>
+            <p class="ib-subheading">{{ ('user.link.' ~ purpose ~ '_hint')|trans }}</p>
+
+            {% include 'components/flashes.html.twig' %}
+
+            <div class="ib-form__actions">
+                <a class="ib-button" href="{{ path('app_login') }}">{{ 'user.link.to_login'|trans }}</a>
+            </div>
+        </main>
+    </div>
+{% endblock %}

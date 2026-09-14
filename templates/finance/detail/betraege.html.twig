@@ -1,0 +1,19 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'finance/_detail.html.twig' %}
+{% set edit_step = 'betraege' %}
+
+{% block panel %}
+    {% if item.isMetered %}
+        <p class="ib-note">
+            {{ 'finance.item.field.measure'|trans }}:
+            <strong>
+                {{ item.measure ? item.measure.labelKey|trans : 'finance.item.no_measure'|trans }}
+            </strong>
+        </p>
+    {% endif %}
+
+    {% include 'finance/_years.html.twig' with {
+        item: item, years: item.years, modes: modes, units: units, recorded: recorded
+    } only %}
+{% endblock %}

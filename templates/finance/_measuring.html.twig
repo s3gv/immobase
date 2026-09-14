@@ -1,0 +1,54 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Womit gemessen wird: Verteilerschlüssel und Maßeinheit.
+
+    Erwartet: item, keys, keyProperties, measures
+
+    Ohne Knopf: das ist keine Eingabe, die man abschließt, sondern eine
+    Einstellung. Sie speichert sich beim Umstellen selbst; der Knopf im HTML
+    ist der Weg ohne JavaScript und wird sonst ausgeblendet.
+
+    Der Schlüssel steht hier, weil er hier gebraucht wird: er entscheidet, ob
+    es unter jedem Jahr eine Zeile je Einheit gibt. Es ist derselbe wie im
+    Schritt „Zuordnung" — ein Feld, zwei Orte, an denen es zu sehen ist.
+
+    Die Maßeinheit gehört zur Position und nicht zum Schlüssel: „Nach
+    Verbrauch" ist ein einziger Systemschlüssel, und derselbe misst Wasser in
+    m³ und Wärme in kWh.
+#}
+<form class="ib-measuring" method="post" data-auto-submit
+      action="{{ path('app_finance_item_measuring', { number: item.number }) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('finance_year_' ~ item.number) }}">
+
+    <div class="ib-measuring__fields">
+
+    {% include 'components/select.html.twig' with {
+        id: 'measuring-key', name: 'keyId', label: 'finance.item.field.key'|trans,
+        choices: keys|map(k => {
+            value: k.id,
+            label: k.name ~ (k.propertyId ? ' · ' ~ keyProperties[k.propertyId]|default('') : '')
+        }),
+        value: item.key.id
+    } only %}
+
+    {% if item.isMetered %}
+        {% include 'components/select.html.twig' with {
+            id: 'measuring-measure', name: 'measure', label: 'finance.item.field.measure'|trans,
+            hint: 'finance.item.field.measure_hint'|trans,
+            choices: measures|map(m => { value: m.value, label: m.labelKey|trans }),
+            value: item.measure ? item.measure.value : '',
+            blank: 'finance.item.choose_measure'|trans
+        } only %}
+    {% endif %}
+
+    </div>
+
+    {#
+        Der Knopf ist der Weg ohne JavaScript. Mit JavaScript speichert die
+        Auswahl sich selbst, und er wird ausgeblendet.
+    #}
+    <button class="ib-button ib-button--quiet" type="submit" data-auto-submit-fallback>
+        {{ 'settings.save'|trans }}
+    </button>
+</form>

@@ -1,0 +1,30 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Unterpunkte eines Menüeintrags.
+
+    Erwartet: items — Liste von { route, label }
+
+    Dieselbe Gestalt wie der Objektbaum und aus demselben Grund: was zu einem
+    Menüpunkt gehört, steht eingerückt darunter und nicht als Knopfleiste auf
+    der Seite. Eine Knopfleiste sieht aus wie eine Handlung, ist aber
+    Navigation — und sie ist nur dort zu erreichen, wo sie steht.
+
+    Sichtbar nur, solange man in diesem Bereich ist. Beim Verlassen klappt es
+    zusammen; ein Menü, das jeden Bereich dauerhaft aufgeklappt hält, ist nach
+    dem dritten Modul keine Navigation mehr.
+#}
+{% set current_route = app.request.attributes.get('_route')|default('') %}
+
+<ul class="ib-nav ib-nav--nested">
+    {% for item in items %}
+        {% set is_current = current_route == item.route or current_route starts with item.route ~ '_' %}
+        <li>
+            <a class="ib-nav__link ib-nav__link--branch{{ is_current ? ' is-current' : '' }}"
+               href="{{ path(item.route) }}"
+               {% if is_current %}aria-current="page"{% endif %}>
+                {{ item.label }}
+            </a>
+        </li>
+    {% endfor %}
+</ul>

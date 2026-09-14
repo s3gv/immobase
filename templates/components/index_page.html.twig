@@ -1,0 +1,60 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Gerüst jeder Übersichtsseite.
+
+    Von oben nach unten immer gleich: eine Zeile mit Aktionen, darunter eine
+    Zeile zum Filtern, darunter die Tabelle, darunter mittig die
+    Seitennavigation. Wer eine Liste kennt, kennt alle.
+
+    Erwartet: headers, rows  — wie components/table.html.twig
+              page           — App\Shared\Ui\Page
+              action         — Adresse der Übersicht, Ziel des Filterformulars
+              url            — dieselbe Adresse mit __PAGE__ für die Seitenzahl,
+                               Filter bereits enthalten
+    Optional: empty          — Text, wenn nichts angelegt ist; ist gefiltert,
+                               sagt die Liste das stattdessen selbst
+              sort           — App\Shared\Ui\Sort, die aktuelle Sortierung
+              sort_urls      — Feld auf Adresse, je sortierbarer Spalte
+
+    Blöcke:   actions        — Aktionen oben, von links nach rechts
+              filters        — die Filterfelder
+
+    Mit {% embed %} benutzen.
+
+    Das Filterformular schickt per GET und lässt die Seitenzahl weg: eine neue
+    Filterung beginnt wieder auf Seite eins. Alles andere wäre eine leere
+    Seite als Antwort auf eine Eingabe.
+#}
+<div class="ib-index">
+    <div class="ib-index__actions">
+        {% block actions %}{% endblock %}
+    </div>
+
+    <form class="ib-index__filters" method="get" action="{{ action }}" role="search">
+        {% block filters %}{% endblock %}
+
+        <div class="ib-index__filter-actions">
+            <button class="ib-button" type="submit">{{ 'index.filter'|trans }}</button>
+            <a class="ib-button ib-button--quiet" href="{{ action }}">{{ 'index.reset'|trans }}</a>
+        </div>
+    </form>
+
+    <p class="ib-index__count" role="status">{{ 'index.count'|trans({'%count%': page.total}) }}</p>
+
+    {#
+        Unter einer leeren Liste steht, warum sie leer ist: „noch nichts
+        angelegt" ist etwas anderes als „nichts passt zur Suche".
+    #}
+    {% include 'components/table.html.twig' with {
+        headers: headers, rows: rows,
+        empty: list_is_filtered() ? 'index.no_match'|trans : empty|default(''),
+        sort: sort|default(null), sort_urls: sort_urls|default({})
+    } only %}
+
+    <div class="ib-index__pages">
+        {% include 'components/pagination.html.twig' with {
+            page: page.number, pages: page.pages, url: url
+        } only %}
+    </div>
+</div>

@@ -1,0 +1,50 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Felder eines Jahreswerts — einmal für das Ändern, einmal für das
+    Anlegen. Erwartet: year (CostItemYear oder null), modes
+#}
+{% include 'components/field.html.twig' with {
+    id: 'fiscalYear-' ~ (year ? year.id : 'neu'), name: 'fiscalYear', type: 'number',
+    label: 'finance.year.field.year'|trans,
+    value: year ? year.fiscalYear : 'now'|date('Y')
+} only %}
+
+{#
+    Bei „fertig verteilt" ist der Gesamtbetrag die Summe der Einzelbeträge und
+    kein eigener Wert. Ein Feld dafür wäre eine zweite Wahrheit, die still
+    auseinanderläuft — also steht dort die Summe und kein Eingabefeld.
+#}
+{% if year and year.mode.isDistributed %}
+    <div class="ib-field">
+        <span class="ib-field__label">{{ 'finance.year.field.amount'|trans }}</span>
+        <p class="ib-field__static">
+            {{ year.amount|money }}
+            <span class="ib-field__hint">{{ 'finance.year.sum_of_parts'|trans }}</span>
+        </p>
+    </div>
+{% else %}
+    {% include 'components/field.html.twig' with {
+        id: 'amount-' ~ (year ? year.id : 'neu'), name: 'amount',
+        label: 'finance.year.field.amount'|trans,
+        value: year ? year.amount|money_number : ''
+    } only %}
+{% endif %}
+
+{#
+    Nur ausgefüllt, wenn die Rechnung Umsatzsteuer ausweist. Sie zählt
+    ausschließlich für Mietverhältnisse mit Umsatzsteuer — dort wird netto
+    umgelegt. Leer heißt null, und null ist der Regelfall.
+#}
+{% include 'components/field.html.twig' with {
+    id: 'inputTax-' ~ (year ? year.id : 'neu'), name: 'inputTax',
+    label: 'finance.year.field.input_tax'|trans,
+    value: year and not year.inputTax.isZero ? year.inputTax|money_number : ''
+} only %}
+
+{% include 'components/select.html.twig' with {
+    id: 'mode-' ~ (year ? year.id : 'neu'), name: 'mode',
+    label: 'finance.year.field.mode'|trans,
+    choices: modes|map(m => { value: m.value, label: m.labelKey|trans }),
+    value: year ? year.mode.value : 'total'
+} only %}

@@ -1,0 +1,68 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Abschnitt der Darlehensseite.
+
+    Über allen Abschnitten steht die Restschuld von heute: sie ist die erste
+    Frage, die jemand an ein Darlehen hat — und sie ist gerechnet, nicht
+    gespeichert.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {#
+        Bearbeiten führt zu dem Schritt, der zum Abschnitt gehört — aus dem
+        Tilgungsplan und dem Verlauf zu den Eckdaten, denn die beiden sind
+        gerechnet und haben keinen eigenen.
+
+        „Darlehen löschen" heißt so und nicht „Löschen": im Verlauf steht
+        neben jedem Vorgang ein Löschsymbol, und ein zweiter Knopf ohne
+        Gegenstand ließe offen, was er mitnimmt.
+    #}
+    <div class="ib-index__actions">
+        {% if is_granted('finance.edit') %}
+            {% include 'components/action.html.twig' with {
+                action: 'edit',
+                url: path('app_finance_loan_edit', { number: loan.number, step: edit_step|default('eckdaten') }),
+                labelled: true
+            } only %}
+        {% endif %}
+
+        {% if is_granted('finance.delete') %}
+            <button class="ib-button ib-button--quiet" type="button" data-modal-open="loan-delete">
+                {{ 'finance.loan.delete.label'|trans }}
+            </button>
+        {% endif %}
+    </div>
+
+    {#
+        Vor der ersten Rate steht hier kein Betrag: „0,00 €" läse sich wie
+        „abbezahlt", und es ist das Gegenteil.
+    #}
+    <p class="ib-note">
+        {% if running %}
+            {{ 'finance.loan.field.debt'|trans }}: <strong>{{ debt|money }}</strong>
+            <span class="ib-field__hint">
+                {{ 'finance.loan.of_amount'|trans({'%amount%': loan.amount|money}) }}
+            </span>
+        {% else %}
+            <strong>{{ 'finance.loan.not_running'|trans({'%day%': loan.terms.startsOn|date_local}) }}</strong>
+            <span class="ib-field__hint">
+                {{ 'finance.loan.borrowed'|trans({'%amount%': loan.amount|money}) }}
+            </span>
+        {% endif %}
+    </p>
+
+    {% block panel %}{% endblock %}
+
+    {% if is_granted('finance.delete') %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'loan-delete',
+            title: 'finance.loan.delete.title'|trans({'%number%': loan.number}),
+            body: 'finance.loan.delete.body'|trans,
+            consequences: ['finance.loan.delete.consequence'|trans],
+            url: path('app_finance_loan_delete', { number: loan.number }),
+            token: 'finance_loan_delete_' ~ loan.number
+        } only %}
+    {% endif %}
+{% endblock %}

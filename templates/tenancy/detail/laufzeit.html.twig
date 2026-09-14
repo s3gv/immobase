@@ -1,0 +1,21 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'tenancy/_detail.html.twig' %}
+{% set edit_step = 'laufzeit' %}
+
+{% block panel %}
+    {% set blank = 'tenancy.none'|trans %}
+    {% set term = tenancy.term %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['tenancy.field.starts_on'|trans, term.startsOn ? term.startsOn|date_local : blank],
+            ['tenancy.field.ends_on'|trans, term.endsOn ? term.endsOn|date_local : 'tenancy.open_ended'|trans],
+            ['tenancy.field.handed_over_on'|trans, term.handedOverOn ? term.handedOverOn|date_local : blank],
+            ['tenancy.field.notice_period'|trans, term.noticePeriodMonths
+                ? 'tenancy.months'|trans({'%count%': term.noticePeriodMonths})
+                : blank]
+        ],
+        empty: ''
+    } only %}
+{% endblock %}

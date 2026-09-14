@@ -1,0 +1,43 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der erste Schritt: Einheit, Gläubiger und der erste Posten.
+
+    Wer der Schuldner ist, folgt aus beidem — fordert die Gemeinschaft,
+    schuldet der Eigentümer; fordert der Eigentümer, schuldet der Mieter.
+    Das spart zwei Felder und einen ganzen Sonderfall.
+#}
+{% extends 'dunning/claim/_flow.html.twig' %}
+
+{% block fields %}
+    {% if errors.unit is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.unit|trans }}</p>
+    {% endif %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'unitId', name: 'unitId', label: 'dunning.field.unit'|trans,
+        hint: 'dunning.field.unit_hint'|trans,
+        choices: units|map(u => { value: u.id, label: u.oneLine }),
+        value: submitted.unitId|default(''), blank: 'dunning.field.unit'|trans
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'creditor', name: 'creditor', label: 'dunning.creditor'|trans,
+        hint: 'dunning.field.creditor_hint'|trans,
+        choices: creditors|map(c => { value: c.value, label: c.labelKey|trans }),
+        value: submitted.creditor|default('owner')
+    } only %}
+
+    <label class="ib-check">
+        <input type="checkbox" name="commercial" value="1"
+               {{ submitted.commercial|default('') ? 'checked' : '' }}>
+        <span>{{ 'dunning.field.commercial'|trans }}</span>
+    </label>
+    <p class="ib-field__hint">{{ 'dunning.field.commercial_hint'|trans }}</p>
+
+    {% if errors.rows is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.rows|trans }}</p>
+    {% endif %}
+
+    {% include 'dunning/claim/_entry.html.twig' with { submitted: submitted, hints: true } only %}
+{% endblock %}

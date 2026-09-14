@@ -1,0 +1,64 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Vorauszahlungen des Jahres, gefunden und angehakt.
+
+    Alle sind gesetzt — abwählen ist die Korrektur, nicht das Anwählen. Die
+    Anwendung sucht zusammen, der Mensch prüft.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+{#
+    Breiter als ein Formular: fünf Spalten passen nicht in die 40rem, in
+    denen sich ein Formular gut ausfüllen lässt.
+#}
+{% set wide = true %}
+
+{% block fields %}
+    {#
+        Eine Sonderumlage ist ein Vorschuss auf die Kosten ihrer Maßnahme.
+        Stehen die Kosten in einem anderen Jahr, entsteht hier ein Guthaben,
+        das keines ist — und zwei Jahre später eine Nachzahlung, die niemand
+        erwartet. Ein Hinweis und keine Sperre: wer sie trotzdem aufnimmt,
+        hat vermutlich einen Grund.
+    #}
+    {% if withoutCosts|default([]) is not empty %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'billing.advance.without_costs'|trans({'%measures%': withoutCosts|join(', ')}) }}</p>
+        </div>
+    {% endif %}
+
+    {% if payments is empty %}
+        <p class="ib-empty">{{ 'billing.advance.none'|trans }}</p>
+    {% else %}
+        <div class="ib-table-scroll">
+            <table class="ib-table ib-table--compact">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>{{ 'billing.advance.due_on'|trans }}</th>
+                        <th>{{ 'billing.advance.kind'|trans }}</th>
+                        <th class="ib-table__number">{{ 'billing.advance.expected'|trans }}</th>
+                        <th class="ib-table__number">{{ 'billing.advance.received'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                        <tr>
+                            <td>
+                                <label class="ib-choice">
+                                    <input type="checkbox" name="payments[]" value="{{ payment.paymentId }}"
+                                           {{ payment.paymentId in chosenPayments or chosenPayments is empty ? 'checked' : '' }}>
+                                    <span class="ib-visually-hidden">{{ 'billing.advance.include'|trans }}</span>
+                                </label>
+                            </td>
+                            <td>{{ payment.dueOn|date_local }}</td>
+                            <td>{{ ('finance.payment.kind.' ~ payment.kind)|trans }}</td>
+                            <td class="ib-table__number">{{ payment.expected|money }}</td>
+                            <td class="ib-table__number">{{ payment.received|money }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

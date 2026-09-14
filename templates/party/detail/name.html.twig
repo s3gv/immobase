@@ -1,0 +1,25 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Bei einer Firma steht der Ansprechpartner daneben; bei einer Person ist
+    das Feld der Vorname und geht im angezeigten Namen auf.
+#}
+{% extends 'party/_detail.html.twig' %}
+
+{% block panel %}
+    {# Dieselben Beschriftungen wie im Ablauf: bei einer Firma heißt das Feld
+       „Firmenname", bei einer Person „Nachname". Ein gemeinsames „Name" wäre
+       kürzer und in beiden Fällen ungenau. #}
+    {% set company = party.kind.value == 'company' %}
+
+    {% set rows = [[(company ? 'party.field.company_name' : 'party.field.last_name')|trans, party.name]] %}
+    {% set rows = rows|merge([[
+        (company ? 'party.field.contact_person' : 'party.field.first_name')|trans,
+        party.givenName ?: 'party.none'|trans
+    ]]) %}
+
+    {% include 'components/table.html.twig' with {
+        headers: ['party.review.field'|trans, 'party.review.value'|trans],
+        rows: rows, empty: ''
+    } only %}
+{% endblock %}

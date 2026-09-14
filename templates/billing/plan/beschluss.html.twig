@@ -1,0 +1,101 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Beschluss — und damit gelten die Vorschüsse.
+
+    Ein eigener Schritt und nicht ein Kasten unter den Vorschüssen: er kommt
+    zeitlich später. Zwischen der Vorlage und dem Beschluss liegt eine
+    Versammlung, und dazwischen wird die Anwendung zugeklappt.
+
+    Was beschlossen wird, steht noch einmal da: nach § 28 Abs. 1 WEG sind es
+    die Vorschüsse, nicht der Plan. Wer hier freigibt, hat die Tabelle gesehen,
+    über die abgestimmt wurde.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'billing/plan/_missing.html.twig' with { missing: proposal.missing } only %}
+
+    {% if not plan.stage.wasProposed %}
+        {#
+            Kein Verbot, nur ein Hinweis: manche Verwaltung legt ihre Vorlage
+            auf anderem Weg vor, und die Anwendung muss ihr das nicht
+            ausreden. Sie soll nur nicht so tun, als wäre nichts.
+        #}
+        <div class="ib-note">
+            <p>{{ 'billing.plan.not_proposed'|trans }}</p>
+        </div>
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'decidedOn', name: 'decidedOn', type: 'date',
+        label: 'billing.plan.decision.day'|trans,
+        hint: 'billing.plan.decision.hint'|trans,
+        value: plan.resolution.decidedOn ? plan.resolution.decidedOn|date('Y-m-d') : ''
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'outcome', name: 'outcome', label: 'billing.plan.decision.outcome'|trans,
+        placeholder: 'billing.plan.decision.outcome_hint'|trans,
+        value: plan.resolution.outcome
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'decisionNumber', name: 'decisionNumber', label: 'billing.plan.decision.number'|trans,
+        placeholder: 'billing.plan.decision.number_hint'|trans,
+        value: plan.resolution.number
+    } only %}
+
+    <h3 class="ib-flow__title">{{ 'billing.plan.terms.table'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.plan.terms.decided_hint'|trans }}</p>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: [
+            'billing.plan.terms.unit'|trans,
+            'billing.plan.terms.yearly'|trans,
+            'billing.plan.terms.each'|trans
+        ],
+        rows: proposal.documents|map(d => [
+            d.unitNumber ~ ' · ' ~ d.unitLabel,
+            d.yearly|money,
+            d.advance|money
+        ]),
+        empty: 'billing.plan.terms.nothing'|trans
+    } only %}
+{% endblock %}
+
+{% block forward %}
+    <button class="ib-button ib-button--quiet" type="submit" name="direction" value="forward">
+        {{ 'billing.plan.decision.keep'|trans }}
+    </button>
+{% endblock %}
+
+{% block outside_form %}
+    {% if proposal.documents is not empty and proposal.missing is empty %}
+        <form method="post" action="{{ path('app_billing_plan_release', { id: plan.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+
+            {#
+                Der Hinweis gehört hierher und nicht nur auf die Vorlage: die
+                Schritte sind einzeln erreichbar, und wer gleich auf den
+                Beschluss springt, hätte ihn nie gesehen. Die Freigabe selbst
+                prüft es noch einmal — ein Knopf, den man umgehen kann, ist
+                keine Sicherung.
+            #}
+            {% if drifted %}
+                <div class="ib-note ib-note--warning">
+                    <p>{{ 'billing.plan.drifted_release'|trans }}</p>
+                </div>
+                <input type="hidden" name="despiteDrift" value="1">
+            {% endif %}
+
+            <p class="ib-field__hint">{{ 'billing.plan.release_hint'|trans }}</p>
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">
+                    {{ (drifted ? 'billing.plan.release_anyway' : 'billing.plan.release')|trans }}
+                </button>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

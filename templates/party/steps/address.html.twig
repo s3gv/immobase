@@ -1,0 +1,75 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'flow/flow.html.twig' %}
+
+{% block step_body %}
+    {# Ohne Angabe beginnt der Ablauf mit einer leeren Anschrift — eine leere
+       Liste mit zwei Knöpfen darunter sähe aus wie ein Fehler. #}
+    {% set entries = draft.addressRows ?: [{ kind: 'street', addition: '', line: '', postalCode: '', city: '' }] %}
+
+    {% if errors.entries is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.entries|trans }}</p>
+    {% endif %}
+
+    <ul class="ib-entries">
+        {% for index, entry in entries %}
+            <li class="ib-entry">
+                <div class="ib-entry__head">
+                    <span class="ib-entry__kind">{{ ('party.address_kind.' ~ entry.kind)|trans }}</span>
+                    {% if loop.first %}
+                        {% include 'components/badge.html.twig' with { label: 'party.field.primary_address'|trans, tone: 'success' } only %}
+                    {% else %}
+                        <button class="ib-linkish" type="submit" name="promote" value="entries:{{ index }}" formnovalidate>
+                            {{ 'party.action.make_primary'|trans }}
+                        </button>
+                    {% endif %}
+                    {% if entries|length > 1 %}
+                        <button class="ib-action ib-action--danger" type="submit" name="remove"
+                                value="entries:{{ index }}" formnovalidate
+                                aria-label="{{ 'action.delete'|trans }}" data-tooltip="{{ 'action.delete'|trans }}">
+                            {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                        </button>
+                    {% endif %}
+                </div>
+
+                <input type="hidden" name="entries[{{ index }}][kind]" value="{{ entry.kind }}">
+
+                {# Der Zusatz steht über der Straße, weil er im Brief über
+                   ihr steht — das Formular bildet das Kuvert ab. #}
+                {% include 'components/field.html.twig' with {
+                    id: 'addition' ~ index, name: 'entries[' ~ index ~ '][addition]',
+                    label: 'party.field.addition'|trans, value: entry.addition|default(''),
+                    hint: 'party.field.addition_hint'|trans
+                } only %}
+
+                {% include 'components/field.html.twig' with {
+                    id: 'line' ~ index, name: 'entries[' ~ index ~ '][line]',
+                    label: (entry.kind == 'poBox' ? 'party.field.po_box' : 'party.field.street')|trans,
+                    value: entry.line, required: true
+                } only %}
+
+                <div class="ib-entry__pair">
+                    {% include 'components/field.html.twig' with {
+                        id: 'zip' ~ index, name: 'entries[' ~ index ~ '][postalCode]',
+                        label: 'party.field.postal_code'|trans, value: entry.postalCode, required: true
+                    } only %}
+                    {% include 'components/field.html.twig' with {
+                        id: 'city' ~ index, name: 'entries[' ~ index ~ '][city]',
+                        label: 'party.field.city'|trans, value: entry.city, required: true
+                    } only %}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="ib-entries__add">
+        <button class="ib-action ib-action--labelled" type="submit" name="add" value="entries:street" formnovalidate>
+            {% include 'components/icon.html.twig' with { name: 'plus' } only %}
+            <span>{{ 'party.action.add_street'|trans }}</span>
+        </button>
+        <button class="ib-action ib-action--labelled" type="submit" name="add" value="entries:poBox" formnovalidate>
+            {% include 'components/icon.html.twig' with { name: 'plus' } only %}
+            <span>{{ 'party.action.add_po_box'|trans }}</span>
+        </button>
+    </div>
+{% endblock %}

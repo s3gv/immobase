@@ -1,0 +1,32 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{# Wie sich die Anwendung verhält. #}
+{% extends 'settings/_page.html.twig' %}
+
+{% block section_body %}
+    <form method="post" action="{{ path('app_settings_app') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('settings') }}">
+
+        {# Ohne das Recht zu ändern ist das Formular zum Lesen da: ein Feld,
+           das eine Eingabe annimmt, die nirgends hingeht, ist dieselbe
+           Einladung zum Irrtum wie ein Knopf, der in eine Absage führt. #}
+        <fieldset class="ib-fieldset"{{ is_granted('settings.edit') ? '' : ' disabled' }}>
+
+            <label class="ib-choice">
+                <input type="checkbox" name="reduced_motion" value="1" {{ reducedMotion ? 'checked' : '' }}>
+                {{ 'settings.reduced_motion.label'|trans }}
+            </label>
+
+            {# Der Schalter kann Bewegung nur wegnehmen — das steht auch da, damit
+               niemand ihn ausschaltet und sich wundert, dass es ruhig bleibt. #}
+            <p class="ib-field__hint">{{ 'settings.reduced_motion.explanation'|trans }}</p>
+
+        </fieldset>
+
+        {% if is_granted('settings.edit') %}
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'settings.save'|trans }}</button>
+            </div>
+        {% endif %}
+    </form>
+{% endblock %}

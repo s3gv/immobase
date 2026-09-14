@@ -1,0 +1,40 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Gespräch — aus der Sicht dessen, der gefragt hat.
+
+    Dasselbe Fenster wie beim Verwalter, damit beide dasselbe sehen. Senden
+    lädt neu: kein Live-Chat, keine offene Verbindung, keine halbe
+    Chat-Anwendung im Browser.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <div class="ib-index__actions">
+        <a class="ib-button ib-button--quiet" href="{{ path('app_portal_enquiries') }}">
+            {{ 'portal.enquiry.back'|trans }}
+        </a>
+        {% include 'components/badge.html.twig' with {
+            label: ('portal.state.' ~ enquiry.state.value)|trans,
+            tone: enquiry.state.value == 'answered' ? 'success' : 'neutral'
+        } only %}
+    </div>
+
+    {% include 'portal/_conversation.html.twig' with {
+        enquiry: enquiry, today: today, attachment_route: 'app_portal_attachment'
+    } only %}
+
+    <form method="post" enctype="multipart/form-data"
+          action="{{ path('app_portal_enquiry_reply', { id: enquiry.id }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('portal_enquiry') }}">
+
+        {% include 'portal/_compose.html.twig' with {
+            id: 'body', name: 'body', label: 'portal.enquiry.answer'|trans,
+            retentionDays: retentionDays, maxFiles: maxFiles, maxMegabytes: maxMegabytes
+        } only %}
+
+        <div class="ib-flow__actions">
+            <button class="ib-button" type="submit">{{ 'portal.enquiry.send'|trans }}</button>
+        </div>
+    </form>
+{% endblock %}

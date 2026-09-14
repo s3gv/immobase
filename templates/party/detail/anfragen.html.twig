@@ -1,0 +1,34 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Verlauf der Anfragen — eine Spur, kein zweiter Posteingang.
+
+    Nur Betreff, Zeitpunkt und Zustand. Wer in den Stammdaten steht, will
+    wissen, ob es Kontakt gab und wann; gelesen und geantwortet wird dort, wo
+    Anfragen bearbeitet werden — dorthin führt der Link.
+
+    Zusammengesetzt wird hier in der Vorlage, über eine Twig-Funktion des
+    Portals: die Stammdaten dürfen das Portal nicht kennen. Ohne das Recht an
+    den Anfragen bleibt die Liste leer — dieselbe Antwort, die auch der
+    Abschnitt in der Reihe links gibt.
+#}
+{% extends 'party/_detail.html.twig' %}
+
+{% block panel %}
+    {% set traces = enquiries_of(party.id) %}
+
+    {% include 'components/table.html.twig' with {
+        headers: [
+            'enquiry.field.subject'|trans,
+            'enquiry.field.asked_at'|trans,
+            'enquiry.field.state'|trans
+        ],
+        rows: traces|map(trace => {
+            cells: [trace.subject, trace.at|datetime_local, trace.stateKey|trans],
+            actions: [{ action: 'open', url: path('app_enquiry_step', {
+                id: trace.id, step: 'gespraech'
+            }) }]
+        }),
+        empty: 'enquiry.none_for_party'|trans
+    } only %}
+{% endblock %}

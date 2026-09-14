@@ -1,0 +1,55 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Positionen des Bedarfs.
+
+    Vier Felder nebeneinander und die Knöpfe rechts: Bezeichnung, Jahr, Betrag,
+    Hinweis. Keine Tabelle — sie hätte eine Kopfzeile und scrollte seitwärts,
+    sobald die Spalte des Ablaufs schmal wird.
+
+    Das **Jahr** steht an jeder Zeile, weil eine Maßnahme über drei
+    Bauabschnitte eine Maßnahme ist und nicht drei Pläne.
+
+    Erwartet: rows (BudgetPosition), years
+#}
+<div class="ib-budget__rows">
+    {% for row in rows %}
+        <div class="ib-budget__row" data-budget-row="{{ row.id }}">
+            {% include 'components/field.html.twig' with {
+                id: 'label-' ~ row.id, name: 'rows[' ~ row.id ~ '][label]',
+                label: 'billing.budget.row.label'|trans,
+                placeholder: 'billing.budget.row.label_hint'|trans,
+                value: row.label
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'year-' ~ row.id, name: 'rows[' ~ row.id ~ '][year]',
+                label: 'billing.budget.row.year'|trans,
+                choices: years|map(y => { value: y, label: y }),
+                value: row.year
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'amount-' ~ row.id, name: 'rows[' ~ row.id ~ '][amount]',
+                label: 'billing.budget.row.amount'|trans,
+                value: row.amount|money_number
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'note-' ~ row.id, name: 'rows[' ~ row.id ~ '][note]',
+                label: 'billing.budget.row.note'|trans,
+                placeholder: 'billing.budget.row.note_hint'|trans,
+                value: row.note
+            } only %}
+
+            <div class="ib-budget__actions">
+                <button class="ib-action ib-action--danger" type="submit"
+                        name="remove" value="{{ row.id }}" formnovalidate
+                        aria-label="{{ 'billing.budget.row.remove'|trans }}"
+                        data-tooltip="{{ 'billing.budget.row.remove'|trans }}">
+                    {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                </button>
+            </div>
+        </div>
+    {% endfor %}
+</div>

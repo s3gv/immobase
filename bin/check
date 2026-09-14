@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 s3gv
+#
+# Einziger Einstiegspunkt für alle Prüfungen.
+#
+# Der Pre-Push-Hook ruft dieses Skript auf, und der GitHub-Workflow, der zum
+# Abschluss der Entwicklung dazukommt, wird dasselbe tun. Prüfungen gehören
+# deshalb hierher und nicht in eine YAML-Datei — sonst driften zwei
+# Definitionen derselben Regeln auseinander.
+#
+# Warnungen aus UNSEREM Code sind Fehler, Deprecations eingeschlossen. Jede
+# Prüfung wird darauf abgeklopft: meldet ein Werkzeug eine PHP-Diagnose, die
+# auf src/, tests/ oder tools/ zeigt, schlägt der Lauf fehl — auch wenn das
+# Werkzeug selbst mit 0 endet.
+#
+# Nicht abgedeckt sind Deprecations, die Fremdbibliotheken untereinander
+# auslösen. Sie sind nicht behebbar, und ein Fehler, den niemand beheben kann,
+# wird binnen Wochen umgangen — dann wirkt die ganze Regel nicht mehr.
+
+set -uo pipefail
+
+cd "$(dirname "$0")/.." || exit 1
+
+failed=()
+
+# Eine PHP-Diagnose, die auf unseren eigenen Code zeigt. Absichtlich eng
+# gefasst: Meldungen aus vendor/ fangen wir nicht ab.
+own_diagnostic='(Deprecated|Warning|Notice|Fatal error|Parse error):.*/(src|tests|tools)/'
+
+run() {
+    local name="$1" output status
+    shift
+
+    printf '\n\033[1m▸ %s\033[0m\n' "$name"
+
+    output="$("$@" 2>&1)"
+    status=$?
+
+    [ -n "$output" ] && printf '%s\n' "$output"
+
+    if [ $status -ne 0 ]; then
+        failed+=("$name")
+        return 1
+    fi
+
+    # Manche Werkzeuge melden Diagnosen und enden trotzdem mit 0. Ohne diese
+    # Prüfung bliebe der Lauf grün, obwohl unser Code eine Deprecation auslöst.
+    if printf '%s' "$output" | grep -qE "$own_diagnostic"; then
+        printf '\033[31mPHP-Diagnose im eigenen Code — siehe oben.\033[0m\n'
+        failed+=("$name (PHP-Diagnose)")
+        return 1
+    fi
+
+    return 0
+}
+
+run "Formatierung"            vendor/bin/php-cs-fixer fix --dry-run --diff
+# Auch PHPStan sagt, wie viel es braucht: es faehrt je Arbeiter den halben
+# Baum in den Speicher und stand zuletzt an derselben 128-MB-Decke wie die
+# Testsuite. Die Meldung nennt den Schalter selbst.
+run "Statische Analyse"       vendor/bin/phpstan analyse --no-progress --memory-limit=512M
+run "Modulgrenzen"            vendor/bin/deptrac analyse --config-file=deptrac.dist.yaml --no-progress
+run "Komplexität"             php tools/check-complexity.php
+# PHPUnit mit eigenem Speicherlimit: gut tausend funktionale Tests fahren in
+# einem Prozess Kernel, Container und DOM-Baeume auf und liegen damit knapp
+# unter PHPs Vorgabe von 128 MB. Das reichte, bis eine Seite ein paar
+# Kilobyte laenger wurde — dann bricht der Lauf mitten im Feld ab, und zwar
+# bei einem beliebigen Test. Das Limit ist hier keine Beschoenigung, sondern
+# die Angabe, wie viel eine Suite dieser Groesse braucht: ein echtes Leck
+# liefe auch dagegen.
+run "Tests"                   php -d memory_limit=512M vendor/bin/phpunit
+# Prüfungen, deren Ziel noch nicht existiert, werden sichtbar übersprungen
+# statt still zu scheitern. Ein stiller Sprung wäre eine Prüfung, die man für
+# grün hält, obwohl sie nie gelaufen ist.
+container_without_deprecations() {
+    local output
+    output="$(php bin/console debug:container --deprecations 2>&1)" || { printf '%s\n' "$output"; return 1; }
+
+    if ! printf '%s' "$output" | grep -q 'no deprecations'; then
+        printf '%s\n' "$output"
+        return 1
+    fi
+}
+
+run_if_present() {
+    local name="$1" path="$2"
+    shift 2
+
+    if [ ! -e "$path" ]; then
+        printf '\n\033[1m▸ %s\033[0m\n\033[33mübersprungen — %s existiert noch nicht\033[0m\n' "$name" "$path"
+        return 0
+    fi
+
+    run "$name" "$@"
+}
+
+run_if_present "YAML (config)"    config       php bin/console lint:yaml config --parse-tags
+run_if_present "YAML (Sprachen)"  translations php bin/console lint:yaml translations --parse-tags
+run_if_present "Twig"             templates    php bin/console lint:twig templates
+run "Service-Container"       php bin/console lint:container
+# lint:container prueft die Verdrahtung, nicht wie sie zustande kommt: ein
+# Argument, das nur ueber seinen Namen gefunden wird, meldet Symfony als
+# veraltet und nirgends sonst.
+run "Container-Deprecations"  container_without_deprecations
+run "Übersetzungen"           php tools/check-translations.php
+run "SPDX-Kopfzeilen"         php tools/check-spdx.php
+run "Abhängigkeitslizenzen"   php tools/check-licenses.php
+# Bekannte Schwachstellen in PHP- und JavaScript-Abhängigkeiten, auch in denen
+# der mitgelieferten Plugins. Fragt die Advisory-Datenbanken im Netz ab — ohne
+# Netz schlägt der Schritt fehl, statt still grün zu sein.
+run "Sicherheitsmeldungen (PHP)" composer audit --locked --no-interaction
+run "Sicherheitsmeldungen (JS)"  php bin/console importmap:audit
+for plugin_lock in plugins/*/composer.lock; do
+    [ -f "$plugin_lock" ] || continue
+    run "Sicherheitsmeldungen ($(basename "$(dirname "$plugin_lock")"))" composer audit --locked --no-interaction --working-dir="$(dirname "$plugin_lock")"
+done
+run "Attributionen aktuell"  php tools/generate-attributions.php --check
+run "Veröffentlichungshygiene" php tools/check-publication-hygiene.php
+
+echo
+
+if [ ${#failed[@]} -eq 0 ]; then
+    printf '\033[32mAlle Prüfungen bestanden.\033[0m\n'
+
+    exit 0
+fi
+
+printf '\033[31mFehlgeschlagen: %s\033[0m\n' "${failed[*]}"
+
+exit 1

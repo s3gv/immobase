@@ -1,0 +1,23 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Jahreswerte — und womit gemessen wird.
+
+    Beides hat eigene Formulare und eigene Adressen: ein Jahr kommt einzeln
+    dazu und verschwindet einzeln. Sie stehen deshalb in `before_form` — ein
+    verschachteltes Formular schließt in HTML das äußere.
+#}
+{% extends 'finance/_flow.html.twig' %}
+
+{% block before_form %}
+    {% include 'finance/_measuring.html.twig' with {
+        item: item, keys: keys, keyProperties: keyProperties, measures: measures
+    } only %}
+
+    {% include 'finance/_years.html.twig' with {
+        item: item, years: item.years, modes: modes,
+        units: units, recorded: recorded, editable: true
+    } only %}
+{% endblock %}
+
+{% block fields %}{% endblock %}

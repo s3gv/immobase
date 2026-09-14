@@ -1,0 +1,83 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Schritt 3: der Änderungsvorschlag.
+
+    Feld, bisher, vorgeschlagen — und eine Spalte mehr, wenn jemand dasselbe
+    Feld inzwischen im Verwalterbereich angefasst hat. Stillschweigend zu
+    überschreiben wäre der Fehler, den niemand bemerkt, bis eine Rechnung an
+    die falsche Adresse geht.
+
+    Die Warnung steht nur, solange noch zu entscheiden ist. Danach ist der
+    Unterschied zwischen „heute" und „bisher" die Entscheidung selbst, und
+    ein Hinweis auf einen Knopf, den es nicht mehr gibt, ist keiner.
+
+    Ablehnen verlangt eine Begründung. Sie geht als Nachricht ins Gespräch —
+    gelesen wird sie dort, wo gefragt wurde.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {% if proposal is null %}
+        {% include 'components/empty_state.html.twig' with { message: 'enquiry.no_change'|trans } only %}
+    {% else %}
+        <div class="ib-index__actions">
+            {% include 'components/badge.html.twig' with {
+                label: proposal.decision.labelKey|trans,
+                tone: proposal.decision.value == 'accepted' ? 'success'
+                    : (proposal.decision.value == 'rejected' ? 'danger' : 'warning')
+            } only %}
+            <span class="ib-field__hint">
+                {{ 'change.about'|trans({'%record%': proposal.recordKind.labelKey|trans}) }}
+                · {{ proposal.proposedAt|datetime_local }}
+            </span>
+        </div>
+
+        {% set drift = proposal.isOpen ? drifted : [] %}
+
+        {% if drift is not empty %}
+            <p class="ib-note">{{ 'change.drifted'|trans }}</p>
+        {% endif %}
+
+        {% include 'components/table.html.twig' with {
+            headers: drift is empty
+                ? ['change.field'|trans, 'change.was'|trans, 'change.wanted'|trans]
+                : ['change.field'|trans, 'change.was'|trans, 'change.today'|trans, 'change.wanted'|trans],
+            rows: proposal.fields|map(f => drift is empty
+                ? [f.labelKey|trans, f.was ?: '—', f.wanted ?: '—']
+                : [
+                    f.labelKey|trans,
+                    f.was ?: '—',
+                    (drift[f.key] is defined ? drift[f.key] : todaysValues[f.key]|default('')) ?: '—',
+                    f.wanted ?: '—'
+                ]),
+            empty: ''
+        } only %}
+
+        {% if is_granted('enquiries.edit') and proposal.isOpen %}
+            <form method="post" action="{{ path('app_enquiry_accept', { id: enquiry.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('enquiry') }}">
+                <div class="ib-flow__actions">
+                    <button class="ib-button" type="submit">{{ 'change.accept'|trans }}</button>
+                </div>
+            </form>
+
+            <form method="post" action="{{ path('app_enquiry_reject', { id: enquiry.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('enquiry') }}">
+
+                {% include 'components/textarea.html.twig' with {
+                    id: 'reason', name: 'reason', label: 'change.reason'|trans, rows: 3,
+                    hint: 'change.reason_hint'|trans
+                } only %}
+
+                <div class="ib-flow__actions">
+                    <button class="ib-button ib-button--danger" type="submit">{{ 'change.reject'|trans }}</button>
+                </div>
+            </form>
+        {% elseif not proposal.isOpen %}
+            <p class="ib-field__hint">
+                {{ 'change.decided_at'|trans({'%date%': proposal.decidedAt|datetime_local}) }}
+            </p>
+        {% endif %}
+    {% endif %}
+{% endblock %}

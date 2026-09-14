@@ -1,0 +1,40 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Wirtschaftsjahr: Tag und Monat, an dem es beginnt.
+
+    Nicht von–bis: ein festes Von–Bis müsste jedes Jahr angefasst werden, und
+    die Abrechnung des Vorjahres bräuchte dann den überschriebenen Stand.
+#}
+{% extends 'property/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.fiscalYear is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.fiscalYear|trans }}</p>
+    {% endif %}
+
+    <div class="ib-entry__pair">
+        {% include 'components/field.html.twig' with {
+            id: 'fiscalYearDay', name: 'fiscalYearDay', type: 'number',
+            label: 'property.accounting.day'|trans,
+            value: posted ? submitted.fiscalYearDay|default('') : property.accounting.fiscalYear.day,
+            autofocus: true
+        } only %}
+
+        {% include 'components/select.html.twig' with {
+            id: 'fiscalYearMonth', name: 'fiscalYearMonth',
+            label: 'property.accounting.month'|trans,
+            choices: months|map(m => { value: m.value, label: m.label|trans }),
+            value: posted ? submitted.fiscalYearMonth|default('') : property.accounting.fiscalYear.month
+        } only %}
+    </div>
+
+    <p class="ib-field__hint">{{ 'property.accounting.hint'|trans }}</p>
+
+    {# Was eine Änderung anrichtet, gehört vor die Änderung und nicht in eine
+       Meldung danach: wer erst hinterher erfährt, dass vorhandene Läufe ihren
+       Zeitraum behalten, konnte die Entscheidung nicht treffen. #}
+    <p class="ib-note">{{ 'property.accounting.consequence'|trans }}</p>
+{% endblock %}

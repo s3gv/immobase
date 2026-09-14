@@ -1,0 +1,68 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der erste Schritt: zu welcher Einheit gehört das Mietverhältnis.
+
+    Die Einheit ist das einzige Pflichtfeld. Alles andere lässt sich
+    nachtragen, sie nicht: ohne sie gibt es keine Miete, sondern eine Notiz.
+#}
+{% extends 'tenancy/_flow.html.twig' %}
+
+{% block fields %}
+    <div class="ib-picker"
+         data-unit-picker
+         data-search-url="{{ path('app_tenancy_unit_search') }}"
+         data-empty="{{ 'tenancy.unit.no_results'|trans }}"
+         data-let="{{ 'tenancy.unit.already_let'|trans }}"
+         data-remove="{{ 'tenancy.unit.remove'|trans }}">
+
+        <input type="hidden" name="unitId" value="{{ chosen ? chosen.id : '' }}" data-unit-value>
+
+        <p class="ib-field__label">{{ 'tenancy.field.unit'|trans }}</p>
+
+        <ul class="ib-picker__list" data-unit-chosen>
+            {% if chosen %}
+                <li class="ib-picker__row">
+                    <span class="ib-picker__name">
+                        {{ chosen.label }}
+                        <span class="ib-field__hint">
+                            {{ chosen.propertyNumber }} · {{ chosen.propertyName }}
+                            {{ chosen.address ? '· ' ~ chosen.address : '' }}
+                        </span>
+                    </span>
+                    <button class="ib-action ib-action--danger" type="button" data-unit-remove
+                            aria-label="{{ 'tenancy.unit.remove'|trans }}"
+                            data-tooltip="{{ 'tenancy.unit.remove'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                    </button>
+                </li>
+            {% endif %}
+        </ul>
+
+        {% if errors.unitId is defined %}
+            <p class="ib-field__error" role="alert">{{ errors.unitId|trans }}</p>
+        {% endif %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'unit-search', name: 'unitSearch',
+            label: 'tenancy.unit.search'|trans,
+            hint: 'tenancy.unit.search_hint'|trans,
+            autocomplete: 'off'
+        } only %}
+
+        <ul class="ib-picker__results" data-unit-results hidden></ul>
+
+        {# Die Vorlage für die gewählte Zeile steht im Picker, weil das Skript
+           sie dort sucht — und weil sie ohne ihn keinen Sinn ergibt. #}
+        <template data-unit-template>
+            <li class="ib-picker__row">
+                <span class="ib-picker__name"></span>
+                <button class="ib-action ib-action--danger" type="button" data-unit-remove
+                        aria-label="{{ 'tenancy.unit.remove'|trans }}">
+                    {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                </button>
+            </li>
+        </template>
+    </div>
+
+{% endblock %}

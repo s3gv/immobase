@@ -1,0 +1,62 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine freigegebene Abrechnung.
+
+    Derselbe Rahmen wie im Ablauf, auf demselben letzten Schritt — nur ohne
+    Knöpfe: geprüft wurde schon, und zurück geht es nicht mehr. Wer die
+    Vorschau gesehen hat, sieht sie hier wieder.
+#}
+{% extends 'components/sections.html.twig' %}
+{#
+    Breiter als ein Formular: fünf Spalten passen nicht in die 40rem, in
+    denen sich ein Formular gut ausfüllen lässt.
+#}
+{% set wide = true %}
+
+{% block section_body %}
+    {% if document %}
+        {% include 'billing/_recipients.html.twig' with {
+            action: path('app_billing_statement_show', { id: statement.id }),
+            value: document.id,
+            choices: documents|map(d => {
+                value: d.id,
+                label: d.reference.toString ~ ' · ' ~ d.recipient.label
+                    ~ ' · ' ~ d.period.from|date_local ~ ' – ' ~ d.period.to|date_local
+            })
+        } only %}
+
+        <p class="ib-note">{{ 'billing.statement.reference'|trans }}: <strong>{{ document.reference.toString }}</strong></p>
+
+        {% if document.letting.isTaxed %}
+            {% if document.letting.eInvoice.isCaptured %}
+                <div class="ib-index__actions">
+                    <a class="ib-button ib-button--quiet"
+                       href="{{ path('app_billing_statement_xrechnung', { id: statement.id, document: document.id }) }}"
+                       data-tooltip="{{ 'billing.einvoice.download_hint'|trans }}">
+                        {{ 'billing.einvoice.download'|trans }}
+                    </a>
+                </div>
+                <p class="ib-field__hint">
+                    {{ 'billing.pdf.seller'|trans({'%name%': document.letting.seller.name, '%address%': document.letting.seller.address|replace({"\n": ', '})}) }}
+                    · {{ 'billing.pdf.tax_number'|trans({'%number%': document.letting.seller.taxNumber}) }}
+                </p>
+            {% endif %}
+        {% endif %}
+
+        {% include 'billing/_preview.html.twig' with {
+            who: document.recipient.label,
+            unit: document.unitNumber ~ ' · ' ~ document.unitLabel,
+            kind: document.kind.labelKey|trans,
+            from: document.period.from, to: document.period.to,
+            lines: document.lines, advances: document.payments,
+            costs: document.outcome.costs, balance: document.balance,
+            taxation: document.letting.taxation, tax: document.outcome.tax,
+            gross: document.outcome.gross, advancesTax: document.outcome.advancesTax,
+            settled: document.outcome.settled,
+            reserve: document.kind.value == 'house_money' ? statement.reserve : null
+        } only %}
+    {% else %}
+        <p class="ib-empty">{{ 'billing.recipient.none'|trans }}</p>
+    {% endif %}
+{% endblock %}

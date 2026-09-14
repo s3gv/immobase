@@ -1,0 +1,22 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'flow/flow.html.twig' %}
+
+{% block step_body %}
+    {% set company = draft.kind.value == 'company' %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'name', name: 'name',
+        label: (company ? 'party.field.company_name' : 'party.field.last_name')|trans,
+        value: draft.name,
+        error: errors.name is defined ? errors.name|trans : null,
+        required: true, autofocus: true
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'givenName', name: 'givenName',
+        label: (company ? 'party.field.contact_person' : 'party.field.first_name')|trans,
+        hint: (company ? 'party.field.contact_person_hint' : 'party.field.first_name_hint')|trans,
+        value: draft.givenName
+    } only %}
+{% endblock %}

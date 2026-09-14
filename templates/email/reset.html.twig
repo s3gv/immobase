@@ -1,0 +1,12 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'email/layout.html.twig' %}
+
+{% block body %}
+    <p>{{ 'email.reset.greeting'|trans }}</p>
+    <p>{{ 'email.reset.body'|trans }}</p>
+    <p><a href="{{ link }}">{{ 'email.reset.action'|trans }}</a></p>
+    <p style="margin:16px 0 0;color:#6b7280;font-size:13px;word-break:break-all;">{{ link }}</p>
+    <p>{{ 'email.reset.validity'|trans }}</p>
+    <p>{{ 'email.reset.ignore'|trans }}</p>
+{% endblock %}

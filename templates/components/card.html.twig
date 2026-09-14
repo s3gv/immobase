@@ -1,0 +1,22 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Karte.
+
+    Erwartet: nichts
+    Optional: title, href (Verweis auf die ausführliche Ansicht)
+
+    Der Inhalt kommt über den Block `body`. Mit {% embed %} einbinden, nicht
+    mit {% include %} — nur so lässt sich der Block füllen.
+#}
+<section class="ib-card">
+    {% if title is defined and title %}
+        <header class="ib-card__head">
+            <h2 class="ib-card__title">{{ title }}</h2>
+            {% if href is defined and href %}
+                <a class="ib-card__more" href="{{ href }}" aria-label="{{ title }}">›</a>
+            {% endif %}
+        </header>
+    {% endif %}
+    <div class="ib-card__body">{% block body %}{% endblock %}</div>
+</section>

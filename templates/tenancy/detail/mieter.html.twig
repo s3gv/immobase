@@ -1,0 +1,33 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'tenancy/_detail.html.twig' %}
+{% set edit_step = 'mieter' %}
+
+{% block panel %}
+    {% if tenants is empty %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'tenancy.tenant.none'|trans
+        } only %}
+    {% else %}
+        <ul class="ib-picker__list">
+            {% for tenant in tenants %}
+                <li class="ib-picker__row">
+                    <span class="ib-picker__name">
+                        {% if tenant.brief %}
+                            <a href="{{ path('app_party_show', { reference: tenant.brief.reference }) }}">
+                                {{ tenant.brief.displayName }}
+                            </a>
+                            <span class="ib-field__hint">{{ tenant.brief.address }}</span>
+                        {% else %}
+                            {{ tenant.partyId }}
+                        {% endif %}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% include 'tenancy/_household.html.twig' with {
+        tenancy: tenancy, household: tenancy.household, today: today
+    } only %}
+{% endblock %}

@@ -1,0 +1,113 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Jahreswerte einer Kostenposition.
+
+    Erwartet: item, years (CostItemYears), modes, units, recorded
+    Optional: editable — mit Formularen zum Ändern und Ergänzen
+
+    Verlangt der Schlüssel eine Erfassung, steht unter jedem Jahr eine Zeile
+    je Einheit. Sie gehören unter ihr Jahr und nicht auf eine eigene Seite:
+    ein Jahr ist erst erfasst, wenn seine Mengen darin stehen.
+
+    Sobald welche darin stehen, verschwindet der Entfernen-Knopf: mit dem
+    Jahr gingen sie mit. Ein falscher Betrag wird geändert, nicht gelöscht.
+
+    Dieselbe Gestalt wie die Mietstaffel, weil es dieselbe Sache ist: ein
+    Wert, der zu einem Zeitraum gehört. Das laufende Jahr wird erfasst, das
+    vergangene abgerechnet — und keins überschreibt das andere.
+#}
+<div class="ib-rents">
+    <h3 class="ib-flow__title">{{ 'finance.year.heading'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'finance.year.hint'|trans }}</p>
+    {% if editable|default(false) %}
+        <p class="ib-field__hint">{{ 'finance.year.input_tax_hint'|trans }}</p>
+    {% endif %}
+
+    {% if years.isEmpty %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.year.empty'|trans
+        } only %}
+    {% elseif editable|default(false) %}
+        {% for year in years.all %}
+            <form class="ib-rents__row" method="post"
+                  action="{{ path('app_finance_year_change', { number: item.number, id: year.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('finance_year_' ~ item.number) }}">
+
+                {% include 'finance/_year_fields.html.twig' with { year: year, modes: modes } only %}
+
+                <div class="ib-rents__actions">
+                    <button class="ib-action" type="submit" name="save" value="1"
+                            aria-label="{{ 'settings.save'|trans }}"
+                            data-tooltip="{{ 'settings.save'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'save' } only %}
+                    </button>
+                    {#
+                        Entfernen nur, solange nichts darauf steht: mit dem
+                        Jahr gingen seine Mengen mit. Ein Knopf, der
+                        zuverlässig in eine Absage führt, ist schlechter als
+                        keiner.
+                    #}
+                    {% if year.units is empty %}
+                        <button class="ib-action ib-action--danger" type="submit" name="remove" value="1"
+                                aria-label="{{ 'finance.year.remove'|trans }}"
+                                data-tooltip="{{ 'finance.year.remove'|trans }}" formnovalidate>
+                            {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                        </button>
+                    {% endif %}
+                </div>
+            </form>
+
+            {% if year.mode.isDistributed %}
+                <p class="ib-field__hint">{{ 'finance.year.distributed_note'|trans }}</p>
+            {% endif %}
+
+            {% if item.isMetered %}
+                {% include 'finance/_year_units.html.twig' with {
+                    item: item, year: year, units: units,
+                    recorded: recorded[year.id]|default({}), editable: true
+                } only %}
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'finance.year.field.year'|trans,
+                'finance.year.field.amount'|trans,
+                'finance.year.field.input_tax'|trans,
+                'finance.year.field.mode'|trans
+            ],
+            rows: years.all|map(year => [
+                year.fiscalYear,
+                year.amount|money,
+                year.inputTax.isZero ? '—' : year.inputTax|money,
+                year.mode.labelKey|trans
+            ]),
+            empty: ''
+        } only %}
+
+        {% if item.isMetered %}
+            {% for year in years.all %}
+                <h4 class="ib-flow__title">{{ year.fiscalYear }}</h4>
+                {% include 'finance/_year_units.html.twig' with {
+                    item: item, year: year, units: units,
+                    recorded: recorded[year.id]|default({})
+                } only %}
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+
+    {% if editable|default(false) %}
+        <form class="ib-rents__row ib-rents__add" method="post"
+              action="{{ path('app_finance_year_add', { number: item.number }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('finance_year_' ~ item.number) }}">
+
+            {% include 'finance/_year_fields.html.twig' with { year: null, modes: modes } only %}
+
+            <div class="ib-rents__actions">
+                <button class="ib-button ib-button--quiet" type="submit">{{ 'finance.year.add'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
+</div>

@@ -1,0 +1,104 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Mietstaffel und die Zahlungsweise.
+
+    Die Stufen haben eigene Formulare und eigene Adressen: eine Stufe kommt
+    einzeln dazu und verschwindet einzeln. Sie stehen deshalb in
+    `outside_form` — ein verschachteltes Formular schließt in HTML das äußere,
+    und dessen Knöpfe hören auf zu wirken.
+#}
+{% extends 'tenancy/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'paymentMethod', name: 'paymentMethod', label: 'tenancy.field.payment_method'|trans,
+        choices: methods|map(m => { value: m.value, label: m.labelKey|trans }),
+        value: posted
+            ? submitted.paymentMethod|default('')
+            : (tenancy ? tenancy.payment.method.value : '')
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'paymentDue', name: 'paymentDue', label: 'tenancy.field.payment_due'|trans,
+        hint: 'tenancy.field.payment_due_hint'|trans,
+        choices: dues|map(d => { value: d.value, label: d.labelKey|trans }),
+        value: posted
+            ? submitted.paymentDue|default('')
+            : (tenancy ? tenancy.payment.due.value : '')
+    } only %}
+
+    {#
+        Die Umsatzsteuer steht nur bei gewerblicher Nutzung: Wohnraummiete ist
+        nach § 4 Nr. 12 a UStG steuerfrei, und die Option nach § 9 UStG steht
+        dort nicht offen. Ausgeblendet ist nur die halbe Miete — die Absage
+        steht in SaveTenancy, denn ein Formular schützt nicht vor einem POST.
+    #}
+    {% if unit|default(null) and unit.usage == 'commercial' %}
+        {% if errors.rent is defined %}
+            <p class="ib-field__error" role="alert">{{ errors.rent|trans }}</p>
+        {% endif %}
+
+        <label class="ib-choice">
+            <input type="checkbox" name="vatCharged" value="1"
+                   {{ (posted ? submitted.vatCharged|default('') : (tenancy and tenancy.taxation.isCharged ? '1' : '')) ? 'checked' : '' }}>
+            {{ 'tenancy.field.vat_charged'|trans }}
+        </label>
+        <p class="ib-field__hint">{{ 'tenancy.field.vat_charged_hint'|trans }}</p>
+
+        {% include 'components/field.html.twig' with {
+            id: 'vatRate', name: 'vatRate', label: 'tenancy.field.vat_rate'|trans,
+            hint: 'tenancy.field.vat_rate_hint'|trans,
+            value: posted
+                ? submitted.vatRate|default('')
+                : (tenancy and tenancy.taxation.isCharged ? tenancy.taxation.rateBps|percent(false) : '19')
+        } only %}
+
+        {#
+            Was eine E-Rechnung über den Mieter wissen muss. Alles kommt vom
+            Mieter und wird bei ihm erfragt — nichts davon wird geraten.
+            Gebraucht wird es erst, wenn eine Rechnung mit Umsatzsteuer
+            ausgestellt wird; dort fehlt es dann benannt.
+        #}
+        {% set terms = tenancy ? tenancy.payment.eInvoice : null %}
+        <h3 class="ib-flow__title">{{ 'tenancy.einvoice.heading'|trans }}</h3>
+        <p class="ib-field__hint">{{ 'tenancy.einvoice.hint'|trans }}</p>
+
+        {% include 'components/field.html.twig' with {
+            id: 'buyerReference', name: 'buyerReference', label: 'tenancy.einvoice.buyer_reference'|trans,
+            hint: 'tenancy.einvoice.buyer_reference_hint'|trans,
+            value: posted ? submitted.buyerReference|default('') : (terms ? terms.buyerReference : '')
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'buyerEAddress', name: 'buyerEAddress', type: 'email', label: 'tenancy.einvoice.e_address'|trans,
+            hint: 'tenancy.einvoice.e_address_hint'|trans,
+            value: posted ? submitted.buyerEAddress|default('') : (terms ? terms.buyerEAddress : ''),
+            error: errors.buyerEAddress is defined ? errors.buyerEAddress|trans : null
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'sepaMandate', name: 'sepaMandate', label: 'tenancy.einvoice.sepa_mandate'|trans,
+            hint: 'tenancy.einvoice.sepa_hint'|trans,
+            value: posted ? submitted.sepaMandate|default('') : (terms ? terms.sepaMandate : ''),
+            error: errors.sepaMandate is defined ? errors.sepaMandate|trans : null
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'debtorIban', name: 'debtorIban', label: 'tenancy.einvoice.debtor_iban'|trans,
+            hint: 'tenancy.einvoice.sepa_hint'|trans,
+            value: posted ? submitted.debtorIban|default('') : (terms ? terms.debtorIbanInGroups : ''),
+            error: errors.debtorIban is defined ? errors.debtorIban|trans : null
+        } only %}
+    {% endif %}
+{% endblock %}
+
+{% block before_form %}
+    {% if tenancy %}
+        {% include 'tenancy/_rents.html.twig' with {
+            tenancy: tenancy, schedule: schedule, today: today, editable: true
+        } only %}
+    {% endif %}
+{% endblock %}

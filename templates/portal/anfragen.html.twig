@@ -1,0 +1,38 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Meine Anfragen.
+
+    Offene zuerst, dann das Jüngste — und erledigte bleiben stehen. Eine
+    Historie auf beiden Seiten war ausdrücklich gewünscht: wer vor einem Jahr
+    etwas gemeldet hat, will nachsehen können, was daraus wurde.
+
+    Was eine neue Nachricht enthält, steht hier nicht — nur, dass es eine
+    gibt. Gelesen wird im Gespräch.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <div class="ib-index__actions">
+        <a class="ib-button" href="{{ path('app_portal_enquiry_new') }}">
+            {{ 'portal.enquiry.new'|trans }}
+        </a>
+    </div>
+
+    {% include 'components/table.html.twig' with {
+        headers: [
+            'portal.enquiry.subject'|trans,
+            'portal.enquiry.state'|trans,
+            'portal.enquiry.last_message'|trans
+        ],
+        rows: enquiries|map(enquiry => {
+            cells: [
+                (enquiry.isUnreadByParty ? '● ' : '') ~ enquiry.subject,
+                ('portal.state.' ~ enquiry.state.value)|trans,
+                enquiry.lastMessageAt|datetime_local
+            ],
+            actions: [{ action: 'open', url: path('app_portal_enquiry', { id: enquiry.id }) }]
+        }),
+        empty: 'portal.enquiry.none'|trans
+    } only %}
+{% endblock %}

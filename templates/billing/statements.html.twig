@@ -1,0 +1,115 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Alle Abrechnungen, die neuesten zuerst.
+
+    Öffnen führt in die Vorschau — dorthin, wo man sieht, was drinsteht. Das
+    PDF ist eine eigene Aktion, weil es ein anderer Vorgang ist: eine
+    Abrechnung anzusehen und sie zu verschicken.
+
+    Entwürfe stehen mit in der Liste und tragen ihren Status: sie sind
+    angefangene Arbeit und gehören vor Augen.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'billing.statement.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'billing.statement.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'billing.statement.subheading'|trans }}</p>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            'billing.statement.reference'|trans,
+            'billing.statement.fiscal_year'|trans,
+            'billing.statement.label'|trans,
+            'billing.statement.recipients'|trans,
+            'billing.statement.status'|trans
+        ],
+        rows: statements|map(s => {
+            cells: [
+                s.propertyNumber ~ '-' ~ s.fiscalYear ~ '-' ~ s.number ~ (s.iteration > 1 ? '-' ~ s.iteration : ''),
+                s.fiscalYear,
+                s.label ?: 'billing.statement.unnamed'|trans,
+                s.documents|length,
+                s.release.status.labelKey|trans
+            ],
+            actions: (s.isDraft
+                ? (is_granted('billing.edit')
+                    ? [
+                        { action: 'edit', url: path('app_billing_statement_edit', { id: s.id, step: 'abrechnung' }) },
+                        { action: 'delete', modal: 'billing-delete-' ~ s.id }
+                      ]
+                    : [])
+                : [
+                    { action: 'open', url: path('app_billing_statement_show', { id: s.id }) },
+                    { action: 'download', url: path('app_billing_statement_pdf', { id: s.id }) }
+                  ])
+        }),
+        page: page,
+        action: path('app_billing_statement'),
+        url: url,
+        empty: 'billing.statement.empty'|trans,
+        statements: statements,
+        filter: filter,
+        properties: properties,
+        years: years,
+        statuses: statuses
+    } only %}
+        {% block actions %}
+            {% if is_granted('billing.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_billing_statement_new'), labelled: true
+                } only %}
+            {% endif %}
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'billing.statement.filter.search'|trans,
+                value: filter.search, placeholder: 'billing.statement.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'objekt', name: 'objekt', label: 'billing.statement.property'|trans,
+                choices: properties|map(p => { value: p.number, label: p.oneLine }),
+                value: filter.propertyNumber, blank: 'billing.statement.filter.all_properties'|trans
+            } only %}
+
+            {#
+                Angeboten werden die Jahre, zu denen es Läufe gibt. Eine feste
+                Spanne böte Jahre an, die zuverlässig nichts finden.
+            #}
+            {% include 'components/select.html.twig' with {
+                id: 'jahr', name: 'jahr', label: 'billing.statement.fiscal_year'|trans,
+                choices: years|map(y => { value: y, label: y }),
+                value: filter.fiscalYear, blank: 'billing.statement.filter.all_years'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'zustand', name: 'zustand', label: 'billing.statement.status'|trans,
+                choices: statuses|map(s => { value: s.value, label: s.labelKey|trans }),
+                value: filter.status ? filter.status.value : '',
+                blank: 'billing.statement.filter.all_states'|trans
+            } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {#
+        Gelöscht wird nur ein Entwurf, und auch der mit Rückfrage: die
+        Auswahl von drei Schritten ist Arbeit, und sie steht nirgends sonst.
+        Freigegebene Abrechnungen haben gar keinen Knopf — es gibt kein
+        `billing.delete`.
+    #}
+    {% for s in statements %}
+        {% if s.isDraft and is_granted('billing.edit') %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'billing-delete-' ~ s.id,
+                title: 'billing.delete.title'|trans,
+                body: 'billing.delete.body'|trans,
+                url: path('app_billing_statement_delete', { id: s.id }),
+                token: 'billing'
+            } only %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}

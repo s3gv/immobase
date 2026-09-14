@@ -1,0 +1,54 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wer was bekommt.
+
+    Gespeichert wird für jeden — das Häkchen entscheidet nur darüber, wer ein
+    PDF bekommt. Eine Abrechnung, die es nicht gibt, lässt sich später auch
+    nicht nachreichen.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+{#
+    Breiter als ein Formular: fünf Spalten passen nicht in die 40rem, in
+    denen sich ein Formular gut ausfüllen lässt.
+#}
+{% set wide = true %}
+
+{% block fields %}
+    {% if proposal.documents is empty %}
+        <p class="ib-empty">{{ 'billing.recipient.none'|trans }}</p>
+    {% else %}
+        <p class="ib-field__hint">{{ 'billing.recipient.explanation'|trans }}</p>
+
+        <div class="ib-table-scroll">
+            <table class="ib-table ib-table--compact">
+                <thead>
+                    <tr>
+                        <th>{{ 'billing.recipient.pdf'|trans }}</th>
+                        <th>{{ 'billing.recipient.unit'|trans }}</th>
+                        <th>{{ 'billing.recipient.kind'|trans }}</th>
+                        <th>{{ 'billing.recipient.who'|trans }}</th>
+                        <th>{{ 'billing.recipient.period'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for document in proposal.documents %}
+                        <tr>
+                            <td>
+                                <label class="ib-choice">
+                                    <input type="checkbox" name="pdf[]" value="{{ document.key }}"
+                                           {{ document.key in withoutPdf ? '' : 'checked' }}>
+                                    <span class="ib-visually-hidden">{{ 'billing.recipient.pdf'|trans }}</span>
+                                </label>
+                            </td>
+                            <td>{{ document.unitNumber }} · {{ document.unitLabel }}</td>
+                            <td>{{ document.kind.labelKey|trans }}</td>
+                            <td>{{ document.recipientLabel }}</td>
+                            <td>{{ document.from|date_local }} – {{ document.to|date_local }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

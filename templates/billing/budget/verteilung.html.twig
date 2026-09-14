@@ -1,0 +1,63 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wonach verteilt wird — und wer voraussichtlich trägt.
+
+    Der gesetzliche Schlüssel ist der Miteigentumsanteil (§ 16 Abs. 2 WEG); die
+    Eigentümer dürfen davon abweichend beschließen (§ 16 Abs. 2 Satz 2).
+
+    **Wer trägt, steht hier noch nicht fest.** Bei einer baulichen Veränderung
+    folgt der Verteilerkreis aus dem Abstimmungsergebnis. Was die Vorschau
+    zeigt, ist die Annahme — und sie sagt es auch.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'billing/plan/_missing.html.twig' with { missing: proposal.missing } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'key', name: 'key', label: 'billing.budget.key'|trans,
+        hint: 'billing.budget.key_hint'|trans,
+        choices: keys|map(k => { value: k.id, label: k.label }),
+        value: budget.key.id
+    } only %}
+
+    {% if not budget.verdict.wasCounted %}
+        <div class="ib-note">
+            <p>{{ 'billing.budget.assumed'|trans }}</p>
+        </div>
+    {% endif %}
+
+    {% include 'billing/_budget_preview.html.twig' with { proposal: proposal } only %}
+{% endblock %}
+
+{% block outside_form %}
+    {#
+        Die Vorlage geht vor der Versammlung heraus: ein Beschluss über eine
+        Sonderumlage, die niemand vorher gesehen hat, ist anfechtbar.
+    #}
+    {% if proposal.missing is empty and proposal.shares is not empty %}
+        <form method="post" action="{{ path('app_billing_budget_propose', { id: budget.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+
+            {% if budget.stage.wasProposed %}
+                <p class="ib-field__hint">
+                    {{ 'billing.budget.proposed_on'|trans({'%day%': budget.stage.proposedOn|date_local}) }}
+                </p>
+            {% endif %}
+
+            <p class="ib-field__hint">{{ 'billing.budget.propose_hint'|trans }}</p>
+            <div class="ib-flow__actions">
+                {% if budget.stage.wasProposed %}
+                    <a class="ib-button ib-button--quiet"
+                       href="{{ path('app_billing_budget_proposal_pdf', { id: budget.id }) }}">
+                        {{ 'billing.budget.download_proposal'|trans }}
+                    </a>
+                {% endif %}
+                <button class="ib-button" type="submit">
+                    {{ (budget.stage.wasProposed ? 'billing.budget.propose_again' : 'billing.budget.propose')|trans }}
+                </button>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

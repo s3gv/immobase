@@ -1,0 +1,50 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Zusatzrechte — zusätzlich zu dem, was die Rollen geben.
+
+    Der übliche Fall: jemand macht die Buchhaltung und soll ausnahmsweise auch
+    Stammdaten pflegen dürfen, ohne dass dafür eine Rolle „Buchhaltung mit
+    Stammdaten" entsteht.
+#}
+{% embed 'components/sections.html.twig' with { wide: true } %}
+    {% block section_body %}
+        <form method="post" action="{{ path('app_user_permissions', { number: user.number }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('user_permissions_' ~ user.number) }}">
+
+            {% for area, permissions in areas|by_area_label %}
+                <fieldset class="ib-choices">
+                    {# Dieselbe Bereichsüberschrift wie unter „Meine Rechte" und
+                       in der Matrix: es ist dieselbe Gliederung. #}
+                    <legend class="ib-group__label">{{ ('permission.area.' ~ area)|permission_text }}</legend>
+                    {% for permission in permissions %}
+                        {% set origin = origins[permission.key] %}
+                        <label class="ib-choice">
+                            {# Was aus einer Rolle kommt, steht gesetzt und
+                               abgeschaltet da — sonst sähe es aus, als ließe
+                               es sich hier wegnehmen. #}
+                            <input type="checkbox" name="permissions[]" value="{{ permission.key }}"
+                                   {{ origin.isGranted ? 'checked' : '' }}
+                                   {{ origin.fromRole ? 'disabled' : '' }}>
+                            <span>
+                                {{ permission.labelKey|permission_text }}
+                                <span class="ib-field__hint">
+                                    {{ permission.explanationKey|permission_text }}
+                                    {% if origin.bySystemRole %}
+                                        — {{ 'role.extra.from_system'|trans }}
+                                    {% elseif origin.roles is not empty %}
+                                        — {{ origin.roles|map(r => 'role.extra.from_role'|trans({'%role%': r}))|join(', ') }}
+                                    {% endif %}
+                                </span>
+                            </span>
+                        </label>
+                    {% endfor %}
+                </fieldset>
+            {% endfor %}
+
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'settings.save'|trans }}</button>
+            </div>
+        </form>
+    {% endblock %}
+{% endembed %}

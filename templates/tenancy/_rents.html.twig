@@ -1,0 +1,92 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Mietstaffel: was ab wann gilt.
+
+    Erwartet: tenancy, schedule (RentSchedule), today
+    Optional: editable — mit Formularen zum Ändern und Ergänzen
+
+    Zwei Gestalten für dieselbe Sache. Zum Ansehen eine Tabelle: sechs Zahlen
+    je Zeile lesen sich in Spalten am schnellsten. Zum Bearbeiten Formulare
+    ohne Tabelle — jedes Feld trägt dort seine Beschriftung schon selbst, und
+    eine Kopfzeile darüber wäre dieselbe Beschriftung ein zweites Mal.
+
+    Jede Stufe hat ihr eigenes Formular. Das ist nicht Zierde: eine Stufe
+    kommt einzeln dazu und verschwindet einzeln, und ein Formular, das die
+    ganze Staffel auf einmal schickt, müsste beim Speichern raten, welche
+    Zeile welche war.
+
+    Hervorgehoben ist, was heute gilt — die letzte Stufe mit Datum ≤ heute und
+    nicht die letzte überhaupt: eine Erhöhung, die erst nächstes Jahr greift,
+    steht schon da und gilt noch nicht.
+#}
+{% set current = schedule.on(today) %}
+
+<div class="ib-rents">
+    <h3 class="ib-flow__title">{{ 'tenancy.rent.heading'|trans }}</h3>
+
+    {% if schedule.isEmpty %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'tenancy.rent.empty'|trans
+        } only %}
+    {% elseif editable|default(false) %}
+        {% for step in schedule.steps %}
+            <form class="ib-rents__row{{ step is same as(current) ? ' is-current' : '' }}" method="post"
+                  action="{{ path('app_tenancy_rent_change', { number: tenancy.number, step: step.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('tenancy_rent_' ~ tenancy.number) }}">
+
+                {% include 'tenancy/_rent_fields.html.twig' with { step: step } only %}
+
+                <div class="ib-rents__actions">
+                    {% if step is same as(current) %}
+                        <span class="ib-badge ib-badge--success">{{ 'tenancy.rent.current'|trans }}</span>
+                    {% endif %}
+                    <button class="ib-action" type="submit" name="save" value="1"
+                            aria-label="{{ 'settings.save'|trans }}"
+                            data-tooltip="{{ 'settings.save'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'save' } only %}
+                    </button>
+                    <button class="ib-action ib-action--danger" type="submit" name="remove" value="1"
+                            aria-label="{{ 'tenancy.rent.remove'|trans }}"
+                            data-tooltip="{{ 'tenancy.rent.remove'|trans }}" formnovalidate>
+                        {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                    </button>
+                </div>
+            </form>
+        {% endfor %}
+    {% else %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'tenancy.rent.from'|trans,
+                'tenancy.rent.base'|trans,
+                'tenancy.rent.operating_costs'|trans,
+                'tenancy.rent.heating'|trans,
+                'tenancy.rent.parking'|trans,
+                'tenancy.field.total'|trans
+            ],
+            rows: schedule.steps|map(step => [
+                step.startsOn|date_local,
+                step.rent.base|money,
+                step.rent.operatingCosts|money,
+                step.rent.heating|money,
+                step.rent.parking|money,
+                step.rent.total|money
+            ]),
+            empty: ''
+        } only %}
+    {% endif %}
+
+    {% if editable|default(false) %}
+        <form class="ib-rents__row ib-rents__add" method="post"
+              action="{{ path('app_tenancy_rent_add', { number: tenancy.number }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('tenancy_rent_' ~ tenancy.number) }}">
+
+            {% include 'tenancy/_rent_fields.html.twig' with { step: null } only %}
+
+            <div class="ib-rents__actions">
+                <button class="ib-button ib-button--quiet" type="submit">{{ 'tenancy.rent.add'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
+</div>

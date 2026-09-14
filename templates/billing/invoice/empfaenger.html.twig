@@ -1,0 +1,39 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wer an wen — und wohin gezahlt wird.
+
+    Alles gelesen: der Vermieter ist der Eigentümer der Einheit an dem Tag, ab
+    dem die Rechnung gilt, nicht der heutige. Wer die Einheit inzwischen
+    verkauft hat, hat sie damals vermietet, und das Schreiben spricht über
+    damals.
+#}
+{% extends 'billing/invoice/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['billing.invoice.landlord'|trans, body.landlordName ?: '—'],
+            ['billing.invoice.landlord_address'|trans, body.landlordAddress ?: '—'],
+            ['billing.invoice.tax_number'|trans, body.landlordTaxNumber ?: '—'],
+            ['billing.invoice.tenant'|trans, body.tenantName ?: '—'],
+            ['billing.invoice.tenant_address'|trans, body.tenantAddress ?: '—'],
+            ['billing.invoice.let'|trans, body.letLabel ?: '—'],
+            ['billing.invoice.payee'|trans, body.payeeName ?: '—'],
+            ['billing.invoice.iban'|trans, body.payeeIban ?: '—']
+        ],
+        empty: ''
+    } only %}
+
+    {% if missing is not empty %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'billing.invoice.missing.heading'|trans }}</p>
+            <ul>
+                {% for gap in missing %}
+                    <li>{{ gap|trans }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+{% endblock %}

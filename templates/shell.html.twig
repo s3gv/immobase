@@ -1,0 +1,41 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'base.html.twig' %}
+
+{#
+    Zwei Gestalten, eine Hülle.
+
+    Der Verwalterbereich ist eine Anwendung und bekommt die Seitenleiste. Das
+    Portal sind vier Seiten und bekommt keine — wer hier eine Leiste mit neun
+    Punkten baut, hat den Adressaten nicht verstanden.
+
+    Die Entscheidung fällt hier und nicht in jeder Vorlage: so sieht jede
+    Seite, die das Portal zeigt, von selbst richtig aus — auch die, die sie
+    sich aus dem Verwalterbereich ausleiht.
+#}
+{% block body %}
+    {% set in_portal = app.user is not null and app.user.isPortalAccount %}
+
+    <div class="ib-shell{{ in_portal ? ' ib-shell--portal' : '' }}">
+        {% if not in_portal %}
+            {% include 'components/sidebar.html.twig' %}
+        {% endif %}
+
+        <div class="ib-shell__main">
+            {% include in_portal ? 'components/portal_topbar.html.twig' : 'components/topbar.html.twig' %}
+
+            {% if trail|default([]) is not empty %}
+                {% include 'components/breadcrumb.html.twig' with { trail: trail } %}
+            {% endif %}
+
+            <main class="ib-content">
+                {% include 'components/flashes.html.twig' %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+
+        {% include 'components/open_source_modal.html.twig' %}
+        {% include 'components/notice_modal.html.twig' %}
+    </div>
+{% endblock %}

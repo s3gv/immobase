@@ -1,0 +1,99 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Mengen je Einheit für ein Wirtschaftsjahr.
+
+    Erwartet: item, year, units, recorded (Kennung der Einheit → Wert)
+    Optional: editable
+
+    Zwei Erfassungsarten, weil die Dienstleister unterschiedlich liefern:
+    beim Gesamtbetrag steht der Betrag am Jahr und hier nur die Menge; bei
+    „fertig verteilt" kommen Menge und Betrag je Einheit fertig, und der
+    Gesamtbetrag ist die Summe der Teile.
+
+    Eine erfasste Menge wird berichtigt, nicht geleert: „kein Verbrauch" ist
+    die Null. Sonst ließe sich ein Jahr Feld für Feld leerräumen und danach
+    ganz entfernen — die Sperre am Jahreswert wäre einen Umweg weit umgehbar.
+
+    Eine Menge ohne Einheit ist keine Menge — hinter jedem Feld steht, worin
+    gemessen wird. Fehlt die Angabe noch, steht der Hinweis statt der Zeilen:
+    Zahlen zu erfassen, von denen niemand weiß, was sie messen, ist
+    schlimmer als sie noch nicht zu haben.
+#}
+{% set symbol = item.measure ? item.measure.symbolKey|trans : null %}
+
+<div class="ib-metering">
+    {% if item.measure is null %}
+        <p class="ib-field__hint">{{ 'finance.item.measure_missing'|trans }}</p>
+    {% elseif units is empty %}
+        <p class="ib-field__hint">{{ 'finance.year.no_units'|trans }}</p>
+    {% elseif editable|default(false) %}
+        <form method="post"
+              action="{{ path('app_finance_year_metering', { number: item.number, id: year.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('finance_year_' ~ item.number) }}">
+
+            <div class="ib-metering__head">
+                <span>{{ 'finance.key.unit'|trans }}</span>
+                <span>{{ 'finance.year.field.consumption'|trans }}</span>
+                {% if year.mode.isDistributed %}
+                    <span>{{ 'finance.year.field.unit_amount'|trans }}</span>
+                {% endif %}
+            </div>
+
+            {% for unit in units %}
+                {% set value = recorded[unit.id]|default(null) %}
+                <div class="ib-metering__row">
+                    <span class="ib-metering__unit">{{ unit.label }}</span>
+
+                    <span class="ib-metering__quantity">
+                        {% include 'components/field.html.twig' with {
+                            id: 'consumption-' ~ year.id ~ '-' ~ unit.id,
+                            name: 'consumption[' ~ unit.id ~ ']',
+                            label: unit.label ~ ' · ' ~ 'finance.year.field.consumption'|trans,
+                            value: value ? value.consumption|decimal(false) : '', quiet: true
+                        } only %}
+                        <span class="ib-metering__symbol">{{ symbol }}</span>
+                    </span>
+
+                    {% if year.mode.isDistributed %}
+                        {% include 'components/field.html.twig' with {
+                            id: 'amount-' ~ year.id ~ '-' ~ unit.id,
+                            name: 'amount[' ~ unit.id ~ ']',
+                            label: unit.label ~ ' · ' ~ 'finance.year.field.unit_amount'|trans,
+                            value: value and value.amount ? value.amount|money_number : '', quiet: true
+                        } only %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            {% if recorded is not empty %}
+                <p class="ib-field__hint">{{ 'finance.year.quantities_stay'|trans }}</p>
+            {% endif %}
+
+            <div class="ib-metering__actions">
+                <button class="ib-button ib-button--quiet" type="submit">
+                    {{ 'finance.year.save_quantities'|trans }}
+                </button>
+            </div>
+        </form>
+    {% else %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'finance.key.unit'|trans,
+                'finance.year.field.consumption'|trans,
+                'finance.year.field.unit_amount'|trans
+            ],
+            rows: units|map(unit => [
+                unit.label,
+                recorded[unit.id]|default(null)
+                    ? recorded[unit.id].consumption|decimal(false) ~ ' ' ~ symbol
+                    : '—',
+                recorded[unit.id]|default(null) and recorded[unit.id].amount
+                    ? recorded[unit.id].amount|money
+                    : '—'
+            ]),
+            empty: ''
+        } only %}
+    {% endif %}
+</div>

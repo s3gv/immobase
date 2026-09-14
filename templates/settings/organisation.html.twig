@@ -1,0 +1,133 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wer hier schreibt.
+
+    Vier Gruppen in der Reihenfolge, in der sie auf einem Briefkopf stehen:
+    Firmierung, Anschrift, Kontakt, Bankverbindung — und darunter, was das
+    Impressum verlangt.
+
+    Alles freiwillig. Eine frische Installation hat nichts davon, und das ist
+    kein Fehlerfall: nur ein Briefkopf, der noch nichts sagt.
+
+    Nach einem Fehler steht das Abgeschickte im Formular und nicht der
+    gespeicherte Stand — wer sich vertippt hat, will die Stelle verbessern.
+#}
+{% extends 'settings/_page.html.twig' %}
+
+{% block section_body %}
+    <form method="post" action="{{ path('app_settings_organisation') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('settings') }}">
+
+        {# Ohne das Recht zu ändern ist das Formular zum Lesen da: ein Feld,
+           das eine Eingabe annimmt, die nirgends hingeht, ist dieselbe
+           Einladung zum Irrtum wie ein Knopf, der in eine Absage führt. #}
+        <fieldset class="ib-fieldset"{{ is_granted('settings.edit') ? '' : ' disabled' }}>
+
+            {% include 'components/field.html.twig' with {
+                id: 'name', name: 'name', label: 'settings.organisation.name'|trans,
+                value: values.name,
+                error: errors.name is defined ? errors.name|trans : null
+            } only %}
+
+            <h3 class="ib-flow__title">{{ 'settings.organisation.address'|trans }}</h3>
+
+            {% include 'components/field.html.twig' with {
+                id: 'street', name: 'street', label: 'settings.organisation.street'|trans,
+                value: values.street,
+                error: errors.street is defined ? errors.street|trans : null
+            } only %}
+
+            <div class="ib-entry__pair">
+            {% include 'components/field.html.twig' with {
+                id: 'postalCode', name: 'postalCode', label: 'settings.organisation.postal_code'|trans,
+                value: values.postalCode,
+                error: errors.postalCode is defined ? errors.postalCode|trans : null
+            } only %}
+            {% include 'components/field.html.twig' with {
+                id: 'city', name: 'city', label: 'settings.organisation.city'|trans,
+                value: values.city,
+                error: errors.city is defined ? errors.city|trans : null
+            } only %}
+            </div>
+
+            <h3 class="ib-flow__title">{{ 'settings.organisation.contact'|trans }}</h3>
+
+            <div class="ib-entry__pair">
+            {% include 'components/field.html.twig' with {
+                id: 'phone', name: 'phone', label: 'settings.organisation.phone'|trans,
+                value: values.phone,
+                error: errors.phone is defined ? errors.phone|trans : null
+            } only %}
+            {% include 'components/field.html.twig' with {
+                id: 'email', name: 'email', label: 'settings.organisation.email'|trans,
+                value: values.email,
+                error: errors.email is defined ? errors.email|trans : null
+            } only %}
+            </div>
+
+            {% include 'components/field.html.twig' with {
+                id: 'website', name: 'website', label: 'settings.organisation.website'|trans,
+                value: values.website,
+                error: errors.website is defined ? errors.website|trans : null
+            } only %}
+
+            <h3 class="ib-flow__title">{{ 'settings.organisation.bank'|trans }}</h3>
+
+            {% include 'components/field.html.twig' with {
+                id: 'iban', name: 'iban', label: 'settings.organisation.iban'|trans,
+                value: values.iban,
+                error: errors.iban is defined ? errors.iban|trans : null
+            } only %}
+
+            <div class="ib-entry__pair">
+            {% include 'components/field.html.twig' with {
+                id: 'bic', name: 'bic', label: 'settings.organisation.bic'|trans,
+                value: values.bic,
+                hint: 'settings.organisation.bic_hint'|trans,
+                error: errors.bic is defined ? errors.bic|trans : null
+            } only %}
+            {% include 'components/field.html.twig' with {
+                id: 'accountHolder', name: 'accountHolder', label: 'settings.organisation.account_holder'|trans,
+                value: values.accountHolder,
+                error: errors.accountHolder is defined ? errors.accountHolder|trans : null
+            } only %}
+            </div>
+
+            <h3 class="ib-flow__title">{{ 'settings.organisation.imprint'|trans }}</h3>
+            <p class="ib-field__hint">{{ 'settings.organisation.imprint_hint'|trans }}</p>
+
+            {% include 'components/field.html.twig' with {
+                id: 'management', name: 'management', label: 'settings.organisation.management'|trans,
+                value: values.management,
+                error: errors.management is defined ? errors.management|trans : null
+            } only %}
+
+            <div class="ib-entry__pair">
+            {% include 'components/field.html.twig' with {
+                id: 'registerCourt', name: 'registerCourt', label: 'settings.organisation.register_court'|trans,
+                value: values.registerCourt,
+                error: errors.registerCourt is defined ? errors.registerCourt|trans : null
+            } only %}
+            {% include 'components/field.html.twig' with {
+                id: 'registerNumber', name: 'registerNumber', label: 'settings.organisation.register_number'|trans,
+                value: values.registerNumber,
+                error: errors.registerNumber is defined ? errors.registerNumber|trans : null
+            } only %}
+            </div>
+
+            {% include 'components/field.html.twig' with {
+                id: 'vatId', name: 'vatId', label: 'settings.organisation.vat_id'|trans,
+                value: values.vatId,
+                error: errors.vatId is defined ? errors.vatId|trans : null
+            } only %}
+
+        </fieldset>
+
+        {% if is_granted('settings.edit') %}
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'settings.save'|trans }}</button>
+            </div>
+        {% endif %}
+    </form>
+{% endblock %}

@@ -1,0 +1,16 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein leerer Zustand.
+
+    Erwartet: message
+    Optional: action_label und action_url (nur zusammen sinnvoll)
+
+    Sagt, was fehlt und was zu tun ist — nicht bloß "keine Daten".
+#}
+<div class="ib-empty">
+    <p>{{ message }}</p>
+    {% if action_label is defined and action_url is defined %}
+        <a class="ib-button" href="{{ action_url }}">{{ action_label }}</a>
+    {% endif %}
+</div>

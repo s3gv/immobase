@@ -1,0 +1,59 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was mit der Bank vereinbart ist.
+
+    Rate **oder** Laufzeit — beides einzutragen hieße, zwei Angaben zu haben,
+    die sich widersprechen können. Steht eine Rate da, gilt sie, und die
+    Laufzeit rechnet sich daraus.
+#}
+{% extends 'finance/loan/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+    {# Solange nichts vereinbart ist, stehen leere Felder da: eine Null ist
+       eine Angabe, und diese hat niemand gemacht. #}
+    {% set open = loan.terms.areOpen %}
+
+    {% if errors.terms is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.terms|trans }}</p>
+    {% endif %}
+
+    <div class="ib-entry__pair">
+        {% include 'components/field.html.twig' with {
+            id: 'amount', name: 'amount', label: 'finance.loan.field.amount'|trans,
+            hint: 'finance.loan.field.amount_hint'|trans,
+            value: posted ? submitted.amount|default('') : (open ? '' : loan.terms.amount|money_number)
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'rate', name: 'rate', label: 'finance.loan.field.rate'|trans,
+            hint: 'finance.loan.field.rate_hint'|trans,
+            value: posted ? submitted.rate|default('') : (open ? '' : rate|decimal(false))
+        } only %}
+    </div>
+
+    {% include 'components/field.html.twig' with {
+        id: 'startsOn', name: 'startsOn', type: 'date',
+        label: 'finance.loan.field.starts_on'|trans,
+        hint: 'finance.loan.field.starts_on_hint'|trans,
+        value: posted ? submitted.startsOn|default('') : loan.terms.startsOn|date('Y-m-d')
+    } only %}
+
+    <div class="ib-entry__pair">
+        {% include 'components/field.html.twig' with {
+            id: 'payment', name: 'payment', label: 'finance.loan.field.payment'|trans,
+            hint: 'finance.loan.field.payment_hint'|trans,
+            value: posted
+                ? submitted.payment|default('')
+                : (loan.terms.payment and not open ? loan.terms.payment|money_number : '')
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'months', name: 'months', type: 'number',
+            label: 'finance.loan.field.months'|trans,
+            hint: 'finance.loan.field.months_hint'|trans,
+            value: posted ? submitted.months|default('') : (open ? '' : loan.terms.months ?: '')
+        } only %}
+    </div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'invitation/_layout.html.twig' %}
+
+{% block step_body %}
+    {% include 'components/field.html.twig' with {
+        id: 'givenName', name: 'givenName',
+        label: 'user.field.given_name'|trans,
+        value: user.name.givenName,
+        required: true, autofocus: true, autocomplete: 'given-name'
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'familyName', name: 'familyName',
+        label: 'user.field.family_name'|trans,
+        value: user.name.familyName,
+        required: true, autocomplete: 'family-name'
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'jobTitle', name: 'jobTitle',
+        label: 'user.field.job_title'|trans,
+        hint: 'user.field.job_title_hint'|trans,
+        value: user.name.jobTitle,
+        placeholder: 'user.field.job_title_example'|trans
+    } only %}
+{% endblock %}

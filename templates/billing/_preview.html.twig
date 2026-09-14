@@ -1,0 +1,156 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Abrechnung, wie sie beim Empfänger ankommt.
+
+    Erst die Kosten mit ihrem Rechenweg, dann die Vorauszahlungen, dann das
+    Ergebnis. Die Rechtsprechung verlangt, dass ein durchschnittlicher Mieter
+    seinen Anteil nachrechnen kann — deshalb steht der Weg da und nicht nur
+    die Zahl.
+
+    Erwartet nur Primitive: die Vorschau rechnet mit einem Vorschlag, die
+    Ansicht mit einem eingefrorenen Dokument. Beide sehen gleich aus, sind
+    aber nicht dasselbe — hier laufen sie zusammen.
+
+    who, unit, kind, from, to, lines, advances, costs, balance
+    Optional: taxation, tax, gross, advancesTax — mit Umsatzsteuer vermietet
+              stehen die Anteile netto, darunter Steuer und Bruttosumme, bei
+              den Vorauszahlungen die Steuer darin (§ 14 Abs. 5 UStG)
+              settled — was bei einer Korrektur schon abgerechnet war
+              reserve — die Entwicklung der Erhaltungsrücklage; sie steht auf
+                        der Hausgeldabrechnung und nicht beim Mieter
+#}
+{% set taxed = taxation|default(null) and taxation.isCharged %}
+<div class="ib-preview">
+    <p class="ib-preview__who">
+        <strong>{{ who }}</strong><br>
+        {{ unit }} — {{ kind }}<br>
+        {{ from|date_local }} – {{ to|date_local }}
+    </p>
+
+    {% if taxed %}
+        <p class="ib-field__hint">{{ 'billing.line.net_hint'|trans }}</p>
+    {% endif %}
+
+    <div class="ib-table-scroll">
+        <table class="ib-table ib-table--compact">
+            <thead>
+                <tr>
+                    <th>{{ 'billing.line.kind'|trans }}</th>
+                    <th class="ib-table__number">{{ 'billing.line.total'|trans }}</th>
+                    <th>{{ 'billing.line.key'|trans }}</th>
+                    <th class="ib-table__number">{{ 'billing.line.share'|trans }}</th>
+                    <th class="ib-table__number">{{ 'billing.line.amount'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                    <tr>
+                        <td>{{ line.costKind }}</td>
+                        <td class="ib-table__number">{{ (taxed ? line.totalNet : line.total)|money }}</td>
+                        <td>
+                            {{ line.distribution.key }}<br>
+                            <span class="ib-muted">{{ line.distribution.explanation|trans }}</span>
+                        </td>
+                        <td class="ib-table__number">
+                            {{ line.distribution.shareOf|decimal }} / {{ line.distribution.shareTotal|decimal }}
+                            {%- if line.distribution.measure %} {{ ('finance.measure_symbol.' ~ line.distribution.measure)|trans }}{% endif -%}
+                            {% if line.distribution.isSplitByDay %}
+                                <br><span class="ib-muted">
+                                    {{ 'billing.line.days'|trans({
+                                        '%of%': line.distribution.daysOf,
+                                        '%total%': line.distribution.daysTotal
+                                    }) }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="ib-table__number">{{ (taxed ? line.net : line.amount)|money }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="4">{{ (taxed ? 'billing.line.costs_net' : 'billing.line.costs')|trans }}</th>
+                    <th class="ib-table__number">{{ costs|money }}</th>
+                </tr>
+                {% if taxed %}
+                    <tr>
+                        <td colspan="4">{{ 'billing.line.tax'|trans({'%rate%': taxation.rateBps|percent}) }}</td>
+                        <td class="ib-table__number">{{ tax|money }}</td>
+                    </tr>
+                    <tr>
+                        <th colspan="4">{{ 'billing.line.costs_gross'|trans }}</th>
+                        <th class="ib-table__number">{{ gross|money }}</th>
+                    </tr>
+                {% endif %}
+            </tfoot>
+        </table>
+    </div>
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.advance.heading'|trans }}</h3>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: [
+            'billing.advance.due_on'|trans,
+            'billing.advance.kind'|trans,
+            'billing.advance.expected'|trans,
+            'billing.advance.received'|trans
+        ],
+        rows: advances|map(a => [
+            a.dueOn|date_local,
+            a.kindKey|trans,
+            a.expected|money,
+            a.received|money
+        ]),
+        empty: 'billing.advance.none_paid'|trans
+    } only %}
+
+    {% if taxed %}
+        <p class="ib-field__hint">
+            {{ 'billing.advance.contained_tax'|trans({'%rate%': taxation.rateBps|percent}) }}: {{ advancesTax|money }}
+        </p>
+    {% endif %}
+
+    {% if settled|default(null) %}
+        {# Eine Korrektur weist nur die Differenz aus: der Rest ist schon
+           gefordert oder gutgeschrieben worden. #}
+        <p class="ib-preview__settled">
+            {{ 'billing.result.settled'|trans }}: {{ settled|money }}
+        </p>
+    {% endif %}
+
+    {#
+        Die Rücklage gehört der Gemeinschaft, nicht dem Mieter — der Auszug
+        steht deshalb nur auf der Hausgeldabrechnung. Er beantwortet die
+        Frage, die die Ergebnisrechnung offenlässt: wo das Geld ist, das nicht
+        ausgegeben wurde. Eine Sonderumlage, die der Rücklage zufloss, steht
+        hier und nicht oben bei den Vorauszahlungen.
+    #}
+    {% if reserve|default(null) and not reserve.stoodStill %}
+        <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.reserve.heading'|trans }}</h3>
+
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: ['billing.reserve.figure'|trans, 'billing.reserve.amount'|trans],
+            rows: [
+                ['billing.reserve.opening'|trans, reserve.opening|money],
+                ['billing.reserve.contributions'|trans, reserve.contributions|money],
+                ['billing.reserve.levies'|trans, reserve.specialLevies|money],
+                ['billing.reserve.interest'|trans, reserve.interest|money],
+                ['billing.reserve.withdrawals'|trans, reserve.withdrawals|money],
+                ['billing.reserve.closing'|trans, reserve.closing|money]
+            ],
+            empty: ''
+        } only %}
+    {% endif %}
+
+    <p class="ib-preview__result {{ balance.isNegative ? 'is-credit' : 'is-due' }}">
+        {{ (balance.isNegative ? 'billing.result.credit' : 'billing.result.due')|trans }}:
+        <strong>{{ balance|money }}</strong>
+    </p>
+
+    {% if taxed and not balance.isNegative and not balance.isZero %}
+        <p class="ib-field__hint">{{ 'billing.result.payable'|trans }}</p>
+    {% endif %}
+</div>

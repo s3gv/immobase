@@ -1,0 +1,118 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was auf welche Einheit entfällt.
+
+    Eine Zeile je Einheit, die trägt — wer nach § 21 Abs. 3 WEG nicht zahlt,
+    steht nicht darin und bekommt auch kein Schreiben.
+
+    **Zwei Tabellen und nicht eine.** Die erste sagt, was die Einheit trägt und
+    was laufend auf sie entfällt; die zweite, wer wann wie viel überweist. Das
+    ist nicht dasselbe: die Raten einer Sonderumlage und eine monatliche
+    Darlehensrate nebeneinander in einer Zeile liest man als dasselbe, und dann
+    geht die Rechnung scheinbar nicht auf.
+
+    **Die Sonderumlage wächst nach unten, nicht nach rechts.** Je Fälligkeit
+    eine Spalte wäre bei drei Raten hübsch und bei zwölf unlesbar. Darum:
+    die Einheit nennt ihre Rate (jede gleich groß, die letzte trägt den Rest),
+    und die Termine stehen untereinander mit dem, was an dem Tag insgesamt
+    eingehen muss. Zwei kurze Tabellen statt einer breiten — bei zwei Raten
+    dieselbe Gestalt wie bei vierundzwanzig.
+
+    Die Spalte „letzte Rate" steht nur da, wenn es etwas zu sagen gibt: geht
+    der Betrag glatt auf, stünde sonst zweimal dieselbe Zahl nebeneinander und
+    der Leser suchte den Unterschied.
+
+    Erwartet: proposal (ProposedBudget)
+#}
+{% set hasLevy = proposal.shares|filter(s => not s.levy.isZero)|length > 0 %}
+{% set hasSaving = proposal.shares|filter(s => not s.saving.isZero)|length > 0 %}
+{% set hasLoan = proposal.shares|filter(s => not s.loanPayment.isZero)|length > 0 %}
+{% set parts = proposal.levyDates|length %}
+{% set hasTail = proposal.shares|filter(s => not s.levy.isZero and not s.levyParts|last.equals(s.levyParts|first))|length > 0 %}
+
+<div class="ib-note">
+    <p>{{ proposal.bearing.reasonKey|trans }}</p>
+</div>
+
+{% include 'components/table.html.twig' with {
+    compact: true,
+    headers: [
+        'billing.budget.share.unit'|trans,
+        'billing.budget.share.amount'|trans
+    ]
+        |merge(hasLevy ? ['billing.budget.share.levy'|trans] : [])
+        |merge(hasSaving ? ['billing.budget.share.saving'|trans] : [])
+        |merge(hasLoan ? ['billing.budget.share.rate'|trans] : []),
+    rows: proposal.shares|map(s => [
+        s.unitNumber ~ ' · ' ~ s.unitLabel,
+        s.share|money
+    ]
+        |merge(hasLevy ? [s.levy|money] : [])
+        |merge(hasSaving ? [s.saving|money] : [])
+        |merge(hasLoan ? [s.loanPayment|money] : [])),
+    empty: 'billing.budget.share.none'|trans
+} only %}
+
+{% if hasSaving and proposal.savingPerYear is not empty %}
+    <p class="ib-field__hint">
+        {{ 'billing.budget.share.saving_years'|trans({
+            '%years%': proposal.savingPerYear|keys|join(', ')
+        }) }}
+    </p>
+{% endif %}
+
+{% if hasLoan and proposal.loan %}
+    <p class="ib-field__hint">
+        {{ 'billing.budget.share.loan_term'|trans({'%months%': proposal.loan.months}) }}
+    </p>
+{% endif %}
+
+{#
+    Wer wann wie viel überweist — die Frage, die ein Eigentümer als Erstes
+    stellt. Je Einheit die Rate, darunter die Termine: beide Tabellen bleiben
+    schmal, egal wie viele Raten es sind.
+#}
+{% if hasLevy and parts > 0 %}
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.budget.share.levy_heading'|trans }}</h3>
+
+    {% if parts > 1 %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'billing.budget.share.unit'|trans,
+                'billing.budget.share.instalment'|trans
+            ]
+                |merge(hasTail ? ['billing.budget.share.last_instalment'|trans] : [])
+                |merge(['billing.budget.share.levy'|trans]),
+            rows: proposal.shares|filter(s => not s.levy.isZero)|map(s => [
+                s.unitNumber ~ ' · ' ~ s.unitLabel,
+                s.levyParts|first|money
+            ]
+                |merge(hasTail ? [s.levyParts|last|money] : [])
+                |merge([s.levy|money])),
+            empty: ''
+        } only %}
+
+        <p class="ib-field__hint">
+            {{ (hasTail ? 'billing.budget.share.instalment_hint' : 'billing.budget.share.instalment_hint_even')|trans({
+                '%count%': parts
+            }) }}
+        </p>
+    {% endif %}
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: [
+            'billing.budget.share.due_number'|trans,
+            'billing.budget.share.due_day'|trans,
+            'billing.budget.share.due_amount'|trans
+        ],
+        rows: proposal.levySchedule|map((due, at) => [
+            (at + 1) ~ '.',
+            due.day|date_local,
+            due.amount|money
+        ]),
+        empty: ''
+    } only %}
+{% endif %}

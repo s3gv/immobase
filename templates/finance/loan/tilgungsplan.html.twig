@@ -1,0 +1,42 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was aus den Konditionen folgt.
+
+    Oben die vier Zahlen, nach denen jemand fragt, darunter der Plan Jahr für
+    Jahr. Monat für Monat wären es bei zwanzig Jahren 240 Zeilen, und die
+    Frage an einen Tilgungsplan ist ohnehin eine jährliche: was kostet mich
+    das Darlehen dieses Jahr, und wann ist es weg.
+
+    Nichts davon ist gespeichert — es entsteht bei jedem Aufruf neu. Genau
+    darum stimmt es nach einer Sondertilgung sofort.
+#}
+{% extends 'finance/loan/_detail.html.twig' %}
+
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['finance.loan.ends_on'|trans, endsOn|date_local],
+            ['finance.loan.total_interest'|trans, plan.totalInterest|money],
+            ['finance.loan.total'|trans, plan.total|money],
+            ['finance.loan.last_payment'|trans, plan.last.payment|money]
+        ],
+        empty: ''
+    } only %}
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'finance.loan.by_year'|trans }}</h3>
+    <p class="ib-flow__explanation">{{ 'finance.loan.by_year_hint'|trans }}</p>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: [
+            'finance.loan.field.year'|trans,
+            'finance.loan.field.interest'|trans,
+            'finance.loan.field.principal'|trans,
+            'finance.loan.field.debt_end'|trans
+        ],
+        rows: years|map(y => [y.year, y.interest|money, y.principal|money, y.debt|money]),
+        empty: ''
+    } only %}
+{% endblock %}

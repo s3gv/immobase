@@ -1,0 +1,62 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Logo der Hausverwaltung.
+
+    Die Vorgabe steht da, bevor jemand hochlädt: PNG, genau 600 × 200,
+    höchstens 1 MB. Genau diese Maße und nicht „höchstens" — dann steht es im
+    Briefkopf immer gleich hoch, ohne dass wir skalieren und dabei unscharf
+    werden.
+#}
+{% extends 'settings/_page.html.twig' %}
+
+{% block section_body %}
+    {% if logo %}
+        <figure class="ib-logo">
+            {# Der Zeitstempel hängt an der Adresse, damit nach dem Tauschen
+               nicht das alte Bild aus dem Cache kommt. #}
+            <img class="ib-logo__image" src="{{ path('app_settings_logo') }}?v={{ logo.updatedAt|date('U') }}"
+                 width="600" height="200" alt="{{ 'settings.logo.alt'|trans }}">
+            <figcaption class="ib-field__hint">
+                {{ 'settings.logo.since'|trans({'%date%': logo.updatedAt|date_local}) }}
+            </figcaption>
+        </figure>
+    {% else %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'settings.logo.none'|trans
+        } only %}
+    {% endif %}
+
+    {% if is_granted('settings.edit') %}
+        <form method="post" action="{{ path('app_settings_logo_upload') }}" enctype="multipart/form-data">
+            <input type="hidden" name="_token" value="{{ csrf_token('settings') }}">
+
+            <div class="ib-field">
+                <label class="ib-field__label" for="logo">{{ 'settings.logo.file'|trans }}</label>
+                <input class="ib-field__input" type="file" id="logo" name="logo" accept="image/png" required>
+                <p class="ib-field__hint" id="logo-hint">{{ 'settings.logo.rules'|trans }}</p>
+            </div>
+
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'settings.logo.upload'|trans }}</button>
+            </div>
+        </form>
+
+        {% if logo %}
+            <div class="ib-index__actions">
+                <button class="ib-button ib-button--quiet" type="button" data-modal-open="logo-remove">
+                    {{ 'settings.logo.remove'|trans }}
+                </button>
+            </div>
+
+            {% include 'components/confirm.html.twig' with {
+                id: 'logo-remove',
+                title: 'settings.logo.remove_title'|trans,
+                body: 'settings.logo.remove_body'|trans,
+                confirm_label: 'settings.logo.remove'|trans,
+                url: path('app_settings_logo_remove'),
+                token: 'settings'
+            } only %}
+        {% endif %}
+    {% endif %}
+{% endblock %}

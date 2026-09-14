@@ -1,0 +1,113 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Alle Dauermietrechnungen, die jüngste Geltung zuerst.
+
+    Kein Jahresfilter: eine Dauermietrechnung gehört keinem Wirtschaftsjahr
+    an, sie gilt, bis sich etwas ändert. Nach einem Jahr zu fragen hieße,
+    nach etwas zu fragen, das es hier nicht gibt.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'billing.invoice.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'billing.invoice.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'billing.invoice.subheading'|trans }}</p>
+
+    {#
+        Eine Berichtigung und das Schreiben, das sie berichtigt, tragen
+        denselben Zeitraum. Ohne die Marke an der Nummer stünden beide gleich
+        in der Liste, und niemand wüsste, welches gilt.
+    #}
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            'billing.invoice.field.number'|trans,
+            'billing.invoice.field.tenancy'|trans,
+            'billing.invoice.tenant'|trans,
+            'billing.invoice.period'|trans,
+            'billing.invoice.gross'|trans,
+            'billing.invoice.status'|trans
+        ],
+        rows: invoices|map(i => {
+            cells: [
+                i.reference ~ (i.edition.isCorrection ? ' · ' ~ 'billing.invoice.correction'|trans : ''),
+                i.tenancyNumber,
+                i.contents.asProposed(i.validity).tenantName ?: '—',
+                i.validity.isOpenEnded
+                    ? 'billing.invoice.period_open'|trans({'%from%': i.validity.from|date_local})
+                    : 'billing.invoice.period_closed'|trans({
+                        '%from%': i.validity.from|date_local,
+                        '%until%': i.validity.until|date_local
+                    }),
+                i.release.isDraft ? '—' : i.contents.asProposed(i.validity).gross|money,
+                (i.release.isDraft
+                    ? 'billing.status.draft'
+                    : (corrected[i.id] is defined
+                        ? 'billing.invoice.status_corrected'
+                        : 'billing.invoice.status_issued'))|trans
+            ],
+            actions: (i.release.isDraft
+                ? (is_granted('billing.edit')
+                    ? [
+                        { action: 'edit', url: path('app_billing_invoice_edit', { id: i.id }) },
+                        { action: 'delete', modal: 'billing-invoice-delete-' ~ i.id }
+                      ]
+                    : [])
+                : [
+                    { action: 'open', url: path('app_billing_invoice_show', { id: i.id }) },
+                    { action: 'download', url: path('app_billing_invoice_pdf', { id: i.id }) }
+                  ])
+        }),
+        page: page,
+        action: path('app_billing_invoice'),
+        url: url,
+        empty: (filter.isEmpty ? 'billing.invoice.empty' : 'billing.invoice.empty_filtered')|trans,
+        compact: true,
+        filter: filter,
+        properties: properties
+    } only %}
+        {% block actions %}
+            {% if is_granted('billing.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_billing_invoice_new'), labelled: true
+                } only %}
+            {% endif %}
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'billing.invoice.filter.search'|trans,
+                value: filter.search, placeholder: 'billing.invoice.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'objekt', name: 'objekt', label: 'billing.budget.property'|trans,
+                choices: properties|map(p => { value: p.id, label: p.oneLine }),
+                value: filter.propertyId, blank: 'billing.statement.filter.all_properties'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'status', name: 'status', label: 'billing.invoice.status'|trans,
+                choices: [
+                    { value: 'draft', label: 'billing.status.draft'|trans },
+                    { value: 'released', label: 'billing.invoice.status_issued'|trans }
+                ],
+                value: filter.status ? filter.status.value : '',
+                blank: 'billing.statement.filter.all_states'|trans
+            } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% for i in invoices %}
+        {% if i.release.isDraft and is_granted('billing.edit') %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'billing-invoice-delete-' ~ i.id,
+                title: 'billing.invoice.delete.title'|trans,
+                body: 'billing.invoice.delete.body'|trans,
+                url: path('app_billing_invoice_delete', { id: i.id }),
+                token: 'billing_invoice'
+            } only %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}

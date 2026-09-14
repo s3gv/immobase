@@ -1,0 +1,21 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wie ein Vorgang gerade dasteht — in einem Satz.
+
+    Nicht der Zustand der Forderung, sondern der der Arbeit: ist etwas zu
+    tun, und was. Danach fragt, wer die Liste öffnet.
+
+    Erwartet: state — App\Module\Dunning\Application\ClaimState
+#}
+{%- if not state.claim.arrears.isOpen -%}
+    {{ 'dunning.state_value.settled'|trans }}
+{%- elseif state.needsTheCourt -%}
+    {{ 'dunning.court'|trans }}
+{%- elseif state.isDue -%}
+    {{ 'dunning.state_value.due'|trans }}
+{%- elseif state.daysLeft is not null -%}
+    {{ 'dunning.days_left'|trans({'%count%': max(state.daysLeft, 0)}) }}
+{%- else -%}
+    {{ 'dunning.days_overdue'|trans({'%count%': state.daysOverdue}) }}
+{%- endif -%}

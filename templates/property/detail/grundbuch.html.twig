@@ -1,0 +1,18 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_detail.html.twig' %}
+{% set edit_step = 'grundbuch' %}
+
+{% block panel %}
+    {% set blank = 'property.none'|trans %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['property.registry.court'|trans, property.landRegister.court ?: blank],
+            ['property.registry.sheet'|trans, property.landRegister.sheet ?: blank],
+            ['property.registry.district'|trans, property.landRegister.district ?: blank],
+            ['property.registry.parcel'|trans, property.landRegister.parcel ?: blank]
+        ],
+        empty: ''
+    } only %}
+{% endblock %}

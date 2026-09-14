@@ -1,0 +1,47 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Von wann bis wann.
+
+    Die Felder sind <input type="date">: Kalender und Landesformat bringt der
+    Browser mit, geschickt wird ISO. Ein eigener Parser hätte dieselbe Arbeit
+    schlechter gemacht.
+#}
+{% extends 'tenancy/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+    {% set term = tenancy ? tenancy.term : null %}
+
+    {% if errors.term is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.term|trans }}</p>
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'startsOn', name: 'startsOn', type: 'date',
+        label: 'tenancy.field.starts_on'|trans,
+        value: posted ? submitted.startsOn|default('') : (term and term.startsOn ? term.startsOn|date('Y-m-d') : ''),
+        autofocus: true
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'endsOn', name: 'endsOn', type: 'date',
+        label: 'tenancy.field.ends_on'|trans,
+        hint: 'tenancy.field.ends_on_hint'|trans,
+        value: posted ? submitted.endsOn|default('') : (term and term.endsOn ? term.endsOn|date('Y-m-d') : '')
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'handedOverOn', name: 'handedOverOn', type: 'date',
+        label: 'tenancy.field.handed_over_on'|trans,
+        hint: 'tenancy.field.handed_over_on_hint'|trans,
+        value: posted ? submitted.handedOverOn|default('') : (term and term.handedOverOn ? term.handedOverOn|date('Y-m-d') : '')
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'noticePeriodMonths', name: 'noticePeriodMonths', type: 'number',
+        label: 'tenancy.field.notice_period'|trans,
+        hint: 'tenancy.field.notice_period_hint'|trans,
+        value: posted ? submitted.noticePeriodMonths|default('') : (term ? term.noticePeriodMonths : '')
+    } only %}
+{% endblock %}

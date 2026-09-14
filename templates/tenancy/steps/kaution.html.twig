@@ -1,0 +1,45 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Kaution.
+
+    Ohne Betrag gibt es keine: Art und Eingangsdatum allein würden eine
+    Kaution behaupten, die niemand beziffern kann — und die fällt beim Auszug
+    auf, wenn niemand mehr weiß, wie viel es war.
+#}
+{% extends 'tenancy/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+    {% set deposit = tenancy ? tenancy.deposit : null %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'depositAmount', name: 'depositAmount',
+        label: 'tenancy.field.deposit_amount'|trans,
+        hint: 'tenancy.field.deposit_amount_hint'|trans,
+        value: posted
+            ? submitted.depositAmount|default('')
+            : (deposit and deposit.isAgreed ? deposit.amount|money_number : ''),
+        error: errors.depositAmount is defined ? errors.depositAmount|trans : null,
+        autofocus: true
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'depositKind', name: 'depositKind', label: 'tenancy.field.deposit_kind'|trans,
+        choices: kinds|map(k => { value: k.value, label: k.labelKey|trans }),
+        value: posted
+            ? submitted.depositKind|default('')
+            : (deposit and deposit.kind ? deposit.kind.value : ''),
+        blank: 'tenancy.deposit.kind.none'|trans
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'depositReceivedOn', name: 'depositReceivedOn', type: 'date',
+        label: 'tenancy.field.deposit_received_on'|trans,
+        hint: 'tenancy.field.deposit_received_on_hint'|trans,
+        value: posted
+            ? submitted.depositReceivedOn|default('')
+            : (deposit and deposit.receivedOn ? deposit.receivedOn|date('Y-m-d') : ''),
+        error: errors.depositReceivedOn is defined ? errors.depositReceivedOn|trans : null
+    } only %}
+{% endblock %}

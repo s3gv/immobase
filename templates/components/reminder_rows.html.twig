@@ -1,0 +1,35 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein paar Erinnerungen als Zeilen, jede mit ihrem Papierkorb.
+
+    Erwartet: rows — Liste aus Reminder
+              past — ob sie schon fällig waren; dann steht die Zeile still
+
+    Zweimal eingebunden, einmal für das Kommende und einmal für das Gewesene:
+    zweimal geschrieben liefen die beiden Listen früher oder später
+    auseinander — etwa darin, ob der Papierkorb dabeisteht.
+#}
+<ul class="ib-group__list">
+    {% for reminder in rows %}
+        <li class="ib-row{{ past ? ' is-past' : '' }}">
+            <span class="ib-row__body">
+                <span class="ib-row__title">{{ reminder.subject }}</span>
+                <span class="ib-row__meta">
+                    {{ reminder.dueAt|datetime_local }}{% if reminder.note %} · {{ reminder.note }}{% endif %}
+                </span>
+            </span>
+            <span class="ib-row__trailing">
+                <form method="post" action="{{ path('app_reminder_remove', { id: reminder.id }) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('reminder') }}">
+                    <input type="hidden" name="from" value="{{ app.request.requestUri }}">
+                    <button class="ib-action ib-action--danger" type="submit"
+                            aria-label="{{ 'action.delete'|trans }}"
+                            data-tooltip="{{ 'action.delete'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                    </button>
+                </form>
+            </span>
+        </li>
+    {% endfor %}
+</ul>

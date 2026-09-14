@@ -1,0 +1,21 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_detail.html.twig' %}
+{% set edit_step = 'abrechnung' %}
+
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['property.accounting.begins'|trans, period.from|date_local],
+            ['property.accounting.ends'|trans, period.to|date_local]
+        ],
+        empty: ''
+    } only %}
+
+    <p class="ib-field__hint">
+        {{ (property.accounting.fiscalYear.isCalendarYear
+            ? 'property.accounting.is_calendar_year'
+            : 'property.accounting.is_off_calendar')|trans }}
+    </p>
+{% endblock %}

@@ -1,0 +1,51 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Kosten des Jahres, gefunden und angehakt.
+
+    Umlagefähigkeit und Verteilerschlüssel stehen dabei: daran entscheidet
+    sich, wer sie am Ende trägt.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+{#
+    Breiter als ein Formular: fünf Spalten passen nicht in die 40rem, in
+    denen sich ein Formular gut ausfüllen lässt.
+#}
+{% set wide = true %}
+
+{% block fields %}
+    {% if costs is empty %}
+        <p class="ib-empty">{{ 'billing.cost.none'|trans }}</p>
+    {% else %}
+        <div class="ib-table-scroll">
+            <table class="ib-table ib-table--compact">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>{{ 'billing.cost.kind'|trans }}</th>
+                        <th>{{ 'billing.cost.key'|trans }}</th>
+                        <th>{{ 'billing.cost.apportionable'|trans }}</th>
+                        <th class="ib-table__number">{{ 'billing.cost.total'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cost in costs %}
+                        <tr>
+                            <td>
+                                <label class="ib-choice">
+                                    <input type="checkbox" name="costs[]" value="{{ cost.costYearId }}"
+                                           {{ cost.costYearId in chosenCosts or chosenCosts is empty ? 'checked' : '' }}>
+                                    <span class="ib-visually-hidden">{{ 'billing.cost.include'|trans }}</span>
+                                </label>
+                            </td>
+                            <td>{{ cost.kindLabel }} <span class="ib-muted">#{{ cost.itemNumber }}</span></td>
+                            <td>{{ cost.keyLabel }}</td>
+                            <td>{{ (cost.apportionable ? 'billing.cost.yes' : 'billing.cost.no')|trans }}</td>
+                            <td class="ib-table__number">{{ cost.total|money }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

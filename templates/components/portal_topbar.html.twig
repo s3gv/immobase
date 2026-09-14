@@ -1,0 +1,45 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Kopfzeile des Portals.
+
+    Ohne Suche: es gibt vier Seiten, die sucht niemand. Und mit dem Namen der
+    Verwaltung statt einer Navigation — wer hier ankommt, soll zuerst sehen,
+    bei wem er ist.
+#}
+<header class="ib-topbar ib-topbar--portal">
+    <a class="ib-topbar__brand" href="{{ path('app_portal_home') }}">
+        {{ 'app.name'|trans }}
+    </a>
+
+    <div class="ib-topbar__actions">
+        {% set other_locale = app.request.locale == 'de' ? 'en' : 'de' %}
+        <a class="ib-icon-button" href="{{ path('app_locale', { locale: other_locale }) }}" hreflang="{{ other_locale }}">
+            {{ other_locale|upper }}
+        </a>
+
+        <button type="button" class="ib-icon-button" data-theme-toggle aria-pressed="false"
+                title="{{ 'shell.toggle_theme'|trans }}">
+            <span class="ib-visually-hidden">{{ 'shell.toggle_theme'|trans }}</span>
+            ◐
+        </button>
+
+        {% if app.user %}
+            <details class="ib-account">
+                <summary class="ib-avatar" title="{{ app.user.displayName }}">
+                    <span class="ib-visually-hidden">{{ 'shell.user_menu'|trans }}</span>
+                    {{ app.user.displayName|slice(0, 1)|upper }}
+                </summary>
+                <div class="ib-account__menu">
+                    <p class="ib-account__name">{{ app.user.displayName }}</p>
+                    <p class="ib-account__mail">{{ app.user.userIdentifier }}</p>
+                    <a class="ib-account__action" href="{{ path('app_portal_account') }}">
+                        {% include 'components/icon.html.twig' with { name: 'shield' } %}
+                        {{ 'portal.account.heading'|trans }}
+                    </a>
+                    {% include 'components/logout.html.twig' only %}
+                </div>
+            </details>
+        {% endif %}
+    </div>
+</header>

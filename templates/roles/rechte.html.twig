@@ -1,0 +1,70 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Rechtematrix: Zeilen sind die Permissions, Spalten die Rollen.
+
+    Die einzige Stelle, an der Rolle und Permission zusammenfinden. Ein
+    Speichern für alles — wer Häkchen über mehrere Rollen hinweg verschiebt,
+    will einen Stand ablegen und nicht sieben.
+#}
+{% embed 'components/sections.html.twig' with { wide: true } %}
+    {% block section_body %}
+        {% set may_edit = is_granted('roles.edit') %}
+
+        <form method="post" action="{{ path('app_role_permissions') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('role_permissions') }}">
+
+            {# Bei vielen Rollen wird die Tabelle breit; sie rollt waagerecht
+               in ihrem eigenen Kasten, wie jede andere auch. #}
+            <div class="ib-table-scroll">
+                <table class="ib-table ib-matrix">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ 'role.permissions'|trans }}</th>
+                            {% for role in roles %}
+                                <th scope="col">{{ role.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for area, permissions in areas|by_area_label %}
+                            <tr class="ib-matrix__group">
+                                <th scope="rowgroup" colspan="{{ roles|length + 1 }}">
+                                    {{ ('permission.area.' ~ area)|permission_text }}
+                                </th>
+                            </tr>
+                            {% for permission in permissions %}
+                                <tr>
+                                    <th scope="row">
+                                        {{ permission.labelKey|permission_text }}
+                                        <span class="ib-field__hint">{{ permission.explanationKey|permission_text }}</span>
+                                    </th>
+                                    {% for role in roles %}
+                                        <td class="ib-matrix__cell">
+                                            {# Der Administrator steht überall gesetzt und abgeschaltet
+                                               da — sichtbar, warum man dort nichts einstellen kann.
+                                               Ebenso ein Recht, das man selbst nicht hat: das vergibt
+                                               und entzieht man auch nicht. #}
+                                            <input type="checkbox"
+                                                   name="permissions[{{ role.id }}][]"
+                                                   value="{{ permission.key }}"
+                                                   aria-label="{{ permission.labelKey|permission_text }} — {{ role.name }}"
+                                                   {{ role.granted[permission.key] is defined ? 'checked' : '' }}
+                                                   {{ role.isSystem or not may_edit or not is_granted(permission.key) ? 'disabled' : '' }}>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if may_edit %}
+                <div class="ib-flow__actions">
+                    <button class="ib-button" type="submit">{{ 'role.save'|trans }}</button>
+                </div>
+            {% endif %}
+        </form>
+    {% endblock %}
+{% endembed %}

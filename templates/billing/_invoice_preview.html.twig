@@ -1,0 +1,83 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Schreiben, wie es hinausgeht.
+
+    Dieselbe Gestalt für den Entwurf und für die ausgestellte Rechnung: beim
+    Entwurf eben gerechnet, beim ausgestellten aus dem gelesen, was
+    eingefroren wurde. Die Vorschau zeigt damit genau das, was hinausgeht —
+    und nicht eine zweite Rechnung, die ihr ähnelt.
+
+    Erwartet: invoice, body
+#}
+<div class="ib-preview">
+    <p class="ib-preview__who"><strong>{{ 'billing.invoice.pdf.subject'|trans }}</strong></p>
+
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['billing.invoice.field.number'|trans, invoice.reference],
+            ['billing.invoice.issued_on'|trans, invoice.release.day ? invoice.release.day|date_local : '—'],
+            ['billing.invoice.period'|trans, body.validity.isOpenEnded
+                ? 'billing.invoice.period_open'|trans({'%from%': body.validity.from|date_local})
+                : 'billing.invoice.period_closed'|trans({
+                    '%from%': body.validity.from|date_local,
+                    '%until%': body.validity.until|date_local
+                })],
+            ['billing.invoice.landlord'|trans, body.landlordName ~ (body.landlordAddress ? ', ' ~ body.landlordAddress : '')],
+            ['billing.invoice.tax_number'|trans, body.landlordTaxNumber ?: '—'],
+            ['billing.invoice.tenant'|trans, body.tenantName ~ (body.tenantAddress ? ', ' ~ body.tenantAddress : '')],
+            ['billing.invoice.let'|trans, body.letLabel]
+        ],
+        empty: ''
+    } only %}
+
+    <div class="ib-table-scroll">
+        <table class="ib-table ib-table--compact ib-plan__sheet">
+            <tbody>
+                {% for line in body.lines %}
+                    <tr>
+                        <td>{{ ('billing.invoice.line.' ~ line.key)|trans }}</td>
+                        <td class="ib-table__number">{{ line.amount|money }}</td>
+                    </tr>
+                {% endfor %}
+
+                {% if body.taxation.isCharged %}
+                    <tr>
+                        <td>{{ 'billing.invoice.net'|trans }}</td>
+                        <td class="ib-table__number">{{ body.net|money }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ 'billing.invoice.vat'|trans({'%rate%': body.taxation.rateBps|percent}) }}</td>
+                        <td class="ib-table__number">{{ body.tax|money }}</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th>{{ 'billing.invoice.gross'|trans }}</th>
+                    <th class="ib-table__number">{{ body.gross|money }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    {#
+        Die beiden Bestätigungssätze stehen nur bei Option — ohne sie wären
+        sie eine Behauptung über einen Verzicht, den niemand erklärt hat.
+    #}
+    {% if body.taxation.isCharged %}
+        <p class="ib-muted">{{ 'billing.invoice.pdf.option'|trans }}</p>
+        <p class="ib-muted">{{ 'billing.invoice.pdf.confirmation'|trans }}</p>
+    {% endif %}
+
+    <p class="ib-preview__settled">
+        {{ 'billing.invoice.pdf.payee'|trans({
+            '%name%': body.payeeName,
+            '%iban%': body.payeeIban
+        }) }}
+    </p>
+
+    <p class="ib-muted">{{ 'billing.invoice.pdf.part_of_contract'|trans }}</p>
+    <p class="ib-muted">{{ 'billing.invoice.pdf.until_changed'|trans }}</p>
+</div>

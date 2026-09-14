@@ -1,0 +1,59 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein herausgegebener Vermögensbericht.
+
+    Derselbe Rahmen wie im Ablauf, auf dem letzten Schritt — wer gerade noch
+    geprüft hat, findet dieselbe Seite wieder, nur ohne Knöpfe.
+
+    Die Empfänger stehen als Liste darunter und nicht als Umschalter: der
+    Inhalt ist für alle derselbe, es gibt nichts durchzublättern.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {% include 'billing/_report_preview.html.twig' with {
+        body: body, asOf: report.asOf,
+        banks: banks, liabilities: liabilities, holdings: holdings
+    } only %}
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.report.recipients'|trans }}</h3>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: ['billing.report.claim.unit'|trans, 'billing.report.recipient'|trans],
+        rows: report.documents|map(d => [
+            d.unitNumber ~ ' · ' ~ d.unitLabel,
+            d.recipient.label
+        ]),
+        empty: 'billing.report.no_units'|trans
+    } only %}
+
+    <div class="ib-flow__actions">
+        <a class="ib-button ib-button--quiet" href="{{ path('app_billing_report') }}">{{ 'flow.cancel'|trans }}</a>
+
+        {#
+            Nur auf der jüngsten Fassung: an einer überholten weiterzuschreiben
+            hieße, eine Auskunft fortzusetzen, die es so nicht mehr gibt — und
+            ein Knopf, der zuverlässig in eine Absage führt, ist schlechter als
+            keiner.
+        #}
+        {% if is_granted('billing.edit') and correctable %}
+            {#
+                Berichtigt statt korrigiert: korrigiert wird ein Beschluss,
+                und den gibt es hier nicht. Das Gesetz nennt den Anlass selbst
+                — den Berichtigungsanspruch des Eigentümers.
+            #}
+            <form method="post" action="{{ path('app_billing_report_correct', { id: report.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+                <button class="ib-button ib-button--quiet" type="submit">
+                    {{ 'billing.report.correct'|trans }}
+                </button>
+            </form>
+        {% endif %}
+
+        <a class="ib-button" href="{{ path('app_billing_report_pdf', { id: report.id }) }}">
+            {{ 'billing.report.download'|trans }}
+        </a>
+    </div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Umriss eines Bundeslands als Hintergrund.
+
+    Das SVG wird eingebettet, nicht per <img> geladen: nur so erbt
+    stroke="currentColor" die Farbe der Seite und wechselt mit dem Theme.
+    Als <img> bliebe der Umriss schwarz und im dunklen Theme unsichtbar.
+
+    Stark gezoomt, sodass eine Linie schräg durchs Bild läuft statt einer
+    erkennbaren Landkarte. aria-hidden, weil der Umriss reine Dekoration ist.
+#}
+<div class="ib-map" aria-hidden="true">
+    <div class="ib-map__shape"
+         style="transform: {{ drift.initialTransform }}"
+         data-drift="{{ drift.parameters|json_encode }}">
+        {# Eigene Datei aus dem Repository, keine Nutzereingabe. #}
+        {{ source('@regions/' ~ background.region ~ '.svg')|raw }}
+    </div>
+</div>

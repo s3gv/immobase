@@ -1,0 +1,43 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Änderung vorschlagen.
+
+    Dieselben Felder wie drüben, vorbelegt mit dem heutigen Stand — und darum
+    steht auch nirgends „speichern": was hier abgeschickt wird, ist ein
+    Vorschlag. Er landet als Anfrage im selben Postfach wie jede Frage, und
+    der Verwalter entscheidet.
+
+    Welche Felder dastehen, sagt das besitzende Modul. Im Portal gibt es keine
+    Liste davon — sonst stünde hier eines Tages ein Feld, das die Stammdaten
+    gar nicht ändern lassen würden.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <p class="ib-field__hint">{{ 'portal.change.explanation'|trans }}</p>
+
+    <form method="post" action="{{ path('app_portal_propose', { type: kind.value, id: recordId }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('portal_change') }}">
+
+        {% for field in fields %}
+            {% include 'portal/_change_field.html.twig' with { field: field } only %}
+        {% endfor %}
+
+        {% include 'components/textarea.html.twig' with {
+            id: 'comment', name: 'comment', label: 'portal.change.comment'|trans,
+            value: comment, rows: 3, hint: 'portal.change.comment_hint'|trans
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'subject', name: 'subject', label: 'portal.enquiry.subject'|trans, value: subject
+        } only %}
+
+        <div class="ib-flow__actions">
+            <a class="ib-button ib-button--quiet" href="{{ path('app_portal', { step: current }) }}">
+                {{ 'portal.enquiry.cancel'|trans }}
+            </a>
+            <button class="ib-button" type="submit">{{ 'portal.change.send'|trans }}</button>
+        </div>
+    </form>
+{% endblock %}

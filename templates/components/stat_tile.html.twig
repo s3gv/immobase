@@ -1,0 +1,13 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Kennzahl.
+
+    Erwartet: value, label
+    Optional: href, tone (neutral|success|warning|danger)
+#}
+{% set tag = (href is defined and href) ? 'a' : 'div' %}
+<{{ tag }} class="ib-stat ib-stat--{{ tone|default('neutral') }}"{% if href is defined and href %} href="{{ href }}"{% endif %}>
+    <span class="ib-stat__value">{{ value }}</span>
+    <span class="ib-stat__label">{{ label }}</span>
+</{{ tag }}>

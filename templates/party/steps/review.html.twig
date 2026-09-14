@@ -1,0 +1,46 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'flow/flow.html.twig' %}
+
+{% block step_body %}
+    {% set company = draft.kind.value == 'company' %}
+
+    {% set rows = [
+        ['party.field.kind'|trans, draft.kind.labelKey|trans],
+        ['party.field.roles'|trans, draft.roles|map(r => r.labelKey|trans)|join(', ')],
+        [(company ? 'party.field.company_name' : 'party.field.name')|trans,
+         company or not draft.givenName ? draft.name : draft.givenName ~ ' ' ~ draft.name]
+    ] %}
+
+    {# Bei einer Firma ist die zweite Namensangabe der Ansprechpartner und kein
+       Vorname — sie gehört in eine eigene Zeile, nicht vor den Firmennamen. #}
+    {% if company and draft.givenName %}
+        {% set rows = rows|merge([['party.field.contact_person'|trans, draft.givenName]]) %}
+    {% endif %}
+
+    {% set rows = rows|merge([
+        ['party.field.address'|trans,
+         draft.addressRows|map(a => (a.addition ? a.addition ~ ', ' : '')
+             ~ a.line ~ ', ' ~ a.postalCode ~ ' ' ~ a.city)|join(' · ')],
+        ['party.field.emails'|trans, draft.emails|join(', ')],
+        ['party.field.phones'|trans, draft.phones|join(', ') ?: '—']
+    ]) %}
+
+    {# Was gespeichert wird, wird auch geprüft: die Steuernummer steht auf den
+       Dauermietrechnungen dieses Eigentümers. #}
+    {% if draft.letsProperty %}
+        {% set rows = rows|merge([['party.field.tax_number'|trans, draft.taxNumber ?: '—']]) %}
+    {% endif %}
+
+    {% set rows = rows|merge([['party.field.note'|trans, draft.note ?: '—']]) %}
+
+    {% include 'components/table.html.twig' with { headers: ['party.review.field'|trans, 'party.review.value'|trans], rows: rows, empty: '' } only %}
+
+    {# Beim Bearbeiten ist die Nummer laengst vergeben, und sie bleibt es auch:
+       sie haengt an Vorgaengen. #}
+    <p class="ib-field__hint">
+        {{ reference is null
+            ? 'party.step.review.reference_hint'|trans
+            : 'party.step.review.reference_kept'|trans({'%reference%': reference}) }}
+    </p>
+{% endblock %}

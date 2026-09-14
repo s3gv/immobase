@@ -1,0 +1,32 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'tenancy/_detail.html.twig' %}
+{% set edit_step = 'kaution' %}
+
+{% block panel %}
+    {% set deposit = tenancy.deposit %}
+
+    {% if not deposit.isAgreed %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'tenancy.deposit.none_agreed'|trans
+        } only %}
+    {% else %}
+        {% if deposit.isOutstanding %}
+            <p class="ib-note ib-note--warning">{{ 'tenancy.deposit.outstanding'|trans }}</p>
+        {% endif %}
+
+        {% include 'components/table.html.twig' with {
+            headers: ['user.review.field'|trans, 'user.review.value'|trans],
+            rows: [
+                ['tenancy.field.deposit_amount'|trans, deposit.amount|money],
+                ['tenancy.field.deposit_kind'|trans, deposit.kind
+                    ? deposit.kind.labelKey|trans
+                    : 'tenancy.none'|trans],
+                ['tenancy.field.deposit_received_on'|trans, deposit.receivedOn
+                    ? deposit.receivedOn|date_local
+                    : 'tenancy.none'|trans]
+            ],
+            empty: ''
+        } only %}
+    {% endif %}
+{% endblock %}

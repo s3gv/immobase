@@ -1,0 +1,49 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'tenancy/_detail.html.twig' %}
+{% set edit_step = 'miete' %}
+
+{% block panel %}
+    {% if rent %}
+        <p class="ib-note">
+            {{ 'tenancy.rent.current'|trans }}: <strong>{{ rent.total|money }}</strong>
+            {#
+                Die Warmmiete steht nur daneben, wenn sie sich von der Summe
+                unterscheidet — also wenn ein Stellplatz dabei ist. Sonst wäre
+                es dieselbe Zahl zweimal.
+            #}
+            {% if not rent.parking.isZero %}
+                <span class="ib-field__hint">{{ 'tenancy.rent.warm'|trans({'%amount%': rent.warm|money}) }}</span>
+            {% endif %}
+        </p>
+    {% endif %}
+
+    {% if next %}
+        <p class="ib-note ib-note--warning">
+            {{ 'tenancy.rent.next'|trans({
+                '%date%': next.startsOn|date_local,
+                '%amount%': next.rent.total|money
+            }) }}
+        </p>
+    {% endif %}
+
+    {% include 'tenancy/_rents.html.twig' with {
+        tenancy: tenancy, schedule: schedule, today: today
+    } only %}
+
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['tenancy.field.payment_method'|trans, tenancy.payment.method.labelKey|trans],
+            ['tenancy.field.payment_due'|trans, tenancy.payment.due.labelKey|trans]
+        ]|merge(tenancy.taxation.isCharged ? [
+            ['tenancy.field.vat_charged'|trans, tenancy.taxation.rateBps|percent],
+            ['tenancy.einvoice.buyer_reference'|trans, tenancy.payment.eInvoice.buyerReference ?: '—'],
+            ['tenancy.einvoice.e_address'|trans, tenancy.payment.eInvoice.buyerEAddress ?: '—']
+        ] : [])|merge(tenancy.taxation.isCharged and tenancy.payment.method.value == 'direct_debit' ? [
+            ['tenancy.einvoice.sepa_mandate'|trans, tenancy.payment.eInvoice.sepaMandate ?: '—'],
+            ['tenancy.einvoice.debtor_iban'|trans, tenancy.payment.eInvoice.debtorIbanInGroups ?: '—']
+        ] : []),
+        empty: ''
+    } only %}
+{% endblock %}

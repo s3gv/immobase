@@ -1,0 +1,65 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die erfassten Positionen einer Art.
+
+    Drei Felder nebeneinander und die Knöpfe rechts: Bezeichnung, Betrag,
+    Hinweis. Eine Tabelle wäre es nicht — sie hätte eine Kopfzeile und
+    scrollte seitwärts, sobald die Spalte des Ablaufs schmal wird. Hier steht
+    jedes Feld immer an derselben Stelle, und jedes trägt seine eigene
+    Beschriftung.
+
+    Angesprochen wird jede Zeile über ihre eigene Kennung und nicht über ihre
+    Stelle in der Liste: wer eine entfernt, verschöbe sonst alle darunter.
+
+    Erwartet: rows (AssetItem), missing (Liste von Kennungen)
+#}
+<div class="ib-assets__rows">
+    {% for row in rows %}
+        <div class="ib-assets__row{{ row.id in missing ? ' ib-assets__row--missing' : '' }}">
+            {% include 'components/field.html.twig' with {
+                id: 'label-' ~ row.id, name: 'rows[' ~ row.id ~ '][label]',
+                label: 'billing.report.row.label'|trans,
+                placeholder: ('billing.report.row.label_hint.' ~ row.kind.value)|trans,
+                value: row.label
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'amount-' ~ row.id, name: 'rows[' ~ row.id ~ '][amount]',
+                label: 'billing.report.row.amount'|trans,
+                hint: row.kind.needsAnAmount ? '' : 'billing.report.row.amount_optional'|trans,
+                value: row.isValued ? row.amount|money_number : ''
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'note-' ~ row.id, name: 'rows[' ~ row.id ~ '][note]',
+                label: 'billing.report.row.note'|trans,
+                placeholder: 'billing.report.row.note_hint'|trans,
+                value: row.note
+            } only %}
+
+            {#
+                Zweckgebunden gibt es nur beim Guthaben: auf einem
+                Gartengerät liegt keine Erhaltungsrücklage. Das Häkchen steht
+                unter den Feldern und nicht daneben — neben ihnen nähme seine
+                Beschriftung den Feldern die halbe Breite.
+            #}
+            {% if row.kind.mayBeEarmarked %}
+                <label class="ib-choice ib-assets__earmark">
+                    <input type="checkbox" name="rows[{{ row.id }}][earmarked]" value="1"
+                           {{ row.isEarmarked ? 'checked' : '' }}>
+                    {{ 'billing.report.row.earmarked'|trans }}
+                </label>
+            {% endif %}
+
+            <div class="ib-assets__actions">
+                <button class="ib-action ib-action--danger" type="submit"
+                        name="remove" value="{{ row.id }}" formnovalidate
+                        aria-label="{{ 'billing.report.row.remove'|trans }}"
+                        data-tooltip="{{ 'billing.report.row.remove'|trans }}">
+                    {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                </button>
+            </div>
+        </div>
+    {% endfor %}
+</div>

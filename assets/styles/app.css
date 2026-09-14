@@ -1,0 +1,2588 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* SPDX-FileCopyrightText: 2026 s3gv */
+
+@import "tailwindcss";
+@import "./tokens.css";
+
+/*
+ * Dunkles Theme über ein Attribut statt über prefers-color-scheme allein: die
+ * Wahl des Nutzers muss die Systemeinstellung überstimmen können.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+    --color-bg:            var(--ib-bg);
+    --color-surface:       var(--ib-surface);
+    --color-surface-muted: var(--ib-surface-muted);
+    --color-border-subtle: var(--ib-border);
+    --color-ink:           var(--ib-text);
+    --color-ink-muted:     var(--ib-text-muted);
+    --color-accent:        var(--ib-accent);
+    --color-accent-soft:   var(--ib-accent-soft);
+    --color-success:       var(--ib-success);
+    --color-warning:       var(--ib-warning);
+    --color-danger:        var(--ib-danger);
+
+    --font-sans: var(--ib-font);
+    --font-mono: var(--ib-font-mono);
+}
+
+@layer base {
+    html {
+        color-scheme: light;
+    }
+
+    [data-theme="dark"] {
+        color-scheme: dark;
+    }
+
+    body {
+        background-color: var(--ib-bg);
+        background-image: var(--ib-bg-gradient);
+        background-attachment: fixed;
+        color: var(--ib-text);
+        font-family: var(--ib-font);
+        -webkit-font-smoothing: antialiased;
+        margin: 0;
+    }
+}
+
+@layer components {
+    .ib-visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* --- Hintergrundkarte ------------------------------------------------ */
+
+    .ib-map {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+        color: var(--ib-map-stroke);
+        opacity: var(--ib-map-opacity);
+    }
+
+    .ib-map__shape {
+        position: absolute;
+        display: block;
+        /*
+         * Sehr stark gezoomt. Bei geringerem Zoom bleibt die Silhouette des
+         * Bundeslands als Form erkennbar — gewollt ist eine einzelne Linie,
+         * die schräg durchs Bild läuft.
+         */
+        width: 105vmax;
+        height: 105vmax;
+        top: 50%;
+        left: 50%;
+        filter: var(--ib-map-filter);
+        will-change: transform;
+        /*
+         * Nur ein Rückfall. Die tatsächliche Startposition kommt als
+         * style-Attribut aus dem Hintergrund-Dienst, damit schon das erste
+         * Bild stimmt und nichts springt, sobald das Modul übernimmt.
+         *
+         * Die Bewegung selbst kommt nicht aus CSS: eine Keyframe-Animation ist
+         * zwangsläufig periodisch und liefe dieselbe Bahn immer wieder ab.
+         */
+        transform: translate(-48%, -46%);
+    }
+
+    .ib-map__shape svg { display: block; width: 100%; height: 100%; }
+
+    /* --- Shell ----------------------------------------------------------- */
+
+    .ib-shell {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 15rem 1fr;
+        min-height: 100vh;
+    }
+
+    /*
+     * Die Seitenspalte bleibt beim Scrollen stehen. sticky statt fixed, damit
+     * sie ihre Rasterspalte behaelt — fixed nimmt sie aus dem Fluss, und die
+     * Breite muesste an zwei Stellen gepflegt werden. align-self: start ist
+     * dabei Pflicht: im Raster wird sonst gestreckt, und gestreckt klebt
+     * nichts.
+     */
+    .ib-sidebar {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100dvh;
+        /* Die Leiste selbst rollt erst, wenn nicht einmal die eigenen
+           Menüpunkte hineinpassen — bis dahin rollt nur die Plugin-Liste. */
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        padding: 1.5rem 1rem;
+        background: var(--ib-sidebar-bg);
+        border-right: 1px solid var(--ib-border);
+        backdrop-filter: blur(8px);
+    }
+
+    .ib-brand { display: block; padding: 0 0.5rem; text-decoration: none; }
+    .ib-brand__mark { display: block; width: 100%; max-width: 12rem; height: auto; }
+    .ib-brand__mark--on-dark { display: none; }
+    [data-theme="dark"] .ib-brand__mark--on-light { display: none; }
+    [data-theme="dark"] .ib-brand__mark--on-dark { display: block; }
+    .ib-brand__tagline {
+        display: block;
+        margin-top: 0.375rem;
+        font-size: 0.75rem;
+        color: var(--ib-text-muted);
+    }
+
+    .ib-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .ib-icon { display: inline-flex; flex: none; }
+    .ib-icon svg { width: 1.125rem; height: 1.125rem; display: block; }
+
+    .ib-nav__link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 0;
+        border-radius: var(--ib-radius);
+        background: transparent;
+        color: var(--ib-nav-text);
+        font: inherit;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .ib-nav__link:hover { background: var(--ib-surface-muted); color: var(--ib-text); }
+
+    /*
+     * Das Abzeichen am Menüpunkt: eine Zahl, die auf Offenes hinweist.
+     *
+     * Ganz rechts und nicht neben der Beschriftung — `margin-left: auto`
+     * schiebt es an die Kante, damit es an derselben Stelle steht, egal wie
+     * lang der Eintrag heißt. Die Farbe ist die der Warnung, nicht die des
+     * Akzents: es ist ein Hinweis auf Arbeit, keine Auszeichnung.
+     */
+    .ib-nav__badge {
+        margin-left: auto;
+        min-width: 1.25rem;
+        padding: 0 0.375rem;
+        border-radius: 999px;
+        background: var(--ib-danger);
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        text-align: center;
+    }
+
+    /*
+     * Der aktive Eintrag bekommt eine Markierung an der Kante und einen
+     * leichten Schein. Ohne das wirkt die Navigation im dunklen Theme flach,
+     * weil dort ein zarter Flächenton kaum sichtbar ist.
+     */
+    .ib-nav__link.is-current {
+        position: relative;
+        background: var(--ib-accent-soft);
+        color: var(--ib-accent);
+        font-weight: 500;
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ib-accent) 22%, transparent);
+    }
+
+    .ib-nav__link.is-current::before {
+        content: "";
+        position: absolute;
+        left: -0.5rem;
+        top: 0.4rem;
+        bottom: 0.4rem;
+        width: 3px;
+        border-radius: 999px;
+        background: var(--ib-accent);
+        box-shadow: 0 0 12px var(--ib-accent);
+    }
+
+    .ib-nav__link.is-current .ib-icon { color: var(--ib-accent); }
+    /*
+     * Deaktivierte Einträge werden nicht ausgeblasst, sondern nur eine Stufe
+     * gedämpft. Die frühere Lösung mit 40 Prozent Deckkraft kam auf 1,70:1
+     * und war schlicht schlecht lesbar. Dass sie nicht anwählbar sind, zeigt
+     * der fehlende Zeiger und die ausbleibende Hover-Reaktion.
+     */
+    .ib-nav__link.is-disabled { color: var(--ib-nav-text-off); cursor: default; }
+    .ib-nav__link.is-disabled .ib-icon { opacity: 0.65; }
+    .ib-nav__link.is-disabled:hover { background: transparent; color: var(--ib-nav-text-off); }
+
+    /*
+        Drei Bereiche, und nur einer gibt nach.
+
+        **Die Menüpunkte der Anwendung schrumpfen nicht.** Sie stehen
+        vollständig da, auch wenn zwanzig Plugins installiert sind; was nicht
+        passt, trägt die Plugin-Liste ab, und die rollt dafür in ihrem eigenen
+        Kasten. Die Verwaltung unten bleibt angeheftet.
+
+        Passt am Ende nicht einmal der Kernbereich, rollt die Leiste als
+        Ganzes — dann ist das Fenster zu klein, und ein abgeschnittener
+        Menüpunkt wäre die schlechtere Antwort als ein Rollbalken.
+    */
+    .ib-nav--core { flex: 0 0 auto; }
+
+    .ib-nav-plugins {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        flex: 0 1 auto;
+        /* Überschrift und ein Eintrag: weniger wäre keine Rubrik mehr. */
+        min-height: 4.5rem;
+    }
+
+    .ib-nav-plugins .ib-nav {
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    /* Eine Rubrik und keine Überschrift der Seite: klein, ruhig, und sie
+       sagt nur, wo das Folgende herkommt. */
+    .ib-nav__caption {
+        margin: 0 0 0 0.75rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ib-text-muted);
+    }
+
+    .ib-sidebar__foot {
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+    }
+
+    .ib-shell__main { display: flex; flex-direction: column; min-width: 0; }
+
+    .ib-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 2rem;
+    }
+
+    .ib-search input {
+        width: min(28rem, 60vw);
+        padding: 0.5rem 0.875rem;
+        border: 1px solid var(--ib-border);
+        border-radius: 999px;
+        background: var(--ib-surface);
+        color: var(--ib-text);
+        font: inherit;
+    }
+
+    .ib-topbar__actions { display: flex; align-items: center; gap: 0.75rem; }
+
+    .ib-icon-button {
+        display: grid;
+        place-items: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border: 1px solid var(--ib-border);
+        border-radius: 999px;
+        background: var(--ib-surface);
+        color: var(--ib-text-muted);
+        font: inherit;
+        font-size: 0.75rem;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .ib-avatar {
+        display: grid;
+        place-items: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 999px;
+        background: var(--ib-accent);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        list-style: none;
+    }
+    .ib-avatar::-webkit-details-marker { display: none; }
+
+    /* --- Kontomenü -------------------------------------------------------- */
+
+    .ib-account { position: relative; }
+
+    .ib-account__menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 0.5rem);
+        z-index: 20;
+        min-width: 14rem;
+        padding: 0.75rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius-lg);
+        background: var(--ib-surface);
+        box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+    }
+
+    .ib-account__name { margin: 0; font-weight: 600; }
+    .ib-account__mail { margin: 0 0 0.75rem; font-size: 0.8125rem; color: var(--ib-text-muted); }
+
+    .ib-account__action {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding: 0.5rem 0.625rem;
+        margin: 0 -0.25rem -0.25rem;
+        border-radius: var(--ib-radius);
+        color: var(--ib-text-muted);
+        text-decoration: none;
+    }
+    .ib-account__action:hover { background: var(--ib-surface-muted); color: var(--ib-text); }
+    .ib-account__form { margin: 0; }
+    .ib-account__action--button {
+        width: calc(100% + 0.5rem);
+        border: 0;
+        background: none;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .ib-breadcrumb { padding: 0 2rem; font-size: 0.8125rem; color: var(--ib-text-muted); }
+    .ib-breadcrumb ol { display: flex; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+    .ib-breadcrumb li + li::before { content: "/"; margin-right: 0.5rem; opacity: 0.5; }
+    .ib-breadcrumb a { color: inherit; }
+
+    .ib-content { padding: 1rem 2rem 3rem; }
+
+    .ib-flash {
+        margin-bottom: 1rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius);
+        background: var(--ib-surface);
+    }
+    .ib-flash--success { border-color: var(--ib-success); }
+    .ib-flash--warning { border-color: var(--ib-warning); }
+    .ib-flash--error   { border-color: var(--ib-danger); }
+
+    /*
+     * Deutsche Überschriften sind oft ein einziges Wort — „Dauermietrechnungen"
+     * ist in dieser Größe breiter als ein Telefon. Getrennt wird nach den
+     * Regeln der Sprache der Seite.
+     */
+    .ib-heading { margin: 0 0 0.25rem; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.02em; hyphens: auto; overflow-wrap: break-word; }
+    .ib-subheading { margin: 0 0 2rem; font-size: 1.125rem; color: var(--ib-text-muted); }
+
+    @media (max-width: 60rem) {
+        .ib-shell { grid-template-columns: minmax(0, 1fr); }
+        .ib-sidebar {
+            position: static;
+            height: auto;
+            border-right: 0;
+            border-bottom: 1px solid var(--ib-border);
+            /* Auf schmalen Geräten rollt die Seite selbst; eigene
+               Rollbereiche in der Leiste wären dort zwei Rollen ineinander. */
+            overflow-y: visible;
+        }
+
+        .ib-nav-plugins .ib-nav { overflow-y: visible; }
+    }
+
+    /*
+     * Auf dem Telefon steht die Suche in einer eigenen Zeile über den
+     * Knöpfen. Nebeneinander brauchen beide gut 500 Pixel, und die Seite
+     * rollte sonst schon ab der obersten Leiste zur Seite.
+     */
+    @media (max-width: 40rem) {
+        .ib-topbar { flex-wrap: wrap; padding: 1rem; }
+        .ib-search { flex: 1 1 100%; }
+        .ib-search input { width: 100%; }
+        .ib-content { padding: 1rem 1rem 3rem; }
+        .ib-heading { font-size: 1.875rem; }
+    }
+}
+
+@layer components {
+    /* --- Formular und Schaltflächen --------------------------------------- */
+
+    .ib-field { display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 1rem; }
+    .ib-field__label { font-size: 0.875rem; font-weight: 500; }
+    .ib-field__input {
+        max-width: 100%;
+        padding: 0.625rem 0.75rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius);
+        background: var(--ib-surface);
+        color: var(--ib-text);
+        font: inherit;
+    }
+    .ib-field__input:focus-visible { outline: 2px solid var(--ib-accent); outline-offset: 1px; }
+
+    /*
+     * Ein Auswahlfeld sieht aus wie ein Eingabefeld.
+     *
+     * Ohne `appearance: none` zeichnet die Plattform Rahmen und Pfeil selbst.
+     * Das Feld sitzt dann anders hoch als das Textfeld daneben, der Pfeil
+     * ignoriert das dunkle Design, und zwei Felder nebeneinander wirken
+     * verschieden hoch — ein Formular sieht kaputt aus, bevor jemand es liest.
+     *
+     * Der Pfeil kommt als Token, weil es in einer data:-URI kein
+     * `currentColor` gibt: je Theme eine Fassung.
+     */
+    select.ib-field__input {
+        appearance: none;
+        padding-right: 2.25rem;
+        background-image: var(--ib-select-arrow);
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1rem 1rem;
+    }
+    /* Sonst schneidet Safari lange Beschriftungen aus dem Feld heraus. */
+    select.ib-field__input { text-overflow: ellipsis; }
+    .ib-field__hint { margin: 0; font-size: 0.8125rem; color: var(--ib-text-muted); }
+    .ib-field__error { margin: 0; font-size: 0.8125rem; color: var(--ib-danger); }
+    .ib-field.is-invalid .ib-field__input { border-color: var(--ib-danger); }
+
+    .ib-button {
+        display: inline-block;
+        padding: 0.625rem 1.25rem;
+        border: 0;
+        border-radius: var(--ib-radius);
+        background: var(--ib-accent);
+        color: #fff;
+        font: inherit;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .ib-button:hover { background: var(--ib-accent-hover); }
+    .ib-button--quiet {
+        background: transparent;
+        color: var(--ib-text-muted);
+        border: 1px solid var(--ib-border);
+    }
+    /* Eigener Hover-Zustand, sonst gewinnt .ib-button:hover per Spezifität:
+       der stille Knopf würde beim Überfahren zum blauen Hauptknopf mit
+       gedämpfter Schrift darauf — kaum lesbar. */
+    .ib-button--quiet:hover { background: var(--ib-surface-muted); color: var(--ib-text); }
+    /* Bestätigt eine Aktion, die etwas unwiederbringlich entfernt oder
+       ändert. Dieselbe Farbe wie das Symbol, das dorthin geführt hat. */
+    .ib-button--danger { background: var(--ib-danger-solid); color: #fff; }
+    .ib-button--danger:hover { background: color-mix(in srgb, var(--ib-danger-solid) 85%, #000); }
+
+    .ib-button--block { width: 100%; }
+    .ib-button:disabled, .ib-button[aria-disabled="true"] { opacity: 0.5; cursor: default; }
+
+    /* --- Anmeldung -------------------------------------------------------- */
+
+    .ib-login {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        padding: 1.5rem;
+    }
+
+    .ib-login__panel {
+        width: min(24rem, 100%);
+        padding: 2.5rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius-lg);
+        background: color-mix(in srgb, var(--ib-surface) 92%, transparent);
+        backdrop-filter: blur(10px);
+    }
+
+    .ib-login__panel .ib-brand__mark { width: 60%; max-width: none; }
+    .ib-login__heading { margin: 1.75rem 0 1.25rem; font-size: 1.5rem; font-weight: 600; }
+}
+
+@layer components {
+    /* --- Inhaltsbausteine -------------------------------------------------- */
+
+    .ib-card {
+        padding: 1.25rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius-lg);
+        background: color-mix(in srgb, var(--ib-surface) 88%, transparent);
+    }
+    .ib-card__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .ib-card__title { margin: 0; font-size: 1rem; font-weight: 600; }
+    .ib-card__more { color: var(--ib-text-muted); font-size: 1.25rem; text-decoration: none; }
+    .ib-card__more:hover { color: var(--ib-accent); }
+
+    /*
+     * Kennzahlen nebeneinander, solange Platz ist.
+     *
+     * 13rem als schmalstes Mass: darunter bricht „1.720,50 €" um, und eine
+     * Zahl auf zwei Zeilen liest niemand als eine Zahl.
+     */
+    .ib-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .ib-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 1.25rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius-lg);
+        background: color-mix(in srgb, var(--ib-surface) 88%, transparent);
+        color: inherit;
+        text-decoration: none;
+    }
+    .ib-stat__value { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+    .ib-stat__label { font-size: 0.875rem; color: var(--ib-text-muted); }
+    .ib-stat--success .ib-stat__value { color: var(--ib-success); }
+    .ib-stat--warning .ib-stat__value { color: var(--ib-warning); }
+    .ib-stat--danger  .ib-stat__value { color: var(--ib-danger); }
+    a.ib-stat:hover { border-color: var(--ib-accent); }
+
+    .ib-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0; list-style: none; }
+    /*
+     * Trägt die Zeile eine Erklärung, wird sie zweizeilig und richtet sich
+     * oben aus. Mittig säße der Punkt zwischen Bezeichnung und Erklärung und
+     * gehörte sichtbar zu keiner von beiden.
+     */
+    .ib-row:has(.ib-row__meta) { align-items: flex-start; }
+    .ib-row:has(.ib-row__meta) .ib-row__dot { margin-top: 0.4375rem; }
+    .ib-row + .ib-row { border-top: 1px solid var(--ib-border); }
+    .ib-row__dot { flex: none; width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--ib-text-muted); }
+    .ib-row__dot--success { background: var(--ib-success); }
+    .ib-row__dot--warning { background: var(--ib-warning); }
+    .ib-row__dot--danger  { background: var(--ib-danger); }
+    /* Der Körper nimmt den freien Platz: sonst bricht die Erklärung um,
+       während rechts daneben eine Handbreit leer bleibt. */
+    .ib-row__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+    .ib-row__title { font-weight: 500; }
+    .ib-row__meta { font-size: 0.8125rem; color: var(--ib-text-muted); }
+    /*
+     * Die Herkunft steht rechts und behält ihre Breite: sie ist die Antwort
+     * auf „woher habe ich das", und ein umgebrochener Rollenname beantwortet
+     * sie nicht mehr.
+     */
+    .ib-row__trailing {
+        margin-left: auto;
+        flex: none;
+        padding-left: 1rem;
+        font-size: 0.8125rem;
+        color: var(--ib-text-muted);
+        text-align: right;
+    }
+
+    /* Eine Gruppe von Zeilen mit ihrer Überschrift. */
+    .ib-group + .ib-group { margin-top: 2rem; }
+    .ib-group__label {
+        margin: 0;
+        color: var(--ib-text-muted);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .ib-group__list { margin: 0.25rem 0 0; padding: 0; }
+
+    /* Breite Tabellen scrollen in ihrem eigenen Kasten. Die Seite selbst darf
+       niemals waagerecht scrollen. */
+    /*
+     * `position: relative` gehört dazu: die unsichtbare Beschriftung der
+     * Aktionsspalte liegt absolut, und ohne einen positionierten Vorfahren
+     * misst sie sich an der Seite statt am Kasten. Die Seite scrollt dann
+     * waagerecht wegen eines Elements, das niemand sieht.
+     */
+    .ib-table-scroll { overflow-x: auto; position: relative; }
+    .ib-table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+    .ib-table th { padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: var(--ib-text-muted); }
+
+    /*
+     * Sortierbare Überschriften.
+     *
+     * Ein Link und kein Knopf: die Sortierung steht in der Adresse, also ist
+     * sie ein Ort und keine Handlung — verlinkbar, im neuen Tab zu öffnen,
+     * vom Zurück-Knopf zu erreichen.
+     *
+     * Der Pfeil steht immer da, damit die Spalte beim Umschalten nicht
+     * springt; auf der unsortierten Spalte ist er blass und wird beim
+     * Überfahren deutlich.
+     */
+    .ib-table__sort {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: inherit;
+        text-decoration: none;
+        border-radius: var(--ib-radius);
+    }
+    .ib-table__sort .ib-icon { width: 0.875rem; height: 0.875rem; opacity: 0.25; transition: opacity 120ms ease; }
+    .ib-table__sort:hover .ib-icon { opacity: 0.6; }
+    .ib-table__sort.is-on { color: var(--ib-text); }
+    .ib-table__sort.is-on .ib-icon { opacity: 1; }
+    .ib-table__sort:focus-visible { outline: 2px solid var(--ib-accent); outline-offset: 2px; }
+    .ib-table td { padding: 0.625rem 0.75rem; border-top: 1px solid var(--ib-border); }
+
+    /*
+     * Fuer Tabellen mit vielen Spalten in einem schmalen Kasten — die
+     * Einheiten eines Objekts sind sechs plus die Aktionen.
+     *
+     * Die Breite einer Tabelle ist die Summe ihrer schmalstmoeglichen
+     * Spalten; passt die nicht, rollt sie waagerecht, und ein Kasten mit
+     * eigener Rollleiste mitten auf der Seite sieht nach Notloesung aus.
+     * Weniger Innenabstand spart hier mehr als es kostet: die Zahlenspalten
+     * sind ohnehin schmal, und die Zeilenhoehe bleibt, wie sie war.
+     */
+    .ib-table--compact th,
+    .ib-table--compact td { padding-inline: 0.4375rem; }
+    /* Die Zahlen brechen nicht um: „78,40" auf zwei Zeilen liest niemand. */
+    .ib-table--compact td:first-child { white-space: nowrap; }
+
+    .ib-badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        border-radius: 999px;
+        background: var(--ib-surface-muted);
+        color: var(--ib-text-muted);
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .ib-badge--success { background: color-mix(in srgb, var(--ib-success) 15%, transparent); color: var(--ib-success); }
+    .ib-badge--warning { background: color-mix(in srgb, var(--ib-warning) 15%, transparent); color: var(--ib-warning); }
+    .ib-badge--danger  { background: color-mix(in srgb, var(--ib-danger) 15%, transparent);  color: var(--ib-danger); }
+
+    .ib-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 2.5rem 1rem;
+        color: var(--ib-text-muted);
+        text-align: center;
+    }
+    .ib-empty p { margin: 0; }
+
+    .ib-pagination { display: flex; align-items: center; gap: 0.5rem; padding: 1rem 0; font-size: 0.875rem; }
+    .ib-pagination span { color: var(--ib-text-muted); }
+
+}
+
+@layer components {
+    /*
+     * `minmax(0, 1fr)` und nicht `1fr`: eine Rasterspalte ist von sich aus
+     * mindestens so breit wie ihr Inhalt. Eine breite Tabelle im Abschnitt
+     * schiebt die Spalte dann über den Bildschirm hinaus, und die ganze Seite
+     * scrollt waagerecht — der Kasten mit `overflow-x: auto` darin kommt gar
+     * nicht erst zum Zug. Genau das ist bei den Anhängen einer Anfrage
+     * passiert.
+     */
+    .ib-flow { display: grid; grid-template-columns: 14rem minmax(0, 1fr); gap: 2.5rem; align-items: start; }
+
+    .ib-flow__steps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+    .ib-flow__step { border-radius: var(--ib-radius); color: var(--ib-text-muted); font-size: 0.9375rem; }
+    /*
+     * Die Beschriftung fuellt die Zeile aus, statt nur als Wort dazustehen.
+     * Wer auf die markierte Flaeche zielt, trifft sonst daneben.
+     */
+    .ib-flow__step > * {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 0;
+        border-radius: inherit;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        text-decoration: none;
+    }
+    .ib-flow__step button { cursor: pointer; }
+    .ib-flow__step a:hover { background: var(--ib-surface-muted); color: var(--ib-text); }
+    .ib-flow__step.is-done { color: var(--ib-text); }
+    .ib-flow__step.is-current { background: var(--ib-accent-soft); color: var(--ib-accent); font-weight: 500; }
+
+    /*
+     * Sichtbar, aber noch nicht dran — beim Einladen die Schritte, die die
+     * eingeladene Person selbst geht. Sie stehen da, damit sichtbar ist, was
+     * folgt, und blass, damit niemand darauf zielt.
+     */
+    .ib-flow__step.is-pending { opacity: 0.5; }
+
+    /* Ein erklärender Satz unter der Abschnittsliste. */
+    .ib-flow__note {
+        margin: 1rem 0 0;
+        padding: 0 0.75rem;
+        color: var(--ib-text-muted);
+        font-size: 0.8125rem;
+        line-height: 1.5;
+    }
+
+    .ib-flow__panel {
+        background: color-mix(in srgb, var(--ib-surface) 88%, transparent);
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius-lg);
+        padding: 2rem;
+        max-width: 40rem;
+    }
+
+    /*
+     * Für Abschnitte, die eine Tabelle tragen statt eines Formulars.
+     *
+     * 40rem sind die Breite, in der sich ein Formular gut ausfüllen lässt —
+     * eine Rechtematrix bricht darin in jeder Spalte um. Ausdrücklich zu
+     * setzen und nicht am Inhalt zu erraten: sonst wird jede beiläufige
+     * Tabelle zum Layoutwechsel.
+     */
+    .ib-flow__panel--wide { max-width: none; }
+    .ib-flow__position { font-size: 0.8125rem; color: var(--ib-text-muted); margin: 0 0 0.5rem; }
+    .ib-flow__title { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.5rem; }
+    /* Eine Überschrift mitten im Ablauf, die einen neuen Abschnitt beginnt. */
+    .ib-flow__title--spaced { margin-top: 2rem; }
+    .ib-flow__explanation { color: var(--ib-text-muted); margin: 0 0 1.75rem; line-height: 1.6; }
+    .ib-flow__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+
+    /*
+     * Zwei Formulare in einem Abschnitt — neue Codes erzeugen und den Faktor
+     * abschalten — sind zwei Handlungen und keine. Ohne Trennung sieht die
+     * zweite aus wie die Fortsetzung der ersten, und wer das Passwortfeld
+     * oben ausfüllt, drückt unten den falschen Knopf.
+     */
+    .ib-flow__panel form + form {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--ib-border);
+    }
+
+    @media (max-width: 60rem) {
+        .ib-flow { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    }
+
+    /*
+     * Ein breiter Kasten trägt Tabellen. Neben der Schrittliste bliebe ihm
+     * bei einem schmalen Laptop weniger Platz als einem Formular — dann
+     * rücken die Schritte darüber, früher als bei den Formularen.
+     */
+    @media (max-width: 75rem) {
+        .ib-flow:has(> .ib-flow__panel--wide) { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    }
+}
+
+@layer components {
+    /* --- Standardaktionen ------------------------------------------------- */
+
+    .ib-action {
+        display: inline-grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border: 0;
+        border-radius: var(--ib-radius);
+        background: transparent;
+        color: var(--ib-text-muted);
+        font: inherit;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .ib-action:hover { background: var(--ib-surface-muted); color: var(--ib-text); }
+
+    /*
+     * Löschen ist immer rot, nicht erst beim Überfahren. Wer eine Zeile
+     * überfliegt, soll die abräumende Aktion schon vor der Berührung
+     * erkennen — Farbe ist hier eine Warnung, keine Verzierung.
+     */
+    .ib-action--danger { color: var(--ib-danger); }
+    .ib-action--danger:hover { background: color-mix(in srgb, var(--ib-danger) 12%, transparent); color: var(--ib-danger); }
+    .ib-action:focus-visible { outline: 2px solid var(--ib-accent); outline-offset: 1px; }
+    .ib-action:disabled { color: var(--ib-text-muted); opacity: 0.4; cursor: default; }
+    .ib-action:disabled:hover { background: transparent; }
+
+    .ib-actions { display: flex; justify-content: flex-end; gap: 0.125rem; }
+
+    /* Beschriftete Aktion: für die Zeile über einer Übersicht, wo Platz ist
+       und ein Symbol allein zu wenig sagt. */
+    .ib-action--labelled {
+        /* .ib-action ist ein Raster für ein einzelnes Symbol. Mit Beschriftung
+           braucht es eine zweite Spalte, sonst steht der Text darunter. */
+        grid-auto-flow: column;
+        width: auto;
+        gap: 0.5rem;
+        padding: 0 0.875rem;
+        border: 1px solid var(--ib-border);
+        color: var(--ib-text);
+        font-size: 0.9375rem;
+    }
+
+    /* Die Aktionsspalte nimmt nur, was sie braucht, und bleibt einzeilig. */
+    .ib-table__actions { width: 1%; white-space: nowrap; padding-top: 0.25rem; padding-bottom: 0.25rem; }
+
+    /*
+     * Die Rechtematrix.
+     *
+     * Die erste Spalte trägt den Text und bekommt deshalb die Breite; die
+     * Rollenspalten sind Kästchen und bleiben schmal und mittig. Bei vielen
+     * Rollen rollt die Tabelle waagerecht in ihrem eigenen Kasten, wie jede
+     * andere auch.
+     */
+    .ib-matrix th[scope='row'] { width: 100%; font-weight: 500; color: var(--ib-text); }
+    .ib-matrix th[scope='row'] .ib-field__hint { display: block; margin: 0.125rem 0 0; max-width: 34rem; }
+    .ib-matrix thead th:not(:first-child),
+    .ib-matrix__cell { width: 1%; white-space: nowrap; text-align: center; }
+    .ib-matrix__cell { border-top: 1px solid var(--ib-border); }
+    .ib-matrix th[scope='row'] { border-top: 1px solid var(--ib-border); padding: 0.625rem 0.75rem; }
+
+    /* Die Bereichszeile gliedert, sie ist keine Zeile mit Werten. */
+    .ib-matrix__group th {
+        padding-top: 1.25rem;
+        color: var(--ib-text);
+        font-size: 0.8125rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .ib-matrix input[type='checkbox']:disabled { cursor: not-allowed; }
+
+    /* Trägt eine Auswahlzeile eine Erklärung, steht sie unter der
+       Beschriftung. Nebeneinander liest sich die Zeile als ein Satz, und
+       welches Wort das Häkchen benennt, ist dann nicht mehr zu sehen. */
+    .ib-choice .ib-field__hint { display: block; margin: 0.125rem 0 0; }
+    /* Zweizeilig wird die Zeile oben ausgerichtet: mittig säße das Häkchen
+       zwischen Beschriftung und Erklärung und gehörte sichtbar zu keiner. */
+    .ib-choice:has(.ib-field__hint) { align-items: flex-start; }
+    .ib-choice:has(.ib-field__hint) input { margin-top: 0.1875rem; }
+    .ib-choice input[type='checkbox']:disabled { cursor: not-allowed; }
+
+    /* Ein Formular, das nur zum Lesen da ist: kein Rahmen, kein Abstand —
+       die Felder stehen, wo sie ohne das Fieldset auch stünden. */
+    .ib-fieldset { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
+    .ib-fieldset:disabled .ib-field__input { opacity: 0.75; cursor: default; }
+    .ib-fieldset:disabled .ib-choice { color: var(--ib-text-muted); }
+
+    /*
+     * Nur für Vorleseprogramme. clip-path statt display:none — Verstecktes
+     * wird nicht vorgelesen.
+     */
+    .ib-visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .ib-tooltip {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 100;
+        padding: 0.3125rem 0.5rem;
+        border-radius: var(--ib-radius);
+        background: var(--ib-tooltip-bg);
+        color: var(--ib-tooltip-text);
+        font-size: 0.8125rem;
+        line-height: 1.3;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.12s ease;
+    }
+    .ib-tooltip.is-visible { opacity: 1; visibility: visible; }
+}
+
+@layer components {
+    /* --- Dialoge ---------------------------------------------------------- */
+
+    .ib-modal {
+        /* Der Browser zentriert einen modalen Dialog über margin:auto.
+           Tailwinds Preflight nimmt allen Elementen den Rand — ohne diese
+           Zeile klebt der Kasten oben links. */
+        margin: auto;
+        max-width: min(32rem, calc(100vw - 2rem));
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--ib-text);
+    }
+    .ib-modal::backdrop { background: rgb(0 0 0 / 0.5); }
+
+    .ib-modal__panel {
+        padding: 1.5rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius-lg);
+        background: var(--ib-surface);
+        box-shadow: 0 24px 64px rgb(0 0 0 / 0.28);
+    }
+
+    .ib-modal__title { margin: 0 0 0.75rem; font-size: 1.25rem; font-weight: 600; }
+    .ib-modal__body { color: var(--ib-text-muted); line-height: 1.6; }
+    .ib-modal__body p { margin: 0 0 0.75rem; }
+    /* Der Fließtext im Dialog ist gedämpft; Links dürfen das nicht erben,
+       sonst sind sie von ihrer Umgebung nicht zu unterscheiden. */
+    .ib-modal__body a { color: var(--ib-accent); }
+
+    /* Bestätigen steht rechts außen, weg vom Abbrechen. */
+    .ib-modal__actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+
+    /*
+     * Lange Inhalte: breiterer Kasten, und der Inhalt rollt statt den Dialog
+     * über den Bildschirmrand wachsen zu lassen.
+     */
+    .ib-modal--wide { max-width: min(48rem, calc(100vw - 2rem)); }
+    .ib-modal--wide .ib-modal__body {
+        max-height: min(62vh, 34rem);
+        overflow-y: auto;
+        /* Sichtbare Kante des Rollbereichs: sonst verschwindet Text
+           übergangslos unter der Überschrift und wirkt abgeschnitten. */
+        padding-top: 1rem;
+        border-top: 1px solid var(--ib-border);
+    }
+
+    .ib-modal__section { margin: 1.75rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; color: var(--ib-text); }
+
+    .ib-attributions { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.875rem; }
+    .ib-attributions p { margin: 0; }
+    .ib-attribution__name { font-weight: 500; color: var(--ib-text); }
+    .ib-attribution__note { font-size: 0.8125rem; }
+    /* Die vorgeschriebene Namensnennung enthält eine lange Adresse. */
+    .ib-attribution__note, .ib-attribution__link { overflow-wrap: anywhere; }
+    .ib-attribution__link { font-size: 0.8125rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+    .ib-attributions--dense { font-size: 0.8125rem; gap: 0.25rem; }
+
+    /* Ein Knopf, der wie ein Link aussieht — für Aktionen, die keine Seite
+       aufrufen, aber an einer Stelle stehen, an der man einen Link erwartet. */
+    .ib-linkish {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--ib-text-muted);
+        font: inherit;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    .ib-linkish:hover { color: var(--ib-text); }
+
+    .ib-login__foot { margin-top: 1.5rem; text-align: center; font-size: 0.875rem; }
+
+    .ib-confirm__lead { margin: 0 0 0.375rem; font-weight: 500; color: var(--ib-text); }
+    /* list-style ebenfalls, aus demselben Grund. */
+    .ib-confirm__list { margin: 0; padding-left: 1.125rem; list-style: disc; }
+    .ib-confirm__list li { margin-bottom: 0.25rem; }
+}
+
+@layer components {
+    /* --- Übersichtsseiten -------------------------------------------------- */
+
+    .ib-index { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* Aktionen laufen von links nach rechts — die wichtigste zuerst. */
+    /*
+     * Die Aktionszeile über einem Inhalt — und alles darin gleich hoch.
+     *
+     * Sie mischt zwei Bausteine: die beschriftete Standardaktion
+     * („Bearbeiten") und gewöhnliche Knöpfe („Beenden", „Löschen"). Ohne
+     * gemeinsames Maß steht der eine 2rem hoch neben einem 2,6rem hohen —
+     * sichtbar schief, und je nachdem, welche Aktionen eine Seite hat, jedes
+     * Mal anders schief. Dieselbe Überlegung wie in der Filterzeile.
+     *
+     * Ein Formular um einen einzelnen Knopf ist Technik und keine Gestalt:
+     * `display: contents` nimmt es aus dem Fluss, damit der Knopf selbst in
+     * der Reihe steht und nicht in einem Kasten daneben.
+     */
+    .ib-index__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; }
+    /*
+     * In einer Übersicht regelt der Abstand des Rasters die Lücke — dort
+     * käme der Rand oben drauf und risse die Zeile von der Filterleiste ab.
+     * Auf einer Abschnittsseite steht sie für sich und braucht ihn.
+     */
+    .ib-index > .ib-index__actions { margin-bottom: 0; }
+    .ib-index__actions form { display: contents; }
+    .ib-index__actions .ib-action--labelled,
+    .ib-index__actions .ib-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        height: 2.5rem;
+        padding: 0 1rem;
+        border-radius: var(--ib-radius);
+        font-size: 0.9375rem;
+    }
+
+    /*
+     * Eine Zeile, in der alles gleich hoch ist.
+     *
+     * Die Beschriftung steht neben dem Feld und nicht darüber: sonst sind die
+     * Elemente unterschiedlich hoch, und die Leiste franst aus. Was sonst als
+     * Hinweis unter dem Feld stünde, gehört hier in den Platzhalter.
+     *
+     * Wird es eng, bricht die Leiste von oben um: zuerst bekommt die Suche
+     * eine eigene Zeile, dann der nächste Filter, und so weiter. Der frühere
+     * Umbruch tat das Gegenteil — er schob die Schaltflächen allein in eine
+     * zweite Zeile und ließ oben eine Lücke stehen.
+     *
+     * Gemessen wird die Breite des Inhaltsbereichs und nicht die des
+     * Fensters: die Seitenleiste nimmt gut 15rem weg, und eine
+     * Media-Query hätte deshalb immer zu spät gegriffen.
+     */
+    .ib-index { container-type: inline-size; }
+
+    .ib-index__filters {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: center;
+        gap: 0.75rem 1rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius-lg);
+        background: color-mix(in srgb, var(--ib-surface) 88%, transparent);
+    }
+
+    .ib-index__filters .ib-field {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.625rem;
+        margin-bottom: 0;
+    }
+    .ib-index__filters .ib-field__label { white-space: nowrap; color: var(--ib-text-muted); }
+    .ib-index__filters .ib-field__hint { display: none; }
+
+    /*
+     * Eine gepflegte Liste: viele kurze Zeilen, eine Kopfzeile darüber.
+     *
+     * Anders als die Mietstaffel, wo drei Zeilen mit je fünf Feldern stehen:
+     * hier sind es zwanzig Zeilen mit zwei Feldern, und dann ist die
+     * wiederholte Beschriftung Lärm.
+     */
+    /*
+     * Die Kostenarten — eine Tabelle, deren Zeilen Formulare sind.
+     *
+     * Das Raster gehoert der Liste, nicht der Zeile: die Zeilen reichen ihre
+     * Zellen durch (`display: contents`), sonst rechnete jedes Formular seine
+     * Spalten fuer sich aus, und die Zeile mit dem Katalog-Abzeichen stuende
+     * anders als die daneben.
+     *
+     * Ohne Fuellung und mit einer Linie zwischen den Zeilen — wie jede andere
+     * Tabelle auch. Eine Zeile ist ein Datensatz, kein Kasten.
+     */
+    .ib-catalogue {
+        display: grid;
+        grid-template-columns: minmax(12rem, 2fr) minmax(9rem, 1fr) auto;
+        align-items: center;
+        column-gap: 0.75rem;
+    }
+    .ib-catalogue__head,
+    .ib-catalogue__row { display: contents; }
+    .ib-catalogue__head > * {
+        padding: 0 0.4375rem 0.5rem;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--ib-text-muted);
+    }
+    .ib-catalogue__row > * { padding: 0.375rem 0.4375rem; border-top: 1px solid var(--ib-border); }
+    .ib-catalogue .ib-field { margin-bottom: 0; }
+    /* Dasselbe Mass wie in der Filterleiste: ein Feld ist ueberall gleich hoch. */
+    .ib-catalogue .ib-field__input {
+        width: 100%;
+        height: 2.5rem;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    .ib-catalogue__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; justify-content: flex-end; }
+    /* Auf dem Telefon geben die Felder nach, statt die Seite zu verbreitern. */
+    @media (max-width: 40rem) {
+        .ib-catalogue { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; }
+    }
+
+    /*
+     * Die Erfassung: Schlüssel und Maßeinheit über den Jahren.
+     *
+     * Nebeneinander, solange Platz ist — sie sind eine Angabe in zwei Teilen
+     * und nicht zwei Schritte.
+     */
+    .ib-measuring { margin-bottom: 1.5rem; }
+    /*
+     * Die Felder nebeneinander, der Knopf darunter statt daneben: neben
+     * einem Feld mit Hinweistext gibt es keine Höhe, auf der er richtig
+     * sitzt — er steht entweder über dem Hinweis oder unter dem Feld.
+     * Mit JavaScript ist er ohnehin nicht da.
+     */
+    .ib-measuring__fields {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: start;
+        gap: 0.75rem;
+    }
+    .ib-measuring__fields .ib-field { flex: 1 1 14rem; min-width: 0; margin-bottom: 0; }
+
+    /*
+     * Die Mengen je Einheit, eingerückt unter ihrem Jahr.
+     *
+     * Eingerückt und mit einer Kante links, damit sichtbar bleibt, wozu sie
+     * gehören: eine Liste von Feldern ohne diese Zuordnung ist bei drei
+     * Jahren nicht mehr zu lesen.
+     */
+    .ib-metering {
+        margin: 0 0 1rem 0.75rem;
+        padding-left: 0.75rem;
+        border-left: 2px solid var(--ib-border);
+    }
+    .ib-metering__head,
+    .ib-metering__row {
+        display: grid;
+        grid-template-columns: minmax(8rem, 1fr) minmax(9rem, 1fr) minmax(0, 1fr);
+        align-items: center;
+        gap: 0.75rem;
+    }
+    /* Ohne Betragsspalte teilen sich Einheit und Menge die Breite. */
+    .ib-metering__head:has(> :nth-child(3)) ~ .ib-metering__row { grid-template-columns: minmax(8rem, 1fr) minmax(9rem, 1fr) minmax(0, 1fr); }
+    .ib-metering__head > * {
+        padding-bottom: 0.25rem;
+        font-size: 0.8125rem;
+        color: var(--ib-text-muted);
+    }
+    .ib-metering__row { padding: 0.25rem 0; }
+    .ib-metering__row .ib-field { margin-bottom: 0; }
+    .ib-metering .ib-field__input { width: 100%; height: 2.5rem; padding-top: 0; padding-bottom: 0; }
+    .ib-metering__unit { font-size: 0.9375rem; }
+    /* Die Einheit steht im Feld, nicht daneben: „84,250 m³" ist eine Angabe. */
+    .ib-metering__quantity { position: relative; display: block; }
+    .ib-metering__quantity .ib-field__input { padding-right: 3rem; }
+    .ib-metering__symbol {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.8125rem;
+        color: var(--ib-text-muted);
+        pointer-events: none;
+    }
+    .ib-metering__actions { display: flex; justify-content: flex-end; padding-top: 0.5rem; }
+
+    /* Ein Wert, der sich nicht ändern lässt, steht wie ein Feld — ohne Kasten. */
+    .ib-field__static { margin: 0; padding: 0.625rem 0; }
+
+    /* --- Die Übersicht der Finanzen ------------------------------------- */
+
+    .ib-overview__year {
+        display: flex;
+        align-items: end;
+        gap: 0.75rem;
+        max-width: 18rem;
+        margin-bottom: 1.5rem;
+    }
+    .ib-overview__year .ib-field { flex: 1 1 auto; margin-bottom: 0; }
+
+    /*
+     * Die Auswertungen nebeneinander, solange Platz ist. Der Ring braucht
+     * weniger Breite als die Balken — er zeigt eine Zahl, nicht eine Liste.
+     */
+    .ib-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+        /* Jede Auswertung so hoch wie ihr Inhalt: gleich hohe Kästen mit
+           halbleerem Grund sehen aus, als fehlte etwas. */
+        align-items: start;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .ib-overview__panel {
+        padding: 1.25rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius-lg);
+        background: color-mix(in srgb, var(--ib-surface) 55%, transparent);
+    }
+    .ib-overview__panel > .ib-flow__title { margin-top: 0; }
+    /*
+     * Erklärung, Knopf, Liste — überall derselbe Abstand.
+     *
+     * Der Knopf trägt die Akzentfarbe wie jede andere Handlung: als stiller
+     * Umriss stand er zwischen zwei grauen Texten und ging darin unter.
+     */
+    .ib-overview__panel > .ib-field__hint { margin-bottom: 1rem; }
+    .ib-overview__recheck { margin: 0 0 1rem; }
+    .ib-overview__panel--narrow { display: flex; flex-direction: column; }
+
+    /*
+     * Liegende Balken.
+     *
+     * Die Beschriftung bekommt eine feste Spalte, damit die Balken alle an
+     * derselben Kante beginnen — sonst vergleicht man Längen, die nicht
+     * vergleichbar sind. Was nicht hineinpasst, wird gekürzt; der ganze Name
+     * steht im Titel.
+     */
+    .ib-bars { display: grid; gap: 0.625rem; margin: 0; padding: 0; list-style: none; }
+    .ib-bars__row {
+        display: grid;
+        grid-template-columns: minmax(6rem, 11rem) 1fr auto;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.875rem;
+    }
+    .ib-bars__label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--ib-text-muted);
+    }
+    .ib-bars__track {
+        height: 0.625rem;
+        border-radius: 999px;
+        background: var(--ib-surface-muted);
+        overflow: hidden;
+    }
+    .ib-bars__fill {
+        display: block;
+        height: 100%;
+        border-radius: 999px;
+        background: var(--ib-accent);
+        /* Ein Balken, der ganz verschwindet, sieht aus wie ein Fehler. */
+        min-width: 2px;
+    }
+    .ib-bars__row--rest .ib-bars__fill { background: var(--ib-text-muted); }
+    .ib-bars__value { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* Der Ring: ein Anteil in zwei Teilen. */
+    .ib-ring { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+    .ib-ring__chart { width: 100%; max-width: 11rem; height: auto; }
+    .ib-ring__rest { stroke: var(--ib-surface-muted); }
+    .ib-ring__share { stroke: var(--ib-accent); }
+    .ib-ring__number { fill: var(--ib-text); font-size: 0.5rem; font-weight: 600; }
+    .ib-ring__caption { margin: 0; font-size: 0.8125rem; color: var(--ib-text-muted); text-align: center; }
+
+    /*
+     * Das Logo in den Einstellungen.
+     *
+     * Auf hellem Grund, auch im dunklen Design: ein Briefkopf steht auf
+     * Papier, und ein Logo mit dunkler Schrift verschwände sonst hier, wo man
+     * gerade prüft, ob es richtig aussieht.
+     */
+    .ib-logo { margin: 0 0 1.5rem; }
+    .ib-logo__image {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        padding: 1rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius);
+        background: #ffffff;
+    }
+    .ib-logo figcaption { margin-top: 0.5rem; }
+
+    /* Der Schalter für Vergangenes: Kästchen und Beschriftung auf einer Höhe. */
+    .ib-field--check { cursor: pointer; white-space: nowrap; color: var(--ib-text-muted); }
+    /* Nicht schrumpfen: die Beschriftung ist ein Satz, kein Feld. */
+    .ib-index__filters .ib-field--check { height: 2.5rem; flex: 0 0 auto; }
+    .ib-field--check input { accent-color: var(--ib-accent); }
+
+    /* Ein gemeinsames Maß für Felder und Schaltflächen der Leiste. */
+    .ib-index__filters .ib-field__input,
+    .ib-index__filters select.ib-field__input,
+    .ib-index__filters .ib-button {
+        height: 2.5rem;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    .ib-index__filters .ib-button { display: inline-flex; align-items: center; }
+
+    .ib-index__filter-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+    /* Schmal: jedes Element eine eigene Zeile, das Feld füllt sie aus. */
+    .ib-index__filters .ib-field__input { flex: 1; min-width: 0; }
+
+    /*
+     * Mittel: die Suche oben über die ganze Breite, darunter so viele Filter
+     * nebeneinander, wie hineinpassen. Die Schaltflächen bleiben rechts in
+     * derselben Zeile.
+     */
+    @container (min-width: 34rem) {
+        /* 14rem, nicht enger: Beschriftung und Feld stehen nebeneinander,
+           und darunter wird die Auswahl unlesbar abgeschnitten. */
+        .ib-index__filters { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+        .ib-index__filters > :first-child { grid-column: 1 / -1; }
+        .ib-index__filter-actions { justify-self: end; }
+    }
+
+    /* Breit: alles nebeneinander, die Suche bekommt den meisten Platz. */
+    @container (min-width: 58rem) {
+        .ib-index__filters { display: flex; flex-wrap: nowrap; }
+        /* Die Filter so breit wie Beschriftung und Auswahl, die Suche nimmt,
+           was bleibt. Zu gleichen Teilen aufgeteilt blieb bei einer langen
+           Beschriftung („Management type") von der Auswahl nur der Pfeil.
+           Wird es eng, gibt zuerst die Suche nach, dann die Auswahlen bis zu
+           ihrer Mindestbreite — nie darunter. */
+        .ib-index__filters > * { flex: 0 1 auto; min-width: min-content; }
+        .ib-index__filters > :first-child { flex: 1 1 10rem; min-width: 0; }
+        .ib-index__filters .ib-field__input { min-width: 0; }
+        .ib-index__filters select.ib-field__input { min-width: 7.5rem; max-width: 12rem; }
+        /* Mit vier Filtern passt es auch so nicht in eine Zeile: dann bricht
+           der Rest um, statt aus dem Kasten zu ragen. */
+        .ib-index__filters:has(> :nth-child(6)) { flex-wrap: wrap; }
+        .ib-index__filter-actions { flex: 0 0 auto; margin-left: auto; }
+    }
+
+    .ib-index__count { margin: 0; font-size: 0.875rem; color: var(--ib-text-muted); }
+
+    /* Seitennavigation mittig unter der Tabelle. */
+    .ib-index__pages { display: flex; justify-content: center; }
+}
+
+@layer components {
+    /* --- Auswahl aus mehreren Möglichkeiten -------------------------------- */
+
+    .ib-choices { margin: 1.25rem 0; padding: 0; border: 0; }
+    .ib-choices:first-child { margin-top: 0; }
+    .ib-choices .ib-field__hint { margin-bottom: 0.5rem; }
+    .ib-choice {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding: 0.4375rem 0;
+        cursor: pointer;
+    }
+    .ib-choice input { accent-color: var(--ib-accent); width: 1rem; height: 1rem; }
+    .ib-choices.is-invalid .ib-field__label { color: var(--ib-danger); }
+
+    /* Ein mehrzeiliges Feld darf wachsen, aber nicht ausbrechen. */
+    textarea.ib-field__input { resize: vertical; min-height: 4.5rem; font: inherit; }
+}
+
+@layer components {
+    /* --- Listen innerhalb eines Schritts ----------------------------------- */
+
+    .ib-entries { display: flex; flex-direction: column; gap: 0.875rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+    .ib-entries__group { margin: 0 0 1.75rem; padding: 0; border: 0; }
+    .ib-entries__add { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+    .ib-entry {
+        padding: 0.875rem 1rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius);
+        background: color-mix(in srgb, var(--ib-surface-muted) 60%, transparent);
+    }
+    .ib-entry .ib-field:last-child { margin-bottom: 0; }
+
+    .ib-entry__head {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.875rem;
+    }
+    .ib-entry__kind { font-weight: 500; }
+    /* Entfernen sitzt rechts außen, weg von allem anderen. */
+    .ib-entry__head .ib-action--danger { margin-left: auto; }
+
+    .ib-entry__pair { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .ib-entry__pair .ib-field { flex: 1; min-width: 8rem; margin-bottom: 0; }
+
+    .ib-entry--inline { display: flex; align-items: flex-end; gap: 0.75rem; }
+    .ib-entry--inline .ib-field { flex: 1; margin-bottom: 0; }
+    .ib-entry__actions { display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.375rem; }
+}
+
+@layer components {
+    /* Erklaerender Fliesstext ueber oder unter einem Abschnitt. */
+    .ib-note { max-width: 44rem; margin: 1rem 0 0; color: var(--ib-text-muted); line-height: 1.6; }
+    /* Ein Hinweis, der auf etwas Unfertiges zeigt — eine Verteilung, die noch
+       nicht aufgeht. Kein Fehler: es ist angefangene Arbeit. */
+    /*
+     * Ein Bruch als Eingabe: Zähler im Feld, Nenner daneben.
+     *
+     * Der Nenner steht am Objekt und ist für alle Einheiten derselbe. Ihn
+     * mitzuschreiben statt nur zu erwarten, erspart die Rückfrage „bezogen
+     * worauf?" bei jeder einzelnen Zahl.
+     */
+    /*
+     * Das offene Objekt und seine Einheiten unter dem Menüpunkt.
+     *
+     * Kleiner und eingerückt: sie sind Zubehör zum Menüpunkt darüber, nicht
+     * seinesgleichen.
+     */
+    .ib-nav--nested { margin: 0.125rem 0 0.25rem; padding: 0; list-style: none; }
+    .ib-nav__link--branch,
+    .ib-nav__link--leaf {
+        padding-top: 0.3125rem;
+        padding-bottom: 0.3125rem;
+        font-size: 0.875rem;
+    }
+    .ib-nav__link--branch { padding-left: 2.25rem; }
+    .ib-nav__link--leaf { padding-left: 3.25rem; color: var(--ib-text-muted); }
+
+    .ib-mea { display: inline-flex; align-items: baseline; gap: 0.5rem; }
+    .ib-mea .ib-field { margin: 0; }
+    .ib-mea .ib-field__input { width: 7rem; }
+    .ib-mea__denominator { color: var(--ib-text-muted); white-space: nowrap; }
+
+    /* Die Eigentümerliste mit ihrer Suche. */
+    .ib-picker { margin-top: 1.5rem; }
+    .ib-picker__list { margin: 0 0 1rem; padding: 0; list-style: none; }
+    .ib-picker__row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 0;
+        border-top: 1px solid var(--ib-border);
+    }
+    /*
+     * Der Name braucht eine Mindestbreite, sonst quetscht ihn die Zeile auf
+     * ein Wort je Zeile: „Tobias" über „Wagner" ist kein Name mehr.
+     */
+    .ib-picker__name { display: flex; flex-direction: column; flex: 1 1 14rem; min-width: 0; }
+    /*
+     * Eigentum ab und bis, nebeneinander und schmal: zwei Datumsfelder in
+     * voller Breite schöben Anteil und Papierkorb aus der Zeile. Auf engen
+     * Fenstern bricht die Zeile, statt alles zusammenzudrücken.
+     */
+    .ib-picker__held { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+    .ib-picker__held .ib-field__input { width: auto; min-width: 8.5rem; }
+    .ib-picker__row { flex-wrap: wrap; }
+    .ib-picker__empty {
+        margin: 0 0 1.25rem;
+        color: var(--ib-text-muted);
+        font-size: 0.875rem;
+    }
+    .ib-picker__results {
+        margin: 0.25rem 0 1rem;
+        padding: 0;
+        list-style: none;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius);
+        overflow: hidden;
+    }
+    .ib-picker__result {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 0;
+        background: none;
+        color: var(--ib-text);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+    .ib-picker__result:hover { background: var(--ib-surface-muted); }
+    .ib-picker__result.is-empty { color: var(--ib-text-muted); cursor: default; }
+    /* Sichtbar, aber nicht wählbar — siehe unit-picker.js. */
+    .ib-picker__result.is-let { color: var(--ib-text-muted); }
+
+    /* Ein Hinweis über einem Formular braucht Luft nach unten — sonst klebt
+       er an der ersten Beschriftung und liest sich wie deren Erklärung. */
+    .ib-flow__panel > .ib-note { margin-bottom: 1.5rem; }
+
+    /*
+     * Verweise auf etwas, das in einem anderen Modul liegt — heute das
+     * Mietverhältnis an der Einheit. Über der Bezeichnung steht, worum es
+     * sich handelt: „Mietverhältnis" allein sagt nicht, dass 30001 eines ist.
+     */
+    .ib-links { list-style: none; margin: 1.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+    .ib-links .ib-field__hint { display: block; margin: 0 0 0.125rem; }
+
+    /*
+     * Die Mietstaffel.
+     *
+     * Eine Stufe ist eine Zeile aus fünf schmalen Feldern und nicht ein
+     * Formular untereinander: gelesen wird sie waagerecht, „ab dem 1.4. sind
+     * es 650 plus 120 plus 80", und übereinander gestapelt verliert sie genau
+     * diesen Zusammenhang. Bei wenig Platz bricht sie um, statt zu rollen.
+     */
+    /*
+     * Eine Notiz, wie sie geschrieben wurde.
+     *
+     * Zeilenumbrüche bleiben stehen: wer eine Liste getippt hat, hat eine
+     * Liste gemeint. Die Breite ist begrenzt, weil zu lange Zeilen den
+     * Rücksprung ans nächste Zeilenende erschweren.
+     */
+    .ib-note-text { margin: 0; max-width: 48rem; line-height: 1.7; }
+
+    .ib-rents { margin-top: 2rem; }
+    .ib-rents__row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: flex-end;
+        padding: 0.75rem 0;
+    }
+    .ib-rents__row .ib-field { flex: 1 1 7rem; margin: 0; min-width: 6rem; }
+    /* „Fertig verteilt" muss hineinpassen, sonst steht dort „Gesamt…". */
+    .ib-rents__row .ib-field:has(select) { min-width: 11.5rem; }
+    /* Der errechnete Betrag trägt seinen Grund mit und braucht mehr Platz. */
+    .ib-rents__row .ib-field:has(.ib-field__static) { flex: 1 1 11rem; min-width: 9rem; }
+    .ib-rents__row .ib-field__label { font-size: 0.8125rem; }
+    .ib-rents__actions { display: flex; align-items: center; gap: 0.5rem; }
+    .ib-rents__row + .ib-rents__row { border-top: 1px solid var(--ib-border); }
+    .ib-rents__add { border-top: 1px solid var(--ib-border); margin-top: 0.5rem; }
+
+    /*
+     * Die Stufe, die heute gilt.
+     *
+     * Ein Farbstreifen quer durch die Liste sieht abgeschnitten aus: er
+     * beginnt und endet an der Kante der Felder, ohne dass etwas ihn hält.
+     * Mit Rundung, etwas Luft an den Seiten und einer feinen Kontur wird
+     * daraus eine hervorgehobene Zeile.
+     *
+     * Die Luft kommt über einen negativen Außenabstand, damit die Felder
+     * darin genau unter denen der anderen Zeilen stehen — eine Zeile, die
+     * beim Hervorheben verrutscht, lenkt mehr ab, als sie zeigt.
+     */
+    .ib-rents .is-current {
+        margin-inline: -0.75rem;
+        padding-inline: 0.75rem;
+        border-radius: var(--ib-radius);
+        background: color-mix(in srgb, var(--ib-accent) 8%, transparent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ib-accent) 20%, transparent);
+    }
+    /* Keine Trennlinie unmittelbar an der hervorgehobenen Zeile. */
+    .ib-rents__row:has(+ .is-current) { border-bottom: 0; }
+    .ib-rents .is-current + .ib-rents__row,
+    .ib-rents .is-current { border-top-color: transparent; }
+
+    /*
+     * Die Zeilen eines Wirtschaftsplans.
+     *
+     * Ein festes Raster aus zwei Zeilen und nicht sieben Felder nebeneinander:
+     * die Spalte eines Ablaufs ist schmal, und was nicht hineinpasst, müsste
+     * seitwärts scrollen — genau das versteckt die Spalten, um die es geht.
+     *
+     * Oben steht, was die Zahl ist: Kostenart, Vorjahr, Plan. Unten, wie sie
+     * verteilt wird und warum. Jedes Feld steht damit immer an derselben
+     * Stelle; ein Umbruch, der mal hier und mal dort passiert, lässt den Blick
+     * jedes Mal neu suchen.
+     *
+     * Unter 34rem wird auch das zu eng — dann steht jedes Feld für sich.
+     */
+    .ib-plan__rows { margin-bottom: 1.5rem; }
+    .ib-plan__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1.1fr) auto;
+        gap: 0.25rem 0.75rem;
+        align-items: start;
+        padding: 0.875rem 0;
+    }
+    /*
+     * Die Reihenfolge steht in der Vorlage fest — Kostenart, Vorjahr, Plan,
+     * Schlüssel, Begründung, Aktionen. Sie hier über die Stelle anzusprechen
+     * ist der Preis dafür, dass die Felder aus gemeinsamen Bausteinen kommen
+     * und keine eigenen Klassen tragen.
+     *
+     * „Einmalig" und der Papierkorb stehen oben neben dem Betrag: beide
+     * betreffen ihn und nicht den Verteilerschlüssel. Die Begründung nimmt
+     * dafür unten die ganze restliche Breite — sie ist das einzige Feld, in
+     * das ein Satz kommt.
+     */
+    .ib-plan__row > *:nth-child(4) { grid-column: 1; grid-row: 2; }
+    .ib-plan__row > *:nth-child(5) { grid-column: 2 / -1; grid-row: 2; }
+    .ib-plan__row > .ib-plan__actions { grid-column: 4; grid-row: 1; }
+    .ib-plan__row + .ib-plan__row { border-top: 1px solid var(--ib-border); }
+    .ib-plan__row .ib-field { margin: 0; min-width: 0; }
+    .ib-plan__row .ib-field__label { font-size: 0.8125rem; }
+    /* Zahlen ohne Eingabe: rechtsbündig, mit gleicher Ziffernbreite. */
+    .ib-plan__figure .ib-field__label,
+    .ib-plan__figure .ib-field__static { text-align: right; }
+    .ib-plan__figure .ib-field__static { font-variant-numeric: tabular-nums; }
+    .ib-plan__figure .ib-field__label { display: block; }
+    /*
+     * Häkchen und Papierkorb stehen in der unteren Zeile rechts, auf Höhe der
+     * Felder daneben — ein Knopf, der über der Zeile schwebt, gehört optisch
+     * zu nichts.
+     */
+    .ib-plan__actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding-top: 1.75rem;
+    }
+    .ib-plan__actions .ib-choice { margin: 0; white-space: nowrap; }
+
+    /*
+     * Das Blatt in der Vorschau: der Name trägt den Rechenweg, die Zahlen
+     * stehen rechts. Die erste Spalte darf schrumpfen, die beiden Zahlen
+     * nicht — sonst brechen Beträge mitten im Tausenderpunkt um.
+     */
+    /*
+     * Die erste Spalte traegt den Rechenweg und darf umbrechen — anders als
+     * sonst bei einer kompakten Tabelle, wo dort eine Zahl steht.
+     */
+    .ib-plan__sheet td:first-child { white-space: normal; }
+    /*
+     * Die Zahlenspalten nehmen, was sie brauchen, und der Name bekommt den
+     * Rest. `width: 1%` ist der alte Kniff dafür: eine Breite, die kleiner
+     * ist als der Inhalt, heißt „so schmal wie möglich".
+     */
+    .ib-plan__sheet .ib-table__number { width: 1%; white-space: nowrap; vertical-align: top; }
+
+    @media (max-width: 40rem) {
+        .ib-plan__row { grid-template-columns: minmax(0, 1fr); }
+        .ib-plan__row > *:nth-child(4),
+        .ib-plan__row > *:nth-child(5),
+        .ib-plan__row > .ib-plan__actions { grid-column: 1; grid-row: auto; }
+        .ib-plan__actions { justify-content: flex-start; padding-top: 0.5rem; }
+        .ib-plan__figure .ib-field__label,
+        .ib-plan__figure .ib-field__static { text-align: left; }
+    }
+
+    /*
+     * Die Abrechnung: Zahlen rechtsbündig, der Rechenweg leise.
+     *
+     * Beträge werden untereinander gelesen und verglichen — dafür müssen sie
+     * an derselben Stelle enden und dieselbe Ziffernbreite haben.
+     */
+    .ib-table__number { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .ib-muted { color: var(--ib-text-muted); font-size: 0.8125rem; }
+
+    .ib-billing__pending { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+    .ib-billing__pending li { margin-top: 0.375rem; }
+    .ib-billing__pending form { display: inline; }
+
+    /* Ein Schreiben, wie es beim Empfänger ankommt. */
+    .ib-preview + .ib-preview { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--ib-border); }
+    .ib-preview__who { margin: 0 0 1rem; line-height: 1.6; }
+    /*
+     * Der zweite Abschnitt eines Berichts braucht Luft nach oben: beim
+     * Vermögensbericht folgt auf die Rücklagentabelle die Aufstellung, und
+     * ohne Abstand klebt ihre Überschrift an der Summe darüber.
+     */
+    .ib-preview .ib-table-scroll + .ib-preview__who { margin-top: 1.75rem; }
+    .ib-preview__settled { margin: 0.75rem 0 0; color: var(--ib-text-muted); }
+    .ib-preview__result { margin: 0.25rem 0 0; font-size: 1.0625rem; }
+    .ib-preview__result.is-due { color: var(--ib-danger); }
+    .ib-preview__result.is-credit { color: var(--ib-success); }
+
+    /* Eine Zahlungszeile: Schalter, Betrag und Knopf nebeneinander. */
+    .ib-payment { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .ib-payment .ib-field { margin: 0; width: 8rem; }
+
+    .ib-note--warning {
+        padding: 0.625rem 0.875rem;
+        border-radius: var(--ib-radius);
+        background: color-mix(in srgb, var(--ib-warning) 12%, transparent);
+        color: var(--ib-text);
+    }
+
+    /*
+     * Ein Kasten mit etwas zum Kopieren — heute der Einladungslink, wenn kein
+     * Mailserver eingerichtet ist. Abgesetzt, weil er nur einmal erscheint und
+     * dann weg ist: wer ihn uebersieht, muss neu einladen.
+     */
+    .ib-note--link {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius);
+        background: var(--ib-surface-muted);
+    }
+
+    .ib-note--link p { margin: 0 0 0.5rem; }
+
+    /* Der Link muss ganz zu sehen sein — er wird abgeschrieben oder kopiert,
+       und ein abgeschnittener Link ist wertlos. */
+    .ib-note--link input {
+        width: 100%;
+        font-family: var(--ib-font-mono);
+        font-size: 0.875rem;
+    }
+
+    /*
+     * Ein Plugin auf der Einstellungsseite.
+     *
+     * Name und Zustand nebeneinander, darunter die technische Zeile und die
+     * Knoepfe. Der Zustand steht oben rechts, weil er die erste Frage ist:
+     * laeuft das Ding oder liegt es nur da?
+     */
+    .ib-plugin + .ib-plugin { margin-top: 1rem; }
+    .ib-plugin__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+    .ib-plugin__name { margin: 0; font-size: 1rem; font-weight: 600; }
+    .ib-plugin__meta {
+        margin: 0.25rem 0 0;
+        color: var(--ib-text-muted);
+        font-size: 0.875rem;
+    }
+    .ib-plugin__meta code { font-family: var(--ib-font-mono); }
+
+    .ib-plugin__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    /*
+     * Die Knoepfe eines Plugins sind eine Reihe und keine Abfolge.
+     *
+     * Im Abschnittsrahmen trennt sonst eine Linie je zwei Formulare — richtig
+     * dort, wo zwei Handlungen untereinanderstehen, falsch hier, wo drei
+     * Knoepfe nebeneinandergehoeren.
+     */
+    .ib-plugin__actions form,
+    .ib-plugin__actions form + form {
+        margin: 0;
+        padding: 0;
+        border-top: 0;
+    }
+
+    /* Die Abschnitte der Vertrauensseite: was es verlangt, was es anlegt. */
+    .ib-plugin__section { margin-top: 1.5rem; }
+    .ib-plugin__section h4 {
+        margin: 0 0 0.5rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ib-text-muted);
+    }
+    .ib-plugin__section code { font-family: var(--ib-font-mono); font-size: 0.875rem; }
+    .ib-plugin__section .ib-field__hint { display: block; }
+
+    /* Ein einzelnes, schmales Formular ausserhalb eines Ablaufs. */
+    .ib-form { max-width: 32rem; margin-top: 1.5rem; }
+    .ib-form__actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+}
+
+@layer components {
+    /*
+     * Passwortregeln unter dem Feld — sichtbar, bevor jemand tippt. Ruhig
+     * gehalten: sie sind eine Hilfe, keine Anklage.
+     */
+    .ib-rules {
+        margin: 0.75rem 0 0;
+        padding-left: 1.125rem;
+        color: var(--ib-text-muted);
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+
+    /* QR-Code und Geheimnis beim Einrichten des zweiten Faktors. */
+    .ib-qr {
+        display: block;
+        margin: 1rem 0;
+        padding: 0.75rem;
+        border-radius: var(--ib-radius);
+        /* Weißer Grund unabhängig vom Theme: ein QR-Code auf dunklem Grund
+           wird von vielen Kameras nicht gelesen. */
+        background: #fff;
+    }
+
+    .ib-secret code, .ib-codes code { font-family: var(--ib-font-mono); letter-spacing: 0.05em; }
+
+    /* Die Wiederherstellungscodes, zum Abschreiben und zum Ausdrucken. */
+    .ib-codes {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+        gap: 0.5rem 1.5rem;
+        max-width: 32rem;
+        margin: 1.5rem 0;
+        padding: 1rem;
+        border: 1px solid var(--ib-border);
+        border-radius: var(--ib-radius);
+        list-style: none;
+    }
+
+    /* Überspringen steht links und leise, die eigentliche Handlung rechts. */
+    .ib-flow__skip { margin-right: auto; font-size: 0.875rem; }
+
+    /* Anmeldeseite: Hinweise und Nebenwege unter dem Formular. */
+    .ib-login__hint { margin-top: 1rem; color: var(--ib-text-muted); font-size: 0.875rem; text-align: center; }
+    .ib-login__alternatives { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; align-items: center; }
+
+    /* Ohne Seitenleiste: Einrichten und Bestätigen laufen vor der Anmeldung. */
+    .ib-shell--bare { display: block; }
+    .ib-shell--bare .ib-content { max-width: 56rem; margin: 0 auto; padding: 3rem 1.5rem; }
+
+    /*
+        Das Portal: auch ohne Seitenleiste, aber angemeldet.
+
+        Der Verwalterbereich ist eine Anwendung und braucht die Leiste; das
+        Portal sind vier Seiten. Die Spalte fällt weg, und der Inhalt bekommt
+        eine Breite statt über den ganzen Bildschirm zu laufen — vier Zeilen
+        Tabelle auf 2000 Pixeln liest niemand gern.
+    */
+    .ib-shell--portal { grid-template-columns: minmax(0, 1fr); }
+    .ib-shell--portal .ib-content { width: 100%; max-width: 64rem; margin: 0 auto; }
+
+    /* Ohne Suche bleibt der Name links stehen, statt in der Mitte zu schweben. */
+    .ib-topbar--portal { justify-content: space-between; }
+
+    .ib-topbar__brand {
+        color: var(--ib-text);
+        font-weight: 600;
+        font-size: 1.0625rem;
+        text-decoration: none;
+    }
+
+    .ib-topbar__brand:hover { color: var(--ib-accent); }
+}
+
+@media print {
+    /* Beim Ausdrucken der Wiederherstellungscodes bleibt nur, worauf es
+       ankommt. */
+    .ib-button, .ib-form__actions { display: none; }
+}
+
+/*
+    Die Zeilen der Vermögensaufstellung.
+
+    Drei Felder nebeneinander und die Knöpfe rechts. Anders als beim
+    Wirtschaftsplan reicht eine Zeile: hier gibt es keinen Vorjahreswert, kein
+    Verteilerschlüssel und keinen Rechenweg, sondern eine Bezeichnung, einen
+    Betrag und einen Hinweis.
+
+    Kein seitwärts scrollender Kasten: was rechts abgeschnitten ist, liest
+    niemand, und wer scrollen muss, vergleicht nicht mehr.
+*/
+.ib-assets__rows { margin-bottom: 1.5rem; }
+
+.ib-assets__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.4fr) auto;
+    gap: 0.25rem 0.75rem;
+    align-items: start;
+    padding: 0.875rem 0;
+}
+
+.ib-assets__row + .ib-assets__row { border-top: 1px solid var(--ib-border); }
+.ib-assets__row .ib-field { margin: 0; min-width: 0; }
+.ib-assets__row .ib-field__label { font-size: 0.8125rem; }
+
+/* Was fehlt, wird gezeigt und nicht stillschweigend zu null. */
+.ib-assets__row--missing { border-left: 3px solid var(--ib-warning); padding-left: 0.75rem; }
+
+/* Die Knöpfe stehen auf der Höhe der Eingabefelder, nicht der Beschriftungen. */
+.ib-assets__actions {
+    grid-column: 4;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 1.6rem;
+}
+
+/*
+ * Die Zweckbindung steht unter den Feldern und nicht neben ihnen: ihre
+ * Beschriftung ist länger als jedes der drei Felder und nähme ihnen die halbe
+ * Breite. Unten steht sie da, wo sie hingehört — bei dem Betrag, den sie
+ * betrifft.
+ */
+.ib-assets__earmark {
+    grid-column: 1 / 4;
+    grid-row: 2;
+    margin: 0;
+}
+
+/*
+    Die Positionen eines Budgetplans.
+
+    Vier Felder nebeneinander und der Knopf rechts: Bezeichnung, Jahr, Betrag,
+    Hinweis. Das Jahr bekommt eine feste, schmale Spalte — es ist immer vier
+    Zeichen breit, und eine Spalte, die mit dem Inhalt wächst, wäre hier nur
+    unruhig.
+*/
+.ib-budget__rows { margin-bottom: 1.5rem; }
+
+.ib-budget__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) 7rem minmax(0, 1fr) minmax(0, 1.4fr) auto;
+    gap: 0.25rem 0.75rem;
+    align-items: start;
+    padding: 0.875rem 0;
+}
+
+.ib-budget__row + .ib-budget__row { border-top: 1px solid var(--ib-border); }
+.ib-budget__row .ib-field { margin: 0; min-width: 0; }
+.ib-budget__row .ib-field__label { font-size: 0.8125rem; }
+
+.ib-budget__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 1.6rem;
+}
+
+/*
+    Eine Gruppe zusammengehöriger Felder — Betrag, Termin, Raten, Intervall.
+
+    Sie stehen nebeneinander, weil sie eine Angabe sind: „500 € in drei Raten
+    ab dem 1. März, vierteljährlich" ist ein Satz und keine vier.
+*/
+.ib-budget__group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 0.25rem 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.ib-budget__group .ib-field { margin: 0; }
+
+/* Die Zustimmungen: viele Häkchen, wenig Platz. */
+.ib-budget__approvals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 40rem) {
+    .ib-budget__row { grid-template-columns: minmax(0, 1fr); }
+    .ib-budget__actions { padding-top: 0; justify-content: flex-end; }
+}
+
+@media (max-width: 40rem) {
+    .ib-assets__row { grid-template-columns: minmax(0, 1fr); }
+    .ib-assets__actions,
+    .ib-assets__earmark { grid-column: 1; grid-row: auto; }
+    .ib-assets__actions { padding-top: 0; justify-content: flex-end; }
+}
+
+/*
+    Das Gespräch einer Anfrage.
+
+    Nachrichten in der Zeit von oben nach unten, das Neueste direkt über dem
+    Antwortfeld: wer antwortet, hat das gerade Gelesene vor sich.
+
+    Keine Sprechblasen links und rechts. Zwei Spalten sind ein Messenger; hier
+    geht es um Belege und Abrechnungen, und dabei zählt, was dasteht, nicht
+    wer es gesagt hat. Die Seite ist trotzdem zu erkennen — die Nachrichten
+    der Verwaltung stehen auf der ruhigen Fläche und tragen links einen
+    Strich.
+*/
+.ib-chat {
+    margin: 1rem 0 1.5rem;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.ib-chat__message {
+    border: 1px solid var(--ib-border);
+    border-left: 3px solid var(--ib-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--ib-surface);
+}
+
+.ib-chat__message--staff {
+    border-left-color: var(--ib-accent);
+    background: var(--ib-surface-muted);
+}
+
+.ib-chat__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0 0 0.375rem;
+}
+
+.ib-chat__who {
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.ib-chat__when {
+    color: var(--ib-text-muted);
+    font-size: 0.8125rem;
+}
+
+.ib-chat__body {
+    margin: 0;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.ib-chat__files {
+    margin: 0.625rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.25rem;
+}
+
+.ib-chat__file {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.ib-chat__file-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    overflow-wrap: anywhere;
+}
+
+.ib-chat__size,
+.ib-chat__until { color: var(--ib-text-muted); }
+
+/* Abgelaufen heißt: der Name bleibt, die Datei ist weg. */
+.ib-chat__expired {
+    color: var(--ib-text-muted);
+    font-style: italic;
+}
+
+/* Die Zeichenauswahl — eine Reihe Knöpfe, nicht mehr. */
+.ib-emoji {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: -0.5rem 0 0.75rem;
+}
+
+.ib-emoji__key {
+    border: 1px solid var(--ib-border);
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.375rem;
+    background: var(--ib-surface);
+    font-size: 1.0625rem;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.ib-emoji__key:hover { border-color: var(--ib-accent); }
+
+/*
+    Die Ablagefläche.
+
+    Ohne JavaScript ein gewöhnliches Dateifeld in einem Rahmen — das ist der
+    Rückfall und kein Notbehelf.
+*/
+.ib-dropzone {
+    border: 1px dashed var(--ib-border);
+    border-radius: 0.5rem;
+    padding: 0.875rem 1rem;
+    margin-bottom: 1rem;
+    background: var(--ib-surface-muted);
+}
+
+.ib-dropzone.is-over { border-color: var(--ib-accent); }
+
+.ib-dropzone__label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.375rem;
+}
+
+.ib-dropzone__input { display: block; font-size: 0.875rem; }
+
+.ib-dropzone__hint {
+    margin: 0.5rem 0 0;
+    color: var(--ib-text-muted);
+    font-size: 0.8125rem;
+    overflow-wrap: anywhere;
+}
+
+/* Zuweisen: eine Auswahl, ein Knopf, und „mir" daneben. */
+.ib-assign {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.ib-assign__form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.ib-assign .ib-field { margin: 0; min-width: 14rem; }
+
+/*
+    Der Taschenrechner der Kopfzeile.
+
+    Ein Aufklappfeld wie das Kontomenü daneben, mit denselben Maßen: rechts
+    ausgerichtet, über allem, was darunter steht. Die Anzeige in der
+    Schreibmaschinenschrift — Ziffern, die untereinander stehen, lassen sich
+    vergleichen, und der Rechner ist die eine Stelle, an der es darauf ankommt.
+*/
+.ib-calc { position: relative; }
+
+.ib-calc__toggle { list-style: none; }
+.ib-calc__toggle::-webkit-details-marker { display: none; }
+
+.ib-calc__panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    z-index: 20;
+    width: 15rem;
+    padding: 0.75rem;
+    border: 1px solid var(--ib-border);
+    border-radius: var(--ib-radius-lg);
+    background: var(--ib-surface);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+}
+
+/* Das Feld trägt die Eingabemarke, damit die Tastatur rechnet. Ein Rahmen um
+   den ganzen Kasten wäre dabei nur Lärm. */
+.ib-calc__panel:focus { outline: none; }
+
+.ib-calc__pending {
+    margin: 0;
+    min-height: 1.25rem;
+    color: var(--ib-text-muted);
+    font-family: var(--ib-font-mono);
+    font-size: 0.8125rem;
+    text-align: right;
+}
+
+.ib-calc__display {
+    display: block;
+    padding: 0.25rem 0.5rem 0.5rem;
+    font-family: var(--ib-font-mono);
+    font-size: 1.375rem;
+    font-weight: 600;
+    text-align: right;
+    /* Eine lange Zahl schiebt das Feld sonst breiter als die Kopfzeile. */
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.ib-calc__keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.375rem;
+}
+
+.ib-calc__key {
+    padding: 0.5rem 0;
+    border: 1px solid var(--ib-border);
+    border-radius: var(--ib-radius);
+    background: var(--ib-surface);
+    color: var(--ib-text);
+    font: inherit;
+    font-size: 0.9375rem;
+    cursor: pointer;
+}
+.ib-calc__key:hover { background: var(--ib-surface-muted); }
+
+.ib-calc__key--quiet { color: var(--ib-text-muted); }
+.ib-calc__key--op { background: var(--ib-surface-muted); font-weight: 600; }
+.ib-calc__key--equals { background: var(--ib-accent); border-color: var(--ib-accent); color: #fff; }
+.ib-calc__key--equals:hover { background: var(--ib-accent-hover); }
+
+.ib-calc__copy {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/*
+    Die Vorschläge unter dem Suchfeld.
+
+    Dieselbe Bauart wie das Kontomenü und der Rechner daneben: ein Kasten, der
+    über allem liegt, rechts- beziehungsweise linksbündig zu dem, was ihn
+    aufgeklappt hat. Die Breite folgt dem Feld — ein Vorschlagskasten, der
+    schmaler ist als seine Eingabe, sieht aus wie ein Fehler.
+*/
+.ib-search { position: relative; }
+
+.ib-search__suggestions {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    z-index: 30;
+    max-height: min(60vh, 32rem);
+    overflow-y: auto;
+    padding: 0.5rem;
+    border: 1px solid var(--ib-border);
+    border-radius: var(--ib-radius-lg);
+    background: var(--ib-surface);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+}
+
+.ib-suggest__group + .ib-suggest__group { margin-top: 0.5rem; }
+
+.ib-suggest__kind {
+    margin: 0 0 0.125rem;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ib-text-muted);
+}
+
+.ib-suggest__hit {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.4375rem 0.5rem;
+    border-radius: var(--ib-radius);
+    color: var(--ib-text);
+    text-decoration: none;
+}
+.ib-suggest__hit:hover,
+.ib-suggest__hit:focus-visible { background: var(--ib-surface-muted); outline: none; }
+
+.ib-suggest__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ib-suggest__title { font-weight: 500; }
+.ib-suggest__meta,
+.ib-suggest__reference { font-size: 0.8125rem; color: var(--ib-text-muted); }
+
+/* Die Nummer behält ihre Breite: sie ist die Antwort auf „ist das der
+   richtige", und umgebrochen beantwortet sie nichts. */
+.ib-suggest__reference { flex: none; }
+
+.ib-suggest__all {
+    display: block;
+    margin-top: 0.375rem;
+    padding: 0.5rem;
+    border-top: 1px solid var(--ib-border);
+    border-radius: 0 0 var(--ib-radius) var(--ib-radius);
+    color: var(--ib-text-muted);
+    font-size: 0.875rem;
+    text-align: center;
+    text-decoration: none;
+}
+.ib-suggest__all:hover,
+.ib-suggest__all:focus-visible { background: var(--ib-surface-muted); color: var(--ib-text); outline: none; }
+
+.ib-suggest__empty {
+    margin: 0;
+    padding: 0.75rem 0.5rem;
+    color: var(--ib-text-muted);
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+/* Die Treffergruppen auf der Trefferseite stehen untereinander. */
+.ib-search__group + .ib-search__group { margin-top: 1rem; }
+
+/*
+    Die Todo-Kachel der Übersicht.
+
+    Über die volle Breite: sie ist der Grund, warum jemand diese Seite ansieht.
+    Die Gruppen stehen untereinander, ihre Überschrift klein und still — sie
+    ordnet, sie kündigt nichts an.
+*/
+.ib-todo__group + .ib-todo__group { margin-top: 1.75rem; }
+
+.ib-todo__kind {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ib-text-muted);
+}
+
+/* Der Knopf rechts bleibt auf einer Zeile — „Weitermachen" umgebrochen ist
+   kein Knopf mehr, sondern zwei halbe. */
+.ib-todo .ib-row__trailing .ib-button { white-space: nowrap; padding: 0.375rem 0.75rem; font-size: 0.875rem; }
+
+.ib-todo .ib-field__hint { margin: 0.375rem 0 0; }
+
+/* Die Zahlen unter der Todo-Kachel — Abschnitte mit einer stillen
+   Überschrift, darunter die gewohnten Kacheln. */
+.ib-figures { margin-top: 2.5rem; }
+
+.ib-figures__title {
+    margin: 0 0 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ib-text-muted);
+}
+
+/*
+    Begrüßung und Uhr.
+
+    Links wer hereingekommen ist, rechts wie spät es ist — die Uhr in der
+    Schreibmaschinenschrift, damit sie beim Weiterspringen der Minute nicht
+    hüpft.
+*/
+/*
+    Der erste Bildschirm.
+
+    Er gehört der Begrüßung und dem Jahr — was zu tun ist, kommt danach. Wer
+    hereinkommt, soll nicht von einer Liste empfangen werden; die Höhe ist
+    darum an den sichtbaren Bereich gebunden, abzüglich Kopfzeile und
+    Brotkrume. `svh` und nicht `vh`: auf dem Telefon fährt die Adressleiste
+    ein und aus, und `vh` rechnet mit der ausgefahrenen.
+
+    Die Begrüßung steht mittig, das Jahr unten — `margin-top: auto` schiebt
+    es an den Fuß, egal wie hoch der Bildschirm ist.
+*/
+.ib-hero {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100svh - 8rem);
+    padding-bottom: 2rem;
+}
+
+.ib-welcome {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin: auto 0;
+    padding: 2rem 0;
+}
+
+/*
+    Zweizeilig: der Gruß, darunter der Name. Der Name ist die Zeile, um die
+    es geht — er steht in voller Farbe, der Gruß davor gedämpft.
+*/
+.ib-welcome__greeting {
+    margin: 0;
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+.ib-welcome__hello,
+.ib-welcome__name { display: block; }
+.ib-welcome__hello { color: var(--ib-text-muted); font-weight: 500; }
+.ib-welcome__name { color: var(--ib-text); }
+
+.ib-clock {
+    margin: 0;
+    font-family: var(--ib-font-mono);
+    font-size: clamp(1.75rem, 3.5vw, 3rem);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    color: var(--ib-text-muted);
+}
+
+/*
+    Das Jahr als Balken.
+
+    Der Verlauf folgt den Jahreszeiten und ist das einzige farbige Element
+    der Seite. Damit die Terminpunkte auf jedem Untergrund sitzen, tragen sie
+    einen weißen Ring — auf Gold ist Bernstein sonst kein Punkt mehr.
+*/
+/* Im Held-Bereich sitzt das Jahr unten: `auto` oben schiebt es an den Fuß. */
+.ib-year { margin: auto 0 0; }
+
+.ib-year__bar {
+    position: relative;
+    height: 1.25rem;
+    border-radius: 999px;
+    background: linear-gradient(
+        90deg,
+        #2563eb 0%,
+        #16a34a 27%,
+        #eab308 52%,
+        #ea580c 78%,
+        #2563eb 100%
+    );
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+}
+
+/* Die Wochen sind eine Unterteilung und keine Aussage: gerade so sichtbar,
+   dass man den Abstand ahnt. */
+.ib-year__weeks { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+
+.ib-year__week {
+    position: absolute;
+    top: 22%;
+    bottom: 22%;
+    width: 1px;
+    background: rgb(255 255 255 / 0.18);
+}
+
+/* Jede vierte Woche etwas kräftiger — das ergibt ungefähr den Monatsrhythmus
+   und hilft beim Abzählen, ohne eine zweite Skala zu sein. */
+.ib-year__week:nth-child(4n + 1) { top: 12%; bottom: 12%; background: rgb(255 255 255 / 0.3); }
+
+.ib-year__today {
+    position: absolute;
+    top: -0.375rem;
+    bottom: -0.375rem;
+    width: 2px;
+    margin-left: -1px;
+    background: #fff;
+    border-radius: 999px;
+    /* Der dunkle Saum trägt den Strich über jede Farbe des Verlaufs. */
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+}
+
+.ib-year__date {
+    position: absolute;
+    bottom: calc(100% + 0.375rem);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    background: var(--ib-text);
+    color: var(--ib-bg);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ib-year__mark { position: absolute; top: 50%; left: 0; }
+
+.ib-year__pin {
+    display: grid;
+    place-items: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    transform: translate(-50%, -50%);
+    padding: 0;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: var(--ib-text);
+    color: #fff;
+    font: inherit;
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
+}
+.ib-year__pin:hover,
+.ib-year__pin:focus-visible { transform: translate(-50%, -50%) scale(1.25); outline: none; }
+.ib-year__pin--many { width: 1.375rem; height: 1.375rem; font-size: 0.6875rem; }
+
+/*
+    Die Liste steht über dem Balken.
+
+    Darunter lag sie halb außerhalb des sichtbaren Bereichs, weil der Balken
+    am Fuß des ersten Bildschirms sitzt. Der Abstand nach oben lässt das
+    Datum am Heute-Strich frei — es steht dort auf gleicher Höhe, und eine
+    Liste, die es verdeckt, nimmt die eine Angabe weg, die immer dasteht.
+*/
+.ib-year__list {
+    position: absolute;
+    bottom: calc(50% + 3.5rem);
+    left: 0;
+    transform: translateX(-50%);
+    z-index: 25;
+    width: 18rem;
+    max-height: 14rem;
+    overflow-y: auto;
+    padding: 0.5rem;
+    border: 1px solid var(--ib-border);
+    border-radius: var(--ib-radius-lg);
+    background: var(--ib-surface);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
+}
+
+.ib-year__entry {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.4375rem 0.5rem;
+    border-radius: var(--ib-radius);
+}
+.ib-year__entry + .ib-year__entry { border-top: 1px solid var(--ib-border); border-radius: 0; }
+/* Vergangenes ist eine Auskunft und keine Aufforderung. */
+.ib-year__entry.is-past { opacity: 0.55; }
+
+.ib-year__when { display: flex; flex-direction: column; flex: none; }
+.ib-year__day { font-size: 0.8125rem; font-weight: 600; white-space: nowrap; }
+.ib-year__time { font-size: 0.75rem; color: var(--ib-text-muted); font-variant-numeric: tabular-nums; }
+
+.ib-year__what { display: flex; flex-direction: column; min-width: 0; }
+.ib-year__subject { font-size: 0.875rem; overflow-wrap: anywhere; }
+.ib-year__about { font-size: 0.75rem; color: var(--ib-text-muted); overflow-wrap: anywhere; }
+
+.ib-year__months { position: relative; height: 1.25rem; margin-top: 0.375rem; }
+
+.ib-year__month {
+    position: absolute;
+    top: 0;
+    font-size: 0.6875rem;
+    color: var(--ib-text-muted);
+}
+
+/*
+    Die Erinnerungen in der Kopfzeile — dieselbe Klappe wie beim Rechner.
+*/
+.ib-remind { position: relative; }
+
+.ib-remind__toggle { position: relative; list-style: none; }
+.ib-remind__toggle::-webkit-details-marker { display: none; }
+
+/* Ein Punkt sagt: da steht etwas an. Eine Zahl wäre eine Aufforderung, und
+   eine Erinnerung fordert nichts — sie erinnert. */
+.ib-remind__dot {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 0.4375rem;
+    height: 0.4375rem;
+    border-radius: 999px;
+    background: var(--ib-accent);
+}
+
+.ib-remind__panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    z-index: 20;
+    width: 20rem;
+    max-height: min(70vh, 34rem);
+    overflow-y: auto;
+    padding: 0.875rem;
+    border: 1px solid var(--ib-border);
+    border-radius: var(--ib-radius-lg);
+    background: var(--ib-surface);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+    text-align: left;
+}
+
+.ib-remind__panel .ib-field { margin-bottom: 0.625rem; }
+.ib-remind__when { display: grid; grid-template-columns: 1.4fr 1fr; gap: 0.625rem; }
+.ib-remind__save { width: 100%; padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+
+.ib-remind__next { margin-top: 0.875rem; padding-top: 0.75rem; border-top: 1px solid var(--ib-border); }
+
+.ib-remind__kind {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ib-text-muted);
+}
+
+.ib-remind__empty { margin: 0.375rem 0 0; font-size: 0.875rem; color: var(--ib-text-muted); }
+
+/* Was schon fällig war, steht still: es kündigt nichts mehr an, es lässt
+   sich nur noch wegnehmen. */
+.ib-remind__next .ib-row.is-past .ib-row__title,
+.ib-remind__next .ib-row.is-past .ib-row__meta { color: var(--ib-text-muted); }

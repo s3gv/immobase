@@ -1,0 +1,72 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine ausgestellte Dauermietrechnung.
+
+    Derselbe Rahmen wie im Ablauf, auf dem letzten Schritt — wer gerade noch
+    geprüft hat, findet dieselbe Seite wieder, nur ohne Knöpfe.
+
+    Zwei Wege führen von hier zu einem zweiten Schreiben, und sie heißen
+    verschieden: „Berichtigen" für einen Fehler, „Neu ausstellen" für eine
+    Änderung. Umsatzsteuerlich wirkt das eine zurück und das andere nicht.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <div class="ib-index__actions">
+        <a class="ib-button ib-button--quiet" href="{{ path('app_billing_invoice_pdf', { id: invoice.id }) }}">
+            {{ 'billing.invoice.download'|trans }}
+        </a>
+
+        {#
+            Die E-Rechnung gibt es nur mit Umsatzsteuer — Wohnraum ist
+            dauerhaft ausgenommen — und nur, wenn ihre Angaben beim Ausstellen
+            eingefroren wurden.
+        #}
+        {% if body.taxation.isCharged and body.eInvoice.isCaptured %}
+            <a class="ib-button ib-button--quiet" href="{{ path('app_billing_invoice_xrechnung', { id: invoice.id }) }}"
+               data-tooltip="{{ 'billing.einvoice.download_hint'|trans }}">
+                {{ 'billing.einvoice.download'|trans }}
+            </a>
+        {% endif %}
+
+        {% if is_granted('billing.edit') %}
+            <button class="ib-button ib-button--quiet" type="button" data-modal-open="invoice-succeed">
+                {{ 'billing.invoice.succeed.label'|trans }}
+            </button>
+            <button class="ib-button ib-button--quiet" type="button" data-modal-open="invoice-correct">
+                {{ 'billing.invoice.correct.label'|trans }}
+            </button>
+        {% endif %}
+    </div>
+
+    {% if body.taxation.isCharged and not body.eInvoice.isCaptured %}
+        <p class="ib-note ib-note--warning">{{ 'billing.einvoice.needs_new_edition'|trans }}</p>
+    {% endif %}
+
+    {% include 'billing/_invoice_preview.html.twig' with { invoice: invoice, body: body } only %}
+
+    {% if is_granted('billing.edit') %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'invoice-succeed',
+            title: 'billing.invoice.succeed.title'|trans,
+            body: 'billing.invoice.succeed.body'|trans,
+            consequences: ['billing.invoice.succeed.consequence'|trans],
+            confirm_label: 'billing.invoice.succeed.label'|trans,
+            danger: false,
+            url: path('app_billing_invoice_succeed', { id: invoice.id }),
+            token: 'billing_invoice'
+        } only %}
+
+        {% include 'components/confirm.html.twig' with {
+            id: 'invoice-correct',
+            title: 'billing.invoice.correct.title'|trans,
+            body: 'billing.invoice.correct.body'|trans,
+            consequences: ['billing.invoice.correct.consequence'|trans],
+            confirm_label: 'billing.invoice.correct.label'|trans,
+            danger: false,
+            url: path('app_billing_invoice_correct', { id: invoice.id }),
+            token: 'billing_invoice'
+        } only %}
+    {% endif %}
+{% endblock %}

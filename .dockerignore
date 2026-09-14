@@ -1,0 +1,34 @@
+# Was ins Image gehoert — und nur das.
+#
+# Eine Liste der Ausnahmen statt einer Liste der Verbote: `COPY . .` nimmt
+# sonst alles mit, was im Arbeitsverzeichnis liegt, auch wenn Git es nie
+# gesehen hat. Eine .env.local.php aus `composer dump-env`, eine Notiz mit
+# Zugangsdaten, ein Ordner einer Entwicklungsumgebung: was hier nicht
+# ausdruecklich steht, bleibt draussen.
+*
+
+!assets
+!bin/console
+!config
+!docker
+!migrations
+!plugins
+!public
+!src
+!templates
+!translations
+
+!.env
+!composer.json
+!composer.lock
+!importmap.php
+!symfony.lock
+!LICENSE
+!NOTICE
+
+# Auch innerhalb der erlaubten Verzeichnisse nicht: die Abhaengigkeiten der
+# Plugins entstehen im Build, und Spuren des Betriebssystems braucht niemand.
+plugins/*/vendor
+**/.DS_Store
+**/*.local
+**/*.local.*

@@ -1,0 +1,63 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Einladen — in derselben Gestalt wie jedes andere Formular.
+
+    Die Liste links zeigt den ganzen Weg und nicht nur den eigenen Schritt:
+    Passwort, Angaben und zweiter Faktor stehen blass daneben, weil sie
+    kommen, aber von der eingeladenen Person selbst. Das erklärt in einem
+    Blick, warum hier nur ein Feld steht.
+#}
+{% embed 'components/sections.html.twig' %}
+    {% block section_body %}
+        <form method="post" action="{{ path('app_user_new') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('user_invite') }}">
+
+            {# Der Fehler an der Rollenauswahl steht über dem Formular: das
+               Feld dafür ist eine Gruppe von Kästchen, kein Eingabefeld. #}
+            {% if error and error starts with 'role.' %}
+                <p class="ib-field__error" role="alert">{{ error|trans }}</p>
+            {% endif %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'email', name: 'email', type: 'email',
+                label: 'user.field.email'|trans,
+                hint: 'user.invite.email_hint'|trans,
+                value: email, error: error and error starts with 'user.' ? error|trans : null,
+                required: true, autofocus: true, autocomplete: 'off'
+            } only %}
+
+            {#
+                Die Rollenauswahl steht neben der Adresse, weil ein Konto ohne
+                Rolle nichts kann. Gibt es nur „Administrator", steht hier der
+                Hinweis statt einer Auswahl, aus der nur „zum Administrator
+                machen" hervorginge.
+            #}
+            {% if onlySystemRole %}
+                <p class="ib-note">
+                    {{ 'role.assignment.none_available'|trans }}
+                    <a href="{{ path('app_role') }}">{{ 'role.assignment.create_first'|trans }}</a>
+                </p>
+            {% else %}
+                <fieldset class="ib-choices{{ error == 'role.assignment.none' ? ' is-invalid' : '' }}">
+                    <legend class="ib-field__label">{{ 'role.assignment.heading'|trans }}</legend>
+                    <p class="ib-field__hint">{{ 'role.assignment.explanation'|trans }}</p>
+                    {% for role in roles %}
+                        <label class="ib-choice">
+                            <input type="checkbox" name="roles[]" value="{{ role.id }}"
+                                   {{ chosen[role.id] is defined ? 'checked' : '' }}>
+                            {{ role.name.value }}
+                        </label>
+                    {% endfor %}
+                </fieldset>
+            {% endif %}
+
+            <div class="ib-flow__actions">
+                <a class="ib-button ib-button--quiet" href="{{ path('app_user') }}">{{ 'flow.cancel'|trans }}</a>
+                <button class="ib-button" type="submit" {{ onlySystemRole ? 'disabled' : '' }}>
+                    {{ 'user.invite.submit'|trans }}
+                </button>
+            </div>
+        </form>
+    {% endblock %}
+{% endembed %}

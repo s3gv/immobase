@@ -1,0 +1,35 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'flow/flow.html.twig' %}
+
+{% block step_body %}
+    {% embed 'party/_contact_list.html.twig' with {
+        field: 'emails', entries: draft.emailInputs ?: [''], label: 'party.field.emails'|trans,
+        single: 'party.field.email'|trans, add: 'party.action.add_email'|trans,
+        primary: 'party.field.primary_email'|trans,
+        error: errors.emails is defined ? errors.emails|trans : null,
+        type: 'email', required: true
+    } only %}{% endembed %}
+
+    {% embed 'party/_contact_list.html.twig' with {
+        field: 'phones', entries: draft.phoneInputs ?: [''], label: 'party.field.phones'|trans,
+        single: 'party.field.phone'|trans, add: 'party.action.add_phone'|trans,
+        primary: 'party.field.primary_phone'|trans,
+        error: null, type: 'tel'
+    } only %}{% endembed %}
+
+    {#
+        Die Steuernummer steht nur beim Eigentümer, weil nur er sie braucht:
+        eine Dauermietrechnung nennt nach § 14 Abs. 4 Nr. 2 UStG die Nummer des
+        leistenden Unternehmers, und das ist der Vermieter — nicht die
+        Verwaltung, die das Schreiben aufsetzt.
+    #}
+    {% if draft.letsProperty %}
+        {% include 'components/field.html.twig' with {
+            id: 'taxNumber', name: 'taxNumber',
+            label: 'party.field.tax_number'|trans,
+            hint: 'party.field.tax_number_hint'|trans,
+            value: draft.taxNumber
+        } only %}
+    {% endif %}
+{% endblock %}

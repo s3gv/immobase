@@ -1,0 +1,35 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine neue Anfrage: Betreff, Nachricht, Dateien. Drei Felder.
+
+    Keine Kategorie, keine Dringlichkeit, keine Abteilung. Das sind die Dinge,
+    an denen Ticketsysteme scheitern — sie verlangen vom Fragenden eine
+    Einordnung, die er nicht treffen kann.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <form method="post" action="{{ path('app_portal_enquiry_ask') }}" enctype="multipart/form-data">
+        <input type="hidden" name="_token" value="{{ csrf_token('portal_enquiry') }}">
+
+        {% include 'components/field.html.twig' with {
+            id: 'subject', name: 'subject', label: 'portal.enquiry.subject'|trans,
+            value: subject, required: true, autofocus: true,
+            hint: 'portal.enquiry.subject_hint'|trans
+        } only %}
+
+        {% include 'portal/_compose.html.twig' with {
+            id: 'body', name: 'body', label: 'portal.enquiry.message'|trans,
+            value: body, required: true,
+            retentionDays: retentionDays, maxFiles: maxFiles, maxMegabytes: maxMegabytes
+        } only %}
+
+        <div class="ib-flow__actions">
+            <a class="ib-button ib-button--quiet" href="{{ path('app_portal_enquiries') }}">
+                {{ 'portal.enquiry.cancel'|trans }}
+            </a>
+            <button class="ib-button" type="submit">{{ 'portal.enquiry.send'|trans }}</button>
+        </div>
+    </form>
+{% endblock %}

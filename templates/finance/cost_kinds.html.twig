@@ -1,0 +1,125 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Kostenarten.
+
+    Jede Zeile ein eigenes Formular — dieselbe Gestalt wie die Mietstaffel und
+    aus demselben Grund: eine Änderung muss nicht raten, welche Zeile gemeint
+    war. Mitgelieferte Arten lassen sich umbenennen, aber nicht löschen; sie
+    sind die Sprache, in der später jede Abrechnung gruppiert.
+
+    Ein Formular je Zeile und trotzdem ein gemeinsames Raster: die Zeilen
+    reichen ihre Zellen an das Raster der Liste durch (`display: contents`).
+    Sonst rechnet jede Zeile ihre Spalten für sich aus, und die letzte — die
+    mit dem Knopf statt der Symbole — steht als einzige woanders.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'finance.kind.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'finance.kind.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'finance.kind.explanation'|trans }}</p>
+
+    {% set may_edit = is_granted('finance.edit') %}
+
+    {% if may_edit %}
+        <div class="ib-catalogue">
+            {# Eine Kopfzeile statt zwanzigmal derselben Beschriftung. #}
+            <div class="ib-catalogue__head">
+                <span>{{ 'finance.kind.name'|trans }}</span>
+                <span>{{ 'finance.kind.apportionable'|trans }}</span>
+                {#
+                    Die Beschriftung ist verborgen, die Zelle nicht: ein
+                    absolut positioniertes Kind belegt keine Rasterzelle, und
+                    ohne die dritte Spaltenüberschrift rutschte die ganze
+                    Liste um eine Spalte weiter.
+                #}
+                <span><span class="ib-visually-hidden">{{ 'table.actions'|trans }}</span></span>
+            </div>
+
+            {% for kind in kinds %}
+                <form class="ib-catalogue__row" method="post"
+                      action="{{ path('app_finance_cost_kind_change', { id: kind.id }) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('finance_cost_kind') }}">
+
+                    {% include 'components/field.html.twig' with {
+                        id: 'name-' ~ kind.id, name: 'name',
+                        label: 'finance.kind.name'|trans, value: kind.name, quiet: true
+                    } only %}
+
+                    {% include 'components/select.html.twig' with {
+                        id: 'apportionable-' ~ kind.id, name: 'apportionable',
+                        label: 'finance.kind.apportionable'|trans,
+                        choices: [
+                            { value: '1', label: 'finance.kind.apportionable_yes'|trans },
+                            { value: '0', label: 'finance.kind.apportionable_no'|trans }
+                        ],
+                        value: kind.isApportionable ? '1' : '0', quiet: true
+                    } only %}
+
+                    <div class="ib-catalogue__actions">
+                        {% if kind.isSystem %}
+                            <span class="ib-badge">{{ 'finance.kind.from_catalogue'|trans }}</span>
+                        {% endif %}
+                        <button class="ib-action" type="submit" name="save" value="1"
+                                aria-label="{{ 'settings.save'|trans }}"
+                                data-tooltip="{{ 'settings.save'|trans }}">
+                            {% include 'components/icon.html.twig' with { name: 'save' } only %}
+                        </button>
+                        {% if not kind.isSystem %}
+                            <button class="ib-action ib-action--danger" type="submit" name="remove" value="1"
+                                    aria-label="{{ 'finance.kind.remove'|trans }}"
+                                    data-tooltip="{{ 'finance.kind.remove'|trans }}" formnovalidate>
+                                {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                            </button>
+                        {% endif %}
+                    </div>
+                </form>
+            {% endfor %}
+
+            {#
+                Die neue Art steht in denselben Spalten wie die vorhandenen:
+                sie ist dieselbe Sorte Zeile, nur noch leer. Die Beschriftungen
+                bleiben deshalb auch hier verborgen — die Kopfzeile trägt sie.
+            #}
+            <form class="ib-catalogue__row ib-catalogue__add" method="post"
+                  action="{{ path('app_finance_cost_kind_add') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('finance_cost_kind') }}">
+
+                {% include 'components/field.html.twig' with {
+                    id: 'name-neu', name: 'name', label: 'finance.kind.name'|trans,
+                    value: '', placeholder: 'finance.kind.new'|trans, quiet: true
+                } only %}
+
+                {% include 'components/select.html.twig' with {
+                    id: 'apportionable-neu', name: 'apportionable',
+                    label: 'finance.kind.apportionable'|trans,
+                    choices: [
+                        { value: '1', label: 'finance.kind.apportionable_yes'|trans },
+                        { value: '0', label: 'finance.kind.apportionable_no'|trans }
+                    ],
+                    value: '1', quiet: true
+                } only %}
+
+                <div class="ib-catalogue__actions">
+                    <button class="ib-action" type="submit"
+                            aria-label="{{ 'finance.kind.add'|trans }}"
+                            data-tooltip="{{ 'finance.kind.add'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'plus' } only %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    {% else %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: ['finance.kind.name'|trans, 'finance.kind.apportionable'|trans],
+            rows: kinds|map(kind => [
+                kind.name,
+                (kind.isApportionable ? 'finance.kind.apportionable_yes' : 'finance.kind.apportionable_no')|trans
+            ]),
+            empty: ''
+        } only %}
+    {% endif %}
+{% endblock %}

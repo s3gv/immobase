@@ -1,0 +1,58 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der zweite Schritt der Anmeldung.
+
+    Bewusst dieselbe Gestalt wie die Anmeldemaske: es ist derselbe Vorgang,
+    nur noch nicht zu Ende. Eine fremd aussehende Seite an dieser Stelle sieht
+    aus wie ein Phishing-Versuch.
+#}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'login.second_factor'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block body %}
+    <main class="ib-login">
+        <div class="ib-login__panel">
+            <img class="ib-brand__mark ib-brand__mark--on-light" src="{{ asset('images/logo-on-light.svg') }}" alt="{{ 'app.name'|trans }}">
+            <img class="ib-brand__mark ib-brand__mark--on-dark" src="{{ asset('images/logo-on-dark.svg') }}" alt="{{ 'app.name'|trans }}">
+
+            <h1 class="ib-login__heading">{{ 'login.second_factor'|trans }}</h1>
+
+            {% include 'components/flashes.html.twig' %}
+
+            {% if message %}
+                <p class="ib-flash ib-flash--{{ message starts with 'user.factor.error' ? 'error' : 'success' }}" role="alert">
+                    {{ message|trans }}
+                </p>
+            {% endif %}
+
+            <p class="ib-login__hint">{{ ('login.second_factor_' ~ kind.value)|trans }}</p>
+
+            <form method="post" action="{{ path('app_second_factor') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('second_factor') }}">
+
+                {% include 'components/field.html.twig' with {
+                    id: 'code', name: 'code', label: 'user.factor.code'|trans,
+                    required: true, autofocus: true, autocomplete: 'one-time-code'
+                } only %}
+
+                <button class="ib-button ib-button--block" type="submit">{{ 'login.submit'|trans }}</button>
+
+                <div class="ib-login__alternatives">
+                    {% if kind.value == 'email' %}
+                        <button class="ib-linkish" type="submit" name="resend" value="1" formnovalidate>
+                            {{ 'login.resend_code'|trans }}
+                        </button>
+                    {% endif %}
+
+                    {# Der Weg für ein verlorenes Gerät. Er steht hier und
+                       nicht versteckt: wer ihn nicht findet, ruft an. #}
+                    <button class="ib-linkish" type="submit" name="recovery" value="1">
+                        {{ 'login.use_recovery_code'|trans }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+{% endblock %}

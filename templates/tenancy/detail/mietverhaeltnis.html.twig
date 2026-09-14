@@ -1,0 +1,34 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'tenancy/_detail.html.twig' %}
+{% set edit_step = 'mietverhaeltnis' %}
+
+{% block panel %}
+    {% set blank = 'tenancy.none'|trans %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['tenancy.field.number'|trans, tenancy.number],
+            ['tenancy.field.status'|trans, tenancy.status.labelKey|trans]
+        ],
+        empty: ''
+    } only %}
+
+    {#
+        Der Sprung zur Einheit. In die Gegenrichtung meldet sich dieses Modul
+        über UnitLinkSource — das Objektmodul kennt es nicht.
+    #}
+    <ul class="ib-links">
+        <li>
+            <span class="ib-field__hint">{{ 'tenancy.field.unit'|trans }}</span>
+            {% if unit %}
+                <a href="{{ path('app_unit_show', { number: unit.propertyNumber, unit: unit.number }) }}">
+                    {{ unit.oneLine }}
+                </a>
+                <span class="ib-field__hint">{{ unit.address }}</span>
+            {% else %}
+                {{ tenancy.unitId }}
+            {% endif %}
+        </li>
+    </ul>
+{% endblock %}

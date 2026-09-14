@@ -1,0 +1,137 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+
+        # IMPORTANT: You MUST configure your server version,
+        # either here or in the DATABASE_URL env var (see .env file)
+        #server_version: '16'
+
+        profiling_collect_backtrace: '%kernel.debug%'
+
+        # Die Tabellen der Plugins liegen in eigenen Schemata `plugin_<name>`.
+        # Sie gehören nicht dem Core: sie entstehen beim Aktivieren aus dem
+        # Manifest und gehen beim Entfernen mit. Ohne diese Zeile hielte
+        # Doctrines Schema-Werkzeug sie für überflüssig und schriebe ein DROP
+        # in die nächste Migration.
+        schema_filter: '~^(?!plugin_)~'
+    orm:
+        validate_xml_mapping: true
+        naming_strategy: doctrine.orm.naming_strategy.underscore
+        identity_generation_preferences:
+            Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
+        auto_mapping: true
+        # Ein Eintrag pro Modul, das eigene Tabellen besitzt. Bewusst einzeln
+        # statt über einen Sammelpfad: so ist auf einen Blick sichtbar, welche
+        # Module überhaupt persistieren.
+        mappings:
+            # Je Modul ein Eintrag. Ohne ihn findet Doctrine die Entities des
+            # Moduls nicht, und "doctrine:migrations:diff" meldet, es habe sich
+            # nichts geändert — der Fehler sieht dann nach einem Cache-Problem
+            # aus und ist keines.
+            Auth:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Auth/Domain'
+                prefix: 'App\Module\Auth\Domain'
+                alias: Auth
+
+            Plugin:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Plugin/Domain'
+                prefix: 'App\Module\Plugin\Domain'
+                alias: Plugin
+
+            Audit:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Audit/Domain'
+                prefix: 'App\Module\Audit\Domain'
+                alias: Audit
+
+            Dashboard:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Dashboard/Domain'
+                prefix: 'App\Module\Dashboard\Domain'
+                alias: Dashboard
+
+            Dunning:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Dunning/Domain'
+                prefix: 'App\Module\Dunning\Domain'
+                alias: Dunning
+
+            Party:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Party/Domain'
+                prefix: 'App\Module\Party\Domain'
+                alias: Party
+
+            Portal:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Portal/Domain'
+                prefix: 'App\Module\Portal\Domain'
+                alias: Portal
+
+            Property:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Property/Domain'
+                prefix: 'App\Module\Property\Domain'
+                alias: Property
+
+            Settings:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Settings/Domain'
+                prefix: 'App\Module\Settings\Domain'
+                alias: Settings
+
+            Finance:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Finance/Domain'
+                prefix: 'App\Module\Finance\Domain'
+                alias: Finance
+
+            Tenancy:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Tenancy/Domain'
+                prefix: 'App\Module\Tenancy\Domain'
+                alias: Tenancy
+
+            Billing:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Module/Billing/Domain'
+                prefix: 'App\Module\Billing\Domain'
+                alias: Billing
+
+when@test:
+    doctrine:
+        dbal:
+            # "TEST_TOKEN" is typically set by ParaTest
+            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+
+when@prod:
+    doctrine:
+        orm:
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            result_cache_driver:
+                type: pool
+                pool: doctrine.result_cache_pool
+
+    framework:
+        cache:
+            pools:
+                doctrine.result_cache_pool:
+                    adapter: cache.app
+                doctrine.system_cache_pool:
+                    adapter: cache.system

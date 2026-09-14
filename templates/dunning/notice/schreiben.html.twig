@@ -1,0 +1,56 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Stufe, Frist und Nebenforderungen.
+
+    Die Stufe steht fest — sie folgt auf die zuletzt ausgestellte. Wählbar
+    ist sie nicht: eine letzte Mahnung ohne vorausgegangene erste ist keine
+    letzte.
+#}
+{% extends 'dunning/notice/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.notice is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.notice|trans }}</p>
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'level', name: 'level', label: 'dunning.field.level'|trans,
+        value: notice.level.labelKey|trans, readonly: true
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'payBy', name: 'payBy', type: 'date', label: 'dunning.pay_by'|trans,
+        value: posted ? submitted.payBy|default('') : notice.payBy|date('Y-m-d')
+    } only %}
+
+    {% if notice.level.mayCharge %}
+        {% include 'components/field.html.twig' with {
+            id: 'costs', name: 'costs', label: 'dunning.costs'|trans,
+            hint: 'dunning.costs_hint'|trans,
+            value: posted ? submitted.costs|default('') : notice.charges.costs.toDecimal
+        } only %}
+    {% endif %}
+
+    {#
+        Nur das Häkchen, kein Betrag. Was die Pauschale kostet, rechnet die
+        Anwendung aus den gedeckten Forderungen — ein Feld dafür hieße, dass
+        man den Betrag hineinschreiben kann.
+    #}
+    {% if mayClaimTheFlatFee %}
+        <label class="ib-check">
+            <input type="checkbox" name="flatFee" value="1"
+                   {{ notice.charges.flatFeeWanted ? 'checked' : '' }}>
+            <span>{{ 'dunning.flat_fee_offer'|trans({'%amount%': flatFee|money}) }}</span>
+        </label>
+        <p class="ib-field__hint">{{ 'dunning.flat_fee_hint'|trans }}</p>
+    {% endif %}
+
+    {% include 'components/textarea.html.twig' with {
+        id: 'note', name: 'note', label: 'dunning.note'|trans,
+        hint: 'dunning.note_hint'|trans,
+        value: posted ? submitted.note|default('') : notice.note
+    } only %}
+{% endblock %}

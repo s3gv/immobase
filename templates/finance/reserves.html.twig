@@ -1,0 +1,41 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Erhaltungsrücklagen — eine Zeile je Objekt.
+
+    Nur Objekte mit WEG-Verwaltung stehen hier: die Rücklage gehört der
+    Gemeinschaft und liegt auf deren Konto. Bei reiner Mietverwaltung gibt es
+    keine Gemeinschaft, bei Sondereigentumsverwaltung führt sie jemand anders.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'finance.reserve.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'finance.reserve.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'finance.reserve.subheading'|trans }}</p>
+
+    {% if properties is empty %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.reserve.no_weg'|trans
+        } only %}
+    {% else %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'finance.item.field.property'|trans,
+                'finance.reserve.balance'|trans,
+                'finance.reserve.movements'|trans
+            ],
+            rows: properties|map(p => {
+                cells: [
+                    p.oneLine,
+                    balances[p.id].total|money,
+                    balances[p.id].movements|length
+                ],
+                actions: [{ action: 'open', url: path('app_finance_reserve_show', { number: p.number }) }]
+            }),
+            empty: ''
+        } only %}
+    {% endif %}
+{% endblock %}

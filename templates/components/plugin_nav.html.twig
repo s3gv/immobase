@@ -1,0 +1,34 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Menüpunkte der Plugins.
+
+    Mit eigener Zwischenüberschrift, damit erkennbar bleibt, was zur
+    Anwendung gehört und was hinzugekommen ist. Ohne aktive Plugins steht
+    hier nichts — auch die Überschrift nicht: eine leere Rubrik wäre ein
+    Hinweis auf etwas, das es nicht gibt.
+
+    Dieser Block rollt, wenn die Liste lang wird. Die Menüpunkte der
+    Anwendung darüber und die Verwaltung darunter bleiben stehen.
+#}
+{% set entries = plugin_nav()|filter(entry => is_granted(entry.permission)) %}
+
+{% if entries is not empty %}
+    <div class="ib-nav-plugins">
+        <h2 class="ib-nav__caption">{{ 'nav.plugins'|trans }}</h2>
+
+        <ul class="ib-nav">
+            {% for entry in entries %}
+                {% set is_current = app.request.pathinfo starts with entry.url %}
+                <li>
+                    <a class="ib-nav__link{{ is_current ? ' is-current' : '' }}"
+                       href="{{ entry.url }}"
+                       {% if is_current %}aria-current="page"{% endif %}>
+                        {% include 'components/icon.html.twig' with { name: entry.icon } only %}
+                        {{ entry.label }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}

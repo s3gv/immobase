@@ -1,0 +1,64 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Hausgeldstufen einer Einheit.
+
+    Erwartet: unit, schedule (AdvanceSchedule oder null), current, intervals
+
+    Jede Stufe ein eigenes Formular — wie bei der Mietstaffel: eine Stufe
+    kommt einzeln dazu und verschwindet einzeln.
+#}
+<div class="ib-rents">
+    {% for step in schedule ? schedule.steps : [] %}
+        <form class="ib-rents__row{{ step is same as(current) ? ' is-current' : '' }}" method="post"
+              action="{{ path('app_finance_advance_change', { id: step.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('finance_advance') }}">
+
+            {% include 'finance/_advance_fields.html.twig' with {
+                step: step, intervals: intervals
+            } only %}
+
+            <div class="ib-rents__actions">
+                {% if step is same as(current) %}
+                    <span class="ib-badge ib-badge--success">{{ 'tenancy.rent.current'|trans }}</span>
+                {% endif %}
+
+                {#
+                    Woher der Betrag kommt, ist keine Nebensache: eine Stufe
+                    aus einem beschlossenen Wirtschaftsplan ist das, was die
+                    Versammlung entschieden hat. Wer sie hier ändert, darf das
+                    — aber dann steht beides da.
+                #}
+                {% if step.origin.isFromAPlan %}
+                    <span class="ib-badge" data-tooltip="{{ 'finance.advance.from_plan'|trans({'%reference%': step.origin.planReference}) }}">
+                        {{ step.origin.planReference }}
+                    </span>
+                {% endif %}
+                {% if step.origin.wasChangedByHand %}
+                    <span class="ib-badge ib-badge--warning">{{ 'finance.advance.by_hand'|trans }}</span>
+                {% endif %}
+                <button class="ib-action" type="submit" name="save" value="1"
+                        aria-label="{{ 'settings.save'|trans }}"
+                        data-tooltip="{{ 'settings.save'|trans }}">
+                    {% include 'components/icon.html.twig' with { name: 'save' } only %}
+                </button>
+                <button class="ib-action ib-action--danger" type="submit" name="remove" value="1"
+                        aria-label="{{ 'finance.advance.remove'|trans }}"
+                        data-tooltip="{{ 'finance.advance.remove'|trans }}" formnovalidate>
+                    {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                </button>
+            </div>
+        </form>
+    {% endfor %}
+
+    <form class="ib-rents__row ib-rents__add" method="post"
+          action="{{ path('app_finance_advance_add', { unitId: unit.id }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('finance_advance') }}">
+
+        {% include 'finance/_advance_fields.html.twig' with { step: null, intervals: intervals } only %}
+
+        <div class="ib-rents__actions">
+            <button class="ib-button ib-button--quiet" type="submit">{{ 'finance.advance.add'|trans }}</button>
+        </div>
+    </form>
+</div>

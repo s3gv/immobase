@@ -1,0 +1,21 @@
+{
+    "name": "immobase/reporting",
+    "description": "Auswertungen als Plugin für ImmoBase — Referenzimplementierung der Plugin-Grenze.",
+    "type": "project",
+    "license": "AGPL-3.0-or-later",
+    "require": {
+        "php": ">=8.4",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-pdo": "*",
+        "twig/twig": "^3.21"
+    },
+    "autoload": {
+        "psr-4": {
+            "Reporting\\": "src/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

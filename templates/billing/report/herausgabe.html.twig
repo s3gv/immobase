@@ -1,0 +1,56 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Herausgabe.
+
+    Es gibt nichts zu beschließen — § 28 Abs. 4 WEG verlangt eine Auskunft und
+    keine Entscheidung. Herausgeben heißt darum zweierlei: die Schreiben
+    entstehen, und ab hier ändert sich nichts mehr daran. Das Zweite ist das
+    Wichtigere: eine später gebuchte Entnahme darf ein zugestelltes Blatt
+    nicht rückwirkend ändern.
+
+    Was hier steht, ist genau das, was herausgeht.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% if missing is not empty %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'billing.report.missing'|trans }}</p>
+        </div>
+    {% endif %}
+
+    {% include 'billing/_report_preview.html.twig' with {
+        body: body, asOf: report.asOf,
+        banks: banks, liabilities: liabilities, holdings: holdings
+    } only %}
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.report.recipients'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.report.recipients_hint'|trans }}</p>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: ['billing.report.claim.unit'|trans, 'billing.report.recipient'|trans],
+        rows: recipients|map(r => [r.unit, r.recipient ?: 'billing.report.no_recipient'|trans]),
+        empty: 'billing.report.no_units'|trans
+    } only %}
+{% endblock %}
+
+{% block forward %}
+    <button class="ib-button ib-button--quiet" type="submit" name="direction" value="forward">
+        {{ 'billing.report.keep'|trans }}
+    </button>
+{% endblock %}
+
+{% block outside_form %}
+    {% if missing is empty and recipients is not empty %}
+        <form method="post" action="{{ path('app_billing_report_release', { id: report.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+
+            <p class="ib-field__hint">{{ 'billing.report.release_hint'|trans }}</p>
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'billing.report.release'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

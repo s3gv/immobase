@@ -1,0 +1,15 @@
+framework:
+    asset_mapper:
+        # The paths to make available to the asset mapper.
+        paths:
+            - assets/
+        missing_import_mode: strict
+        # Kein Nachladen von es-module-shims von einem fremden Server fuer
+        # Browser ohne Importmap-Unterstuetzung. Alle aktuellen koennen es, und
+        # ein fremdes Skript waere eine Gegenstelle, die niemand bestellt hat.
+        importmap_polyfill: false
+
+when@prod:
+    framework:
+        asset_mapper:
+            missing_import_mode: warn

@@ -1,0 +1,90 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Beschlussvorlage: was den Eigentümern vor der Versammlung vorliegt.
+
+    Oben die Einheitenwahl, darunter genau das, was auf dem Schreiben stehen
+    wird. Wer hier herausgibt, hat gesehen, was rausgeht — beschlossen ist
+    damit nichts, das kommt im nächsten Schritt.
+
+    Geändert werden darf danach weiter: die Versammlung entscheidet am Ende,
+    und was sie anders sieht, gehört in den Plan und nicht daneben. Die Vorlage
+    behält ihren Tag; er sagt, was wann vorlag.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block before_form %}
+    {% if shown %}
+        {% include 'billing/_recipients.html.twig' with {
+            action: path('app_billing_plan_edit', { id: plan.id, step: current }),
+            field: 'einheit',
+            value: shown.key,
+            choices: proposal.documents|map(d => {
+                value: d.key,
+                label: d.unitNumber ~ ' · ' ~ d.unitLabel ~ ' · ' ~ d.recipientLabel
+            })
+        } only %}
+    {% endif %}
+{% endblock %}
+
+{% block fields %}
+    {% include 'billing/plan/_missing.html.twig' with { missing: proposal.missing } only %}
+
+    {% if shown is null %}
+        <p class="ib-empty">{{ 'billing.plan.nothing'|trans }}</p>
+    {% else %}
+        {% include 'billing/_plan_preview.html.twig' with {
+            who: shown.recipientLabel,
+            unit: shown.unitNumber ~ ' · ' ~ shown.unitLabel,
+            lines: shown.lines,
+            costs: shown.costs, reserve: shown.reserve, yearly: shown.yearly,
+            advance: shown.advance,
+            interval: plan.terms.interval.labelKey|trans,
+            firstDue: plan.terms.firstDueOn
+        } only %}
+    {% endif %}
+{% endblock %}
+
+{% block outside_form %}
+    {% if proposal.documents is not empty and proposal.missing is empty %}
+        {#
+            Herausgegeben wird der ganze Plan und nicht das angesehene
+            Schreiben — darum steht der Knopf unter der Auswahl und nicht in
+            ihr.
+        #}
+        <form method="post" action="{{ path('app_billing_plan_propose', { id: plan.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+
+            {% if plan.stage.wasProposed %}
+                <p class="ib-field__hint">
+                    {{ 'billing.plan.proposed_on'|trans({'%day%': plan.stage.proposedOn|date_local}) }}
+                </p>
+
+                {#
+                    Die Vorlage selbst ist eingefroren und ändert sich nicht.
+                    Die Angaben, aus denen sie entstand, schon — und dann läge
+                    der Versammlung etwas vor, das nicht mehr stimmt.
+                #}
+                {% if drifted %}
+                    <div class="ib-note ib-note--warning">
+                        <p>{{ 'billing.plan.drifted'|trans }}</p>
+                    </div>
+                {% endif %}
+            {% else %}
+                <p class="ib-field__hint">{{ 'billing.plan.propose_hint'|trans }}</p>
+            {% endif %}
+
+            <div class="ib-flow__actions">
+                {% if plan.stage.wasProposed %}
+                    <a class="ib-button ib-button--quiet"
+                       href="{{ path('app_billing_plan_proposal_pdf', { id: plan.id }) }}">
+                        {{ 'billing.plan.download_proposal'|trans }}
+                    </a>
+                {% endif %}
+                <button class="ib-button" type="submit">
+                    {{ (plan.stage.wasProposed ? 'billing.plan.propose_again' : 'billing.plan.propose')|trans }}
+                </button>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

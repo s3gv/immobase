@@ -1,0 +1,48 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Stile dieses Plugins.
+
+    **Eigenes Präfix `aw-`.** Die Bausteine des Cores (`ib-`) benutzt es, wo
+    es sie gibt — Karte, Tabelle, Überschrift; was es selbst mitbringt, trägt
+    einen eigenen Namen. Ein Plugin, das `.ib-card` umdefiniert, bräche die
+    Anwendung an Stellen, die es nie gesehen hat.
+
+    **Farben nur als Variablen des Cores.** Damit wechseln die Diagramme mit
+    dem Theme. Ein fester Farbwert leuchtete im dunklen Design als Fremdkörper.
+
+    Inline und nicht als Datei: der Core holt ein Fragment, kein Dokument —
+    ein <link> im Rumpf wäre an der falschen Stelle.
+#}
+<style>
+    .aw-cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(21rem, 1fr)); }
+    .aw-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.25rem; }
+    .aw-card__title { margin: 0; font-size: 1rem; font-weight: 600; }
+    .aw-card__note { margin: 0 0 1rem; color: var(--ib-text-muted); font-size: 0.8125rem; }
+
+    .aw-bars { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+    .aw-bar__head { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.8125rem; }
+    .aw-bar__label { color: var(--ib-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .aw-bar__value { color: var(--ib-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* Die Spur bleibt sichtbar: ein Balken ohne sie zeigt einen Wert, aber
+       kein Verhältnis. */
+    .aw-bar__track { height: 0.5rem; margin-top: 0.25rem; border-radius: 999px; background: color-mix(in srgb, var(--ib-text) 8%, transparent); overflow: hidden; }
+    .aw-bar__fill { display: block; height: 100%; border-radius: 999px; background: var(--ib-accent); }
+    .aw-bar__fill--warning { background: var(--ib-warning); }
+    .aw-bar__fill--danger { background: var(--ib-danger); }
+    .aw-bar__fill--success { background: var(--ib-success); }
+
+    .aw-line { display: block; width: 100%; height: 8rem; overflow: visible; }
+    .aw-line__area { fill: color-mix(in srgb, var(--ib-accent) 18%, transparent); }
+    .aw-line__stroke { fill: none; stroke: var(--ib-accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+    .aw-line__dot { fill: var(--ib-accent); }
+    .aw-line__years { display: flex; justify-content: space-between; margin: 0.25rem 0 0; color: var(--ib-text-muted); font-size: 0.75rem; }
+
+    /* Der Gläubiger steht unter dem Darlehen, nicht daneben. */
+    .aw-sub { display: block; color: var(--ib-text-muted); font-size: 0.8125rem; }
+
+    .aw-figure { margin: 0 0 0.75rem; font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .aw-figure--danger { color: var(--ib-danger); }
+    .aw-figure--warning { color: var(--ib-warning); }
+</style>

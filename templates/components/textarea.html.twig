@@ -1,0 +1,18 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein mehrzeiliges Feld.
+
+    Erwartet: id, label, name
+    Optional: value, hint, error, rows (Vorgabe 4), required, autofocus
+#}
+<div class="ib-field{{ error|default(null) ? ' is-invalid' : '' }}">
+    <label class="ib-field__label" for="{{ id }}">{{ label }}</label>
+    <textarea class="ib-field__input" id="{{ id }}" name="{{ name }}" rows="{{ rows|default(4) }}"
+              {% if required|default(false) %}required{% endif %}
+              {% if autofocus|default(false) %}autofocus{% endif %}
+              {% if hint|default(null) %}aria-describedby="{{ id }}-hint"{% endif %}
+              {% if error|default(null) %}aria-invalid="true"{% endif %}>{{ value|default('') }}</textarea>
+    {% if hint|default(null) %}<p class="ib-field__hint" id="{{ id }}-hint">{{ hint }}</p>{% endif %}
+    {% if error|default(null) %}<p class="ib-field__error" role="alert">{{ error }}</p>{% endif %}
+</div>

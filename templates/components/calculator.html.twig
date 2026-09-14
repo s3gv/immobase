@@ -1,0 +1,74 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Taschenrechner in der Kopfzeile.
+
+    Jedes Betriebssystem hat einen Rechner. Der Grund für diesen ist, dass man
+    beim Erfassen von Beträgen die Seite nicht verlassen will — und dass er
+    dieselbe Schreibweise spricht wie das Feld daneben: Komma im Deutschen,
+    Punkt im Englischen, beim Tippen wie in der Anzeige.
+
+    **Er rechnet und kopiert, mehr nicht.** Ein Rechner, der von sich aus in
+    ein Feld schreibt, das gerade niemand ansieht, ist eine Fehlerquelle. Wer
+    das Ergebnis braucht, holt es sich mit einem Knopf.
+
+    <details> statt eigenem Aufklapp-Skript: Öffnen, Schließen und
+    Tastaturbedienung kommen vom Browser — dieselbe Entscheidung wie beim
+    Benutzermenü daneben. Offen bleibt es, bis es geschlossen wird; wer
+    rechnet, rechnet selten nur einmal.
+#}
+{% set decimal = app.request.locale|slice(0, 2) == 'en' ? '.' : ',' %}
+
+<details class="ib-calc" data-calculator data-decimal="{{ decimal }}"
+         data-error="{{ 'calc.error'|trans }}"
+         data-failed="{{ 'calc.copy_failed'|trans }}">
+    <summary class="ib-icon-button ib-calc__toggle" title="{{ 'calc.heading'|trans }}">
+        <span class="ib-visually-hidden">{{ 'calc.heading'|trans }}</span>
+        {% include 'components/icon.html.twig' with { name: 'calculator' } only %}
+    </summary>
+
+    {# Das Feld nimmt beim Aufklappen die Eingabemarke. Sonst behielte sie die
+       Zusammenfassung, und die nächste Eingabetaste klappte wieder zu, statt
+       zu rechnen. #}
+    <div class="ib-calc__panel" data-calc-panel tabindex="-1">
+        {# Die angefangene Rechnung steht über dem Ergebnis: „200 ×" sagt,
+           worauf die nächste Taste wirkt. Ohne sie ist nach dem Druck auf ein
+           Rechenzeichen nicht zu sehen, dass überhaupt etwas offen ist. #}
+        <p class="ib-calc__pending" data-calc-pending aria-hidden="true"></p>
+
+        <output class="ib-calc__display" data-calc-display
+                aria-label="{{ 'calc.display'|trans }}" aria-live="polite">0</output>
+
+        <div class="ib-calc__keys">
+            {% for key in [
+                { value: 'clear',     sign: 'C',  label: 'calc.key.clear',     tone: 'quiet' },
+                { value: 'sign',      sign: '±',  label: 'calc.key.sign',      tone: 'quiet' },
+                { value: 'percent',   sign: '%',  label: 'calc.key.percent',   tone: 'quiet' },
+                { value: 'divide',    sign: '÷',  label: 'calc.key.divide',    tone: 'op' },
+                { value: '7',         sign: '7',  label: null,                 tone: null },
+                { value: '8',         sign: '8',  label: null,                 tone: null },
+                { value: '9',         sign: '9',  label: null,                 tone: null },
+                { value: 'multiply',  sign: '×',  label: 'calc.key.multiply',  tone: 'op' },
+                { value: '4',         sign: '4',  label: null,                 tone: null },
+                { value: '5',         sign: '5',  label: null,                 tone: null },
+                { value: '6',         sign: '6',  label: null,                 tone: null },
+                { value: 'minus',     sign: '−',  label: 'calc.key.minus',     tone: 'op' },
+                { value: '1',         sign: '1',  label: null,                 tone: null },
+                { value: '2',         sign: '2',  label: null,                 tone: null },
+                { value: '3',         sign: '3',  label: null,                 tone: null },
+                { value: 'plus',      sign: '+',  label: 'calc.key.plus',      tone: 'op' },
+                { value: 'back',      sign: '⌫',  label: 'calc.key.back',      tone: 'quiet' },
+                { value: '0',         sign: '0',  label: null,                 tone: null },
+                { value: 'decimal',   sign: decimal, label: 'calc.key.decimal', tone: null },
+                { value: 'equals',    sign: '=',  label: 'calc.key.equals',    tone: 'equals' }
+            ] %}
+                <button type="button" data-calc="{{ key.value }}"
+                        class="ib-calc__key{{ key.tone ? ' ib-calc__key--' ~ key.tone : '' }}"
+                        {% if key.label %}aria-label="{{ key.label|trans }}"{% endif %}>{{ key.sign }}</button>
+            {% endfor %}
+        </div>
+
+        <button type="button" class="ib-button ib-button--quiet ib-calc__copy"
+                data-calc="copy" data-copied="{{ 'calc.copied'|trans }}">{{ 'calc.copy'|trans }}</button>
+    </div>
+</details>

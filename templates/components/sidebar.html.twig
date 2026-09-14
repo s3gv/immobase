@@ -1,0 +1,200 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Hauptnavigation.
+
+    Einträge ohne Route stehen sichtbar deaktiviert da. Das ist Absicht: die
+    Shell soll zeigen, wie sie mit vollem Menü wirkt, und ein deaktivierter
+    Eintrag ist ehrlicher als ein Link, der ins Leere führt.
+#}
+<nav class="ib-sidebar" aria-label="{{ 'shell.main_navigation'|trans }}">
+    <a class="ib-brand" href="{{ path('app_dashboard') }}">
+        {# Benannt nach Verwendung, nicht nach Farbe: "on-light" ist die dunkle
+           Marke für helle Flächen. #}
+        <img class="ib-brand__mark ib-brand__mark--on-light" src="{{ asset('images/logo-on-light.svg') }}" alt="{{ 'app.name'|trans }}">
+        <img class="ib-brand__mark ib-brand__mark--on-dark" src="{{ asset('images/logo-on-dark.svg') }}" alt="{{ 'app.name'|trans }}">
+        <span class="ib-brand__tagline">{{ 'app.tagline'|trans }}</span>
+    </a>
+
+    {#
+        Es steht bewusst nur die Übersicht hier.
+
+        Welche Fachmodule es geben wird und wie ihre Abläufe aussehen, wird pro
+        Prozess einzeln entschieden. Menüeinträge für Module, über die noch
+        nicht entschieden ist, würden dieser Entscheidung vorgreifen — und
+        gegenüber Nutzern etwas versprechen, das es vielleicht nie gibt.
+
+        Jeder Eintrag kommt dazu, wenn sein Modul gebaut ist.
+    #}
+    <ul class="ib-nav ib-nav--core">
+        {% include 'components/nav_item.html.twig' with {
+            route: 'app_dashboard', icon: 'house', label: 'nav.dashboard'|trans
+        } only %}
+        {% if is_granted('properties.view') %}
+            {% include 'components/nav_item.html.twig' with {
+                route: 'app_property', icon: 'house', label: 'nav.properties'|trans
+            } only %}
+
+            {#
+                Solange ein Objekt offen ist, steht es unter dem Menüpunkt und
+                seine Einheiten darunter. Beim Verlassen klappt es zusammen —
+                ein Baum, der alles behält, was man je geöffnet hat, ist nach
+                einer Woche keine Navigation mehr.
+            #}
+            {% set open = open_property() %}
+            {% if open %}
+                {% include 'components/property_tree.html.twig' with {
+                    property: open, units: open.units
+                } only %}
+            {% endif %}
+        {% endif %}
+
+        {% if is_granted('tenancies.view') %}
+            {% include 'components/nav_item.html.twig' with {
+                route: 'app_tenancy', icon: 'key', label: 'tenancy.heading'|trans
+            } only %}
+        {% endif %}
+
+        {% if is_granted('finance.view') %}
+            {#
+                Eine fällige Mahnung entsteht von selbst: niemand legt sie an,
+                es ist nur ein Tag vergangen. Ohne Abzeichen erführe davon nur,
+                wer zufällig auf die Mahnwesen-Seite geht — und die Forderung
+                altert weiter.
+
+                Am Hauptpunkt und nicht am Unterpunkt: der erscheint erst,
+                wenn man schon in den Finanzen ist, und dann kommt die
+                Erinnerung zu spät.
+            #}
+            {% set pressure = dunning_pressure() %}
+            {% include 'components/nav_item.html.twig' with {
+                route: 'app_finance', icon: 'euro', label: 'finance.heading'|trans,
+                badge: pressure.letters,
+                badge_label: pressure.letters > 0
+                    ? 'dunning.pressure'|trans({'%count%': pressure.letters})
+                    : ''
+            } only %}
+
+            {# Die Bereiche der Finanzen gehören unter ihren Menüpunkt. #}
+            {% if app.request.attributes.get('_route')|default('') starts with 'app_finance'
+                or app.request.attributes.get('_route')|default('') starts with 'app_dunning' %}
+                {% include 'components/sub_nav.html.twig' with { items: [
+                    { route: 'app_finance_item', label: 'finance.item.heading'|trans },
+                    { route: 'app_finance_advance', label: 'finance.advance.heading'|trans },
+                    { route: 'app_finance_key', label: 'finance.key.heading'|trans },
+                    { route: 'app_finance_reserve', label: 'finance.reserve.heading'|trans },
+                    { route: 'app_finance_loan', label: 'finance.loan.heading'|trans },
+                    { route: 'app_finance_cost_kind', label: 'finance.kind.heading'|trans }
+                ]|merge(is_granted('dunning.view')
+                    ? [{ route: 'app_dunning', label: 'dunning.heading'|trans }]
+                    : []) } only %}
+            {% endif %}
+        {% endif %}
+
+        {% if is_granted('billing.view') %}
+            {#
+                Eine fällige Korrektur entsteht von selbst: niemand hat sie
+                angelegt, jemand hat anderswo eine Zahl geändert. Ohne
+                Abzeichen erführe davon nur, wer zufällig auf die Übersicht
+                geht — und die Frist läuft weiter.
+            #}
+            {# Die Meldung kennt keine Null — sie wird bei null auch nicht
+               gebraucht, und „Für 0 Abrechnungen" wäre keine. #}
+            {% set corrections = pending_corrections() %}
+            {% include 'components/nav_item.html.twig' with {
+                route: 'app_billing', icon: 'euro', label: 'billing.heading'|trans,
+                badge: corrections,
+                badge_label: corrections > 0
+                    ? 'billing.correction.pending'|trans({'%count%': corrections})
+                    : ''
+            } only %}
+
+            {# Die Bereiche der Abrechnung gehören unter ihren Menüpunkt. Was
+               es noch nicht gibt, steht auch nicht da: ein Menüpunkt, der auf
+               eine leere Seite führt, ist ein Versprechen ohne Deckung. #}
+            {% if app.request.attributes.get('_route')|default('') starts with 'app_billing' %}
+                {% include 'components/sub_nav.html.twig' with { items: [
+                    { route: 'app_billing_statement', label: 'billing.statement.heading'|trans },
+                    { route: 'app_billing_plan', label: 'billing.plan.heading'|trans },
+                    { route: 'app_billing_report', label: 'billing.report.heading'|trans },
+                    { route: 'app_billing_budget', label: 'billing.budget.heading'|trans },
+                    { route: 'app_billing_invoice', label: 'billing.invoice.heading'|trans }
+                ] } only %}
+            {% endif %}
+        {% endif %}
+
+        {% if is_granted('parties.view') %}
+            {% include 'components/nav_item.html.twig' with {
+                route: 'app_party', icon: 'users', label: 'party.heading'|trans
+            } only %}
+        {% endif %}
+
+        {% if is_granted('enquiries.view') %}
+            {#
+                Eine Anfrage aus dem Portal wartet auf einen Menschen. Ohne
+                Abzeichen erführe davon nur, wer zufällig auf die Übersicht
+                geht — und der Absender wartet weiter.
+
+                Gezählt wird, was noch niemand angesehen hat, nicht was noch
+                offen ist: eine gelesene Anfrage in Arbeit gehört nicht mehr
+                in eine rote Zahl.
+            #}
+            {% set unread = enquiry_pressure() %}
+            {% include 'components/nav_item.html.twig' with {
+                route: 'app_enquiry', icon: 'mail', label: 'enquiry.heading'|trans,
+                badge: unread,
+                badge_label: unread > 0 ? 'enquiry.unread_hint'|trans({'%count%': unread}) : ''
+            } only %}
+        {% endif %}
+    </ul>
+
+    {# Plugins stehen unter den Anfragen und tragen ihre eigene Überschrift. #}
+    {% include 'components/plugin_nav.html.twig' %}
+
+    {#
+        Verwaltung steht unten, getrennt von der täglichen Arbeit oben.
+
+        Jeder Eintrag hängt an seinem eigenen Recht: wer die Seite ohnehin
+        nicht öffnen darf, soll den Eintrag auch nicht sehen. Ein Menüpunkt,
+        der zuverlässig in eine Fehlermeldung führt, ist schlechter als keiner.
+    #}
+    <div class="ib-sidebar__foot">
+        {% set admin_nav = is_granted('users.view') or is_granted('roles.view')
+            or is_granted('audit.view') or is_granted('settings.view') %}
+
+        {% if admin_nav %}
+            <ul class="ib-nav">
+                {% if is_granted('users.view') %}
+                    {% include 'components/nav_item.html.twig' with {
+                        route: 'app_user', icon: 'shield', label: 'nav.users'|trans
+                    } only %}
+                {% endif %}
+                {% if is_granted('roles.view') %}
+                    {% include 'components/nav_item.html.twig' with {
+                        route: 'app_role', icon: 'users', label: 'nav.roles'|trans
+                    } only %}
+                {% endif %}
+                {#
+                    Das Protokoll steht über den Einstellungen: es ist das,
+                    was man nachsieht, wenn etwas nicht stimmt — und nicht
+                    das, was man einstellt.
+                #}
+                {% if is_granted('audit.view') %}
+                    {% include 'components/nav_item.html.twig' with {
+                        route: 'app_audit', icon: 'clock', label: 'nav.audit'|trans
+                    } only %}
+                {% endif %}
+                {% if is_granted('settings.view') %}
+                    {% include 'components/nav_item.html.twig' with {
+                        route: 'app_settings', icon: 'sliders', label: 'nav.settings'|trans
+                    } only %}
+                {% endif %}
+            </ul>
+        {% endif %}
+
+        <button type="button" class="ib-nav__link" data-modal-open="open-source">
+            {% include 'components/icon.html.twig' with { name: 'github' } %}
+            {{ 'nav.open_source'|trans }}
+        </button>
+    </div>
+</nav>

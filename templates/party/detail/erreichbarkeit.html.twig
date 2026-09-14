@@ -1,0 +1,48 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    E-Mail-Adressen und Telefonnummern, jede in ihrer Zeile.
+
+    Als Komma-Liste in einem Feld waren drei Adressen ein Wort — nicht
+    anklickbar, nicht zu überfliegen, und bei langen Adressen umgebrochen an
+    beliebiger Stelle.
+#}
+{% extends 'party/_detail.html.twig' %}
+
+{% block panel %}
+    <h3 class="ib-flow__title">{{ 'party.field.emails'|trans }}</h3>
+
+    {% if party.contact.emails is empty %}
+        <p class="ib-field__hint">{{ 'party.none'|trans }}</p>
+    {% else %}
+        <ul class="ib-links">
+            {% for email in party.contact.emails %}
+                <li><a href="mailto:{{ email }}">{{ email }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <h3 class="ib-flow__title">{{ 'party.field.phones'|trans }}</h3>
+
+    {% if party.contact.phones is empty %}
+        <p class="ib-field__hint">{{ 'party.none'|trans }}</p>
+    {% else %}
+        <ul class="ib-links">
+            {% for phone in party.contact.phones %}
+                <li><a href="tel:{{ phone|replace({' ': '', '/': '', '-': ''}) }}">{{ phone }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% include 'party/_portal_access.html.twig' with {
+        party: party, account: portalAccount
+    } only %}
+
+    {# Nur beim Eigentümer: sie steht auf seinen Dauermietrechnungen. #}
+    {% if party.roles.includesOwner %}
+        <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'party.field.tax_number'|trans }}</h3>
+        <p class="ib-field__hint">
+            {{ party.taxId.toString ?: 'party.none'|trans }}
+        </p>
+    {% endif %}
+{% endblock %}

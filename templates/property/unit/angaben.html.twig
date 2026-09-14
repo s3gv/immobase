@@ -1,0 +1,33 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/unit/_detail.html.twig' %}
+{% set edit_step = 'angaben' %}
+
+{#
+    Die Verweise stehen hier und nicht in einem eigenen Abschnitt: es ist eine
+    Zeile, und ein Tab für eine Zeile ist ein Umweg. Woher sie kommen, weiß
+    diese Seite nicht — das Objektmodul kennt das Mietmodul nicht.
+#}
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['property.unit.field.number'|trans, unit.number],
+            ['property.unit.field.label'|trans, unit.label],
+            ['property.unit.field.usage'|trans, unit.usage.labelKey|trans],
+            ['property.unit.field.property'|trans, property.name]
+        ],
+        empty: ''
+    } only %}
+
+    {% if links is not empty %}
+        <ul class="ib-links">
+            {% for link in links %}
+                <li>
+                    <span class="ib-field__hint">{{ link.labelKey|trans }}</span>
+                    <a href="{{ link.url }}">{{ link.text }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}

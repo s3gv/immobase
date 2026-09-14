@@ -1,0 +1,112 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Schritt beim Anlegen oder Bearbeiten eines Mietverhältnisses.
+
+    Dieselbe Gestalt wie beim Objekt — links die Schritte, rechts einer davon,
+    und die Schritte sind Links: jeder hat schon gespeichert, es geht also
+    nichts verloren, wenn jemand springt.
+
+    Ein Schritt füllt den Block `fields`. Was ein eigenes <form> mitbringt,
+    gehört in `outside_form`.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {% if tenancy and tenancy.status.isDraft %}
+        <p class="ib-note">{{ 'tenancy.draft.hint'|trans }}</p>
+    {% endif %}
+
+    {#
+        Was ein eigenes <form> mitbringt und vor den Feldern stehen soll — die
+        Mietstaffel. Ein verschachteltes Formular schließt in HTML das äußere,
+        und dessen Knöpfe hören auf zu wirken.
+    #}
+    {% block before_form %}{% endblock %}
+
+    {#
+        Ein Fehler, der zu einem anderen Schritt gehört als dem, auf dem er
+        auffällt — „ohne Mieter kein Abschluss" fällt beim Abschließen auf,
+        das Feld dafür steht zwei Schritte vorher. Er steht deshalb oben und
+        nicht an einem Feld, das hier gar nicht existiert.
+    #}
+    {% if errors.flow is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.flow|trans }}</p>
+    {% endif %}
+
+    <form id="tenancy-flow" method="post" action="{{ action }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('tenancy_flow') }}">
+
+        {% block fields %}{% endblock %}
+
+        <div class="ib-flow__actions">
+            {# Abbrechen führt weg, ohne noch etwas zu speichern — das haben
+               die vorigen Schritte schon getan. #}
+            <a class="ib-button ib-button--quiet" href="{{ cancel }}">{{ 'flow.cancel'|trans }}</a>
+
+            {% if hasPrevious %}
+                {# formnovalidate: sonst hält die Browservalidierung des
+                   aktuellen Schritts das Zurückgehen auf. #}
+                <button class="ib-button ib-button--quiet" type="submit"
+                        name="direction" value="back" formnovalidate>
+                    {{ 'flow.back'|trans }}
+                </button>
+            {% endif %}
+
+            {#
+                Der letzte Schritt fragt nach. Was er auslöst, lässt sich
+                nicht zurücknehmen: ab da ist die Einheit vermietet, und das
+                Mietverhältnis wird nur noch beendet, nicht mehr gelöscht.
+            #}
+            {% if isLast %}
+                <button class="ib-button" type="button" data-modal-open="tenancy-finish">
+                    {{ 'flow.finish'|trans }}
+                </button>
+            {% else %}
+                <button class="ib-button" type="submit" name="direction" value="forward">
+                    {{ 'flow.next'|trans }}
+                </button>
+            {% endif %}
+        </div>
+    </form>
+
+    {#
+        Alles, was ein eigenes <form> mitbringt, gehört hierher und nicht in
+        `fields`. Ein verschachteltes Formular schließt in HTML das äußere,
+        und dessen Knöpfe hören auf zu wirken.
+    #}
+    {% block outside_form %}{% endblock %}
+
+    {#
+        Der bestätigende Knopf steht außerhalb des Formulars und schickt es
+        über `form` trotzdem ab — ein Dialog im Formular wäre bei jedem
+        Schritt mit eigener Staffel ein verschachteltes <form>.
+    #}
+    {% if isLast %}
+        {% embed 'components/modal.html.twig' with {
+            id: 'tenancy-finish',
+            title: 'tenancy.finish.title'|trans
+        } only %}
+            {% block body %}
+                <p>{{ 'tenancy.finish.body'|trans }}</p>
+
+                <p class="ib-confirm__lead">{{ 'confirm.consequences'|trans }}</p>
+                <ul class="ib-confirm__list">
+                    <li>{{ 'tenancy.finish.consequence_let'|trans }}</li>
+                    <li>{{ 'tenancy.finish.consequence_final'|trans }}</li>
+                </ul>
+            {% endblock %}
+
+            {% block actions %}
+                <button class="ib-button ib-button--quiet" type="button" data-modal-close autofocus>
+                    {{ 'confirm.cancel'|trans }}
+                </button>
+
+                <button class="ib-button" type="submit" form="tenancy-flow"
+                        name="direction" value="forward">
+                    {{ 'tenancy.action.activate'|trans }}
+                </button>
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+{% endblock %}

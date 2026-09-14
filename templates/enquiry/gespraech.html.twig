@@ -1,0 +1,79 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Schritt 1: das Gespräch.
+
+    Dasselbe Fenster wie im Portal — dieselbe Vorlage, damit beide Seiten
+    dasselbe sehen. Daneben, was nur der Verwalter kann: zuweisen und
+    erledigen.
+
+    Die Zuweisung ist Arbeitsteilung, keine Sperre. Sie sagt, wer sich
+    kümmert, und steht nicht im Weg, wenn jemand anders antworten muss — wer
+    eine nicht zugewiesene Anfrage beantwortet, wird dabei zugewiesen.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <div class="ib-index__actions">
+        {% include 'components/badge.html.twig' with {
+            label: ('portal.state.' ~ enquiry.state.value)|trans,
+            tone: enquiry.state.value == 'open' ? 'warning' : 'success'
+        } only %}
+
+        <span class="ib-field__hint">{{ 'enquiry.asked_by'|trans({'%name%': asker}) }}</span>
+
+        {% if is_granted('enquiries.edit') and enquiry.state.value != 'done' %}
+            <form method="post" action="{{ path('app_enquiry_close', { id: enquiry.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('enquiry') }}">
+                <button class="ib-button ib-button--quiet" type="submit">{{ 'enquiry.close'|trans }}</button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if is_granted('enquiries.edit') %}
+        <div class="ib-assign">
+            <form class="ib-assign__form" method="post" action="{{ path('app_enquiry_assign', { id: enquiry.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('enquiry') }}">
+
+                {% include 'components/select.html.twig' with {
+                    id: 'assignee', name: 'assignee', label: 'enquiry.field.assignee'|trans,
+                    choices: colleagues|keys|map(id => { value: id, label: colleagues[id] }),
+                    value: enquiry.assigneeUserId, blank: 'enquiry.nobody'|trans
+                } only %}
+
+                <button class="ib-button ib-button--quiet" type="submit">{{ 'enquiry.assign'|trans }}</button>
+            </form>
+
+            {# „Mir zuweisen" als eigenes Formular: zwei Knöpfe in einem
+               schickten beide denselben Wert, und der eine wäre nicht der
+               gemeinte. #}
+            <form method="post" action="{{ path('app_enquiry_assign', { id: enquiry.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('enquiry') }}">
+                <input type="hidden" name="assignee" value="{{ app.user.id }}">
+                <button class="ib-button ib-button--quiet" type="submit">{{ 'enquiry.assign_to_me'|trans }}</button>
+            </form>
+        </div>
+    {% endif %}
+
+    {% include 'portal/_conversation.html.twig' with {
+        enquiry: enquiry, today: today, attachment_route: 'app_enquiry_attachment'
+    } only %}
+
+    {% if is_granted('enquiries.edit') %}
+        <form method="post" enctype="multipart/form-data"
+              action="{{ path('app_enquiry_answer', { id: enquiry.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('enquiry') }}">
+
+            {% include 'portal/_compose.html.twig' with {
+                id: 'body', name: 'body', label: 'enquiry.answer'|trans,
+                retentionDays: retentionDays, maxFiles: maxFiles, maxMegabytes: maxMegabytes
+            } only %}
+
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'enquiry.send'|trans }}</button>
+            </div>
+        </form>
+    {% else %}
+        <p class="ib-field__hint">{{ 'enquiry.read_only'|trans }}</p>
+    {% endif %}
+{% endblock %}

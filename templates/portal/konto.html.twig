@@ -1,0 +1,74 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Mein Zugang.
+
+    Zwei Karten statt der Abschnittsliste des Verwalterbereichs: hier gibt es
+    genau zwei Dinge zu tun, und eine Navigation für zwei Punkte ist keine.
+
+    Name und Anschrift stehen nicht hier — das sind die Daten der Partei, und
+    die ändern sich über einen Vorschlag.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'portal.account.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'portal.account.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ user.email.toString }}</p>
+
+    {% embed 'components/card.html.twig' with { title: 'user.account.change_password'|trans, rules: rules } only %}
+        {% block body %}
+            <form method="post" action="{{ path('app_portal_account_password') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('account_password') }}">
+
+                {% include 'components/field.html.twig' with {
+                    id: 'current', name: 'current', type: 'password',
+                    label: 'user.field.current_password'|trans,
+                    hint: 'user.field.current_password_hint'|trans,
+                    required: true, autocomplete: 'current-password'
+                } only %}
+                {% include 'components/field.html.twig' with {
+                    id: 'password', name: 'password', type: 'password',
+                    label: 'user.field.password'|trans, required: true, autocomplete: 'new-password'
+                } only %}
+                {% include 'components/field.html.twig' with {
+                    id: 'repeated', name: 'repeated', type: 'password',
+                    label: 'user.field.password_repeat'|trans, required: true, autocomplete: 'new-password'
+                } only %}
+
+                {# Die Regeln stehen da, bevor jemand tippt — nicht erst als
+                   Fehlermeldung danach. #}
+                <ul class="ib-rules">
+                    {% for rule in rules %}<li>{{ rule|trans }}</li>{% endfor %}
+                </ul>
+
+                <div class="ib-flow__actions">
+                    <button class="ib-button" type="submit">{{ 'user.account.change_password'|trans }}</button>
+                </div>
+            </form>
+        {% endblock %}
+    {% endembed %}
+
+    {#
+        Der zweite Faktor bringt keine eigene Überschrift mit — im
+        Verwalterbereich liefert sie der Abschnittsrahmen. Hier gibt es den
+        nicht, also bekommt er eine Karte wie das Passwort daneben.
+    #}
+    {% embed 'components/card.html.twig' with {
+        title: 'user.step.factor.title'|trans,
+        user: user, recoveryCodesLeft: recoveryCodesLeft, factor: factor, factorMessage: factorMessage
+    } only %}
+        {% block body %}
+            {% include 'account/_second_factor.html.twig' with {
+                user: user,
+                recoveryCodesLeft: recoveryCodesLeft,
+                factor: factor,
+                factorMessage: factorMessage,
+                codesUrl: path('app_portal_account_codes'),
+                factorOffUrl: path('app_portal_account_factor_off'),
+                factorUrl: path('app_portal_account_factor')
+            } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

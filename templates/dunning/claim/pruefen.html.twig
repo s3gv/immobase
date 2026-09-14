@@ -1,0 +1,36 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was daraus geworden ist — und der Weg ins Mahnen.
+
+    Hier wird nichts mehr eingetragen. Die Forderungen stehen, und die Frage
+    ist nur noch, ob jetzt geschrieben wird.
+#}
+{% extends 'dunning/claim/_flow.html.twig' %}
+
+{% block fields %}
+    {% set rows = [
+        ['dunning.debtor'|trans, debtor.name ~ (debtor.address ? ', ' ~ debtor.address : '')],
+        ['dunning.creditor'|trans, creditor.name ~ (creditor.address ? ', ' ~ creditor.address : '')]
+    ] %}
+
+    {% embed 'components/card.html.twig' with { title: 'dunning.parties'|trans, rows: rows } only %}
+        {% block body %}
+            {% include 'components/table.html.twig' with {
+                headers: ['user.review.field'|trans, 'user.review.value'|trans],
+                rows: rows, empty: ''
+            } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% include 'dunning/claim/_gathered.html.twig' with { gathered: gathered } only %}
+{% endblock %}
+
+{% block outside_form %}
+    <p class="ib-flow__hint">{{ 'dunning.record_done_hint'|trans }}</p>
+
+    <form method="post" action="{{ path('app_dunning_notice_start', { id: claim.id }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('dunning') }}">
+        <button class="ib-button" type="submit">{{ 'dunning.dun'|trans }}</button>
+    </form>
+{% endblock %}

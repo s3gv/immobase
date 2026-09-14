@@ -1,0 +1,32 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Empfängerwahl über der Abrechnung.
+
+    Ein Schreiben zur Zeit, gewählt statt gescrollt: ein Lauf über ein Objekt
+    mit zwölf Einheiten ergibt zwei Dutzend Abrechnungen, und wer prüft, prüft
+    eine davon.
+
+    Der Zeitraum gehört mit in die Zeile. Wechselt der Mieter im Jahr, bekommt
+    dieselbe Einheit zwei Nebenkostenabrechnungen — gleiche Art, gleiche
+    Nummer, oft derselbe Name. Ohne den Zeitraum stünden zwei Einträge da, die
+    sich nicht unterscheiden lassen.
+
+    Erwartet: choices  Liste aus { value, label }
+              value    der gewählte Schlüssel
+              action   wohin das Formular fragt (GET)
+    Optional: field    Name des Feldes; ohne Angabe „empfaenger". Der
+                       Wirtschaftsplan wählt eine Einheit und kein Schreiben —
+                       dieselbe Leiste, eine andere Frage.
+#}
+{% set field = field|default('empfaenger') %}
+<form method="get" action="{{ action }}" class="ib-index__filters" data-auto-submit>
+    {% include 'components/select.html.twig' with {
+        id: field, name: field,
+        label: ('billing.select.' ~ field)|trans,
+        choices: choices, value: value
+    } only %}
+    <button class="ib-button ib-button--quiet" type="submit" data-auto-submit-fallback>
+        {{ 'index.filter'|trans }}
+    </button>
+</form>

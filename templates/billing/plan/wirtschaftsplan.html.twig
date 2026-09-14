@@ -1,0 +1,48 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Objekt, Planjahr, Bezeichnung.
+
+    Zur Wahl stehen nur WEG-Objekte: ohne Miteigentum gibt es keine
+    Vorschüsse, über die eine Versammlung beschließen könnte.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% if plan %}
+        {# Objekt und Planjahr stehen fest, sobald der Plan existiert: sie
+           stecken in der Referenz jedes Schreibens. #}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: ['user.review.field'|trans, 'user.review.value'|trans],
+            rows: [
+                ['billing.plan.property'|trans, plan.propertyNumber],
+                ['billing.plan.fiscal_year'|trans, plan.period.year]
+            ],
+            empty: ''
+        } only %}
+    {% elseif properties is empty %}
+        <p class="ib-empty">{{ 'billing.plan.no_weg'|trans }}</p>
+    {% else %}
+        {% include 'components/select.html.twig' with {
+            id: 'property', name: 'property', label: 'billing.plan.property'|trans,
+            hint: 'billing.plan.property_hint'|trans,
+            choices: properties|map(p => { value: p.number, label: p.number ~ ' · ' ~ p.name }),
+            value: submitted.property|default(''),
+            blank: 'billing.plan.choose_property'|trans
+        } only %}
+
+        {% include 'components/select.html.twig' with {
+            id: 'fiscalYear', name: 'fiscalYear', label: 'billing.plan.fiscal_year'|trans,
+            hint: 'billing.plan.fiscal_year_hint'|trans,
+            choices: years|map(y => { value: y, label: y }),
+            value: submitted.fiscalYear|default(defaultYear)
+        } only %}
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'label', name: 'label', label: 'billing.plan.label'|trans,
+        hint: 'billing.plan.label_hint'|trans,
+        value: plan ? plan.label : submitted.label|default('')
+    } only %}
+{% endblock %}

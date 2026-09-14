@@ -1,0 +1,21 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/unit/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'label', name: 'label', label: 'property.unit.field.label'|trans,
+        hint: 'property.unit.field.label_hint'|trans,
+        value: posted ? submitted.label|default('') : unit.label,
+        error: errors.label is defined ? errors.label|trans : null,
+        required: true, autofocus: true
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'usage', name: 'usage', label: 'property.unit.field.usage'|trans,
+        choices: usages|map(u => { value: u.value, label: u.labelKey|trans }),
+        value: posted ? submitted.usage|default('') : unit.usage.value
+    } only %}
+{% endblock %}

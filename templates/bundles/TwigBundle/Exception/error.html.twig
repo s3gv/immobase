@@ -1,0 +1,26 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Fehlerseite im Betrieb — in der Sprache und im Aussehen der Anwendung
+    statt der englischen Vorgabe von Symfony.
+
+    Kein Detail zur Ursache: wer eine Adresse ausprobiert, soll aus der Seite
+    nichts lernen. Die Ursache steht im Protokoll des Containers.
+#}
+{% set kind = status_code in [403, 404] ? status_code : 'other' %}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ ('error.' ~ kind ~ '.title')|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block body %}
+    <div class="ib-shell ib-shell--bare">
+        <main class="ib-content">
+            <h1 class="ib-heading">{{ ('error.' ~ kind ~ '.title')|trans }}</h1>
+            <p class="ib-subheading">{{ ('error.' ~ kind ~ '.text')|trans }}</p>
+
+            <div class="ib-form__actions">
+                <a class="ib-button" href="{{ path('app_dashboard') }}">{{ 'error.home'|trans }}</a>
+            </div>
+        </main>
+    </div>
+{% endblock %}

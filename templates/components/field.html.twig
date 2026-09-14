@@ -1,0 +1,31 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Formularfeld.
+
+    Erwartet: id, label, name
+    Optional: type (Vorgabe text), value, hint, error, required, autocomplete,
+              autofocus, placeholder, readonly
+              quiet — die Beschriftung bleibt für Screenreader stehen, wird
+                      aber nicht gezeigt. Für Zeilen in einer Liste, über der
+                      schon eine Kopfzeile steht: dieselbe Beschriftung
+                      zwanzigmal untereinander ist Lärm, kein Hinweis.
+#}
+<div class="ib-field{{ error is defined and error ? ' is-invalid' : '' }}">
+    <label class="ib-field__label{{ quiet|default(false) ? ' ib-visually-hidden' : '' }}"
+           for="{{ id }}">{{ label }}</label>
+    <input class="ib-field__input"
+           id="{{ id }}"
+           name="{{ name }}"
+           type="{{ type|default('text') }}"
+           value="{{ value|default('') }}"
+           {% if placeholder|default(null) %}placeholder="{{ placeholder }}"{% endif %}
+           {% if required|default(false) %}required{% endif %}
+           {% if readonly|default(false) %}readonly{% endif %}
+           {% if autofocus|default(false) %}autofocus{% endif %}
+           {% if autocomplete is defined and autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+           {% if hint is defined and hint %}aria-describedby="{{ id }}-hint"{% endif %}
+           {% if error is defined and error %}aria-invalid="true"{% endif %}>
+    {% if hint is defined and hint %}<p class="ib-field__hint" id="{{ id }}-hint">{{ hint }}</p>{% endif %}
+    {% if error is defined and error %}<p class="ib-field__error" role="alert">{{ error }}</p>{% endif %}
+</div>

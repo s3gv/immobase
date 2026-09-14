@@ -1,0 +1,39 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+<!DOCTYPE html>
+{#
+    `data-motion` kommt vom Server, weil die Einstellung dort steht. Sie kann
+    Bewegung nur wegnehmen: fehlt sie, entscheidet weiter
+    `prefers-reduced-motion` im Skript.
+#}
+<html lang="{{ app.request.locale }}"{{ motion_is_reduced() ? ' data-motion="reduced"' : '' }}>
+<head>
+    {# Setzt das Theme vor dem ersten Rendern. Als Modul geladen wäre es zu
+       spät und die Seite blitzte hell auf. Die einzige Stelle im Projekt mit
+       eingebettetem JavaScript. #}
+    <script nonce="{{ csp_nonce() }}">
+        (function () {
+            var stored = null;
+            try { stored = localStorage.getItem('immobase.theme'); } catch (e) {}
+            var theme = (stored === 'light' || stored === 'dark')
+                ? stored
+                : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ 'app.name'|trans }}{% endblock %}</title>
+    {% block stylesheets %}
+        {# Das Stylesheet als Link und nicht als Import im Modul: den Import
+           loest die Importmap zu einer data:-URL auf, und die ist unter der
+           Content-Security-Policy kein erlaubtes Skript. #}
+        <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+        {{ importmap('app', { nonce: csp_nonce() }) }}
+    {% endblock %}
+</head>
+<body>
+{% include 'components/background_map.html.twig' %}
+{% block body %}{% endblock %}
+</body>
+</html>

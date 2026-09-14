@@ -1,0 +1,46 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die beiden Stellschrauben des Portals.
+
+    Beides Zusagen an einen Menschen von außen: wie lange seine Datei
+    aufbewahrt wird und wie schnell er eine Mail bekommt, wenn er nicht
+    hinsieht. Darum stehen sie hier und nicht als Zahl im Code — wer darüber
+    streitet, soll nicht deployen müssen.
+
+    Die Grenzen stehen im Hinweis und gelten trotzdem serverseitig: ein Feld,
+    das mehr annimmt, als gespeichert wird, wäre eine Einladung zum Irrtum.
+#}
+{% extends 'settings/_page.html.twig' %}
+
+{% block section_body %}
+    <form method="post" action="{{ path('app_settings_portal') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('settings') }}">
+
+        <fieldset class="ib-fieldset"{{ is_granted('settings.edit') ? '' : ' disabled' }}>
+            {% include 'components/field.html.twig' with {
+                id: 'retention_days', name: 'retention_days', type: 'number',
+                label: 'settings.portal.retention.label'|trans,
+                value: portal.retentionDays,
+                hint: 'settings.portal.retention.explanation'|trans({
+                    '%least%': portal.retentionLeast, '%most%': portal.retentionMost
+                })
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'notify_after_minutes', name: 'notify_after_minutes', type: 'number',
+                label: 'settings.portal.notify.label'|trans,
+                value: portal.notifyMinutes,
+                hint: 'settings.portal.notify.explanation'|trans({
+                    '%least%': portal.notifyLeast, '%most%': portal.notifyMost
+                })
+            } only %}
+        </fieldset>
+
+        {% if is_granted('settings.edit') %}
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'settings.save'|trans }}</button>
+            </div>
+        {% endif %}
+    </form>
+{% endblock %}

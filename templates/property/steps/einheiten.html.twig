@@ -1,0 +1,35 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der letzte Schritt: die Einheiten.
+
+    Optional und beliebig oft — bei einem Mehrfamilienhaus ist das der
+    Regelfall. Über „Bearbeiten" kommt man später hierher zurück, um eine zu
+    ergänzen oder zu entfernen.
+#}
+{% extends 'property/_flow.html.twig' %}
+{#
+    Der Kasten ist hier breiter als bei den Formularen: sechs Spalten und die
+    Aktionen passen nicht in die 40rem, in denen sich ein Formular gut
+    ausfüllen lässt. Die Tabelle selbst ist so schmal wie möglich gehalten —
+    siehe _units.html.twig.
+#}
+{% set wide = true %}
+
+{% block fields %}
+    {% if errors.units is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.units|trans }}</p>
+    {% endif %}
+
+    {% include 'property/_units.html.twig' with {
+        property: property, units: units, may_edit: true, may_delete: is_granted('properties.delete')
+    } only %}
+
+    {% if property.modes.needMea %}
+        {% include 'property/_balance.html.twig' with { balance: balance } only %}
+    {% endif %}
+{% endblock %}
+
+{% block outside_form %}
+    {% include 'property/_unit_confirms.html.twig' with { property: property, units: units } only %}
+{% endblock %}

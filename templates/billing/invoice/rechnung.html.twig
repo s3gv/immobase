@@ -1,0 +1,58 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Welcher Vertrag, ab wann, und wie das Schreiben heißen soll.
+
+    Der einzige Schritt mit Eingabefeldern. Das Mietverhältnis steht fest,
+    sobald es die Rechnung gibt: eine Rechnung, die den Vertrag wechselt,
+    wäre eine andere Rechnung.
+#}
+{% extends 'billing/invoice/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.basics is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.basics|trans }}</p>
+    {% endif %}
+
+    {% if invoice|default(null) %}
+        {% include 'components/field.html.twig' with {
+            id: 'tenancy', name: 'tenancy', label: 'billing.invoice.field.tenancy'|trans,
+            hint: 'billing.invoice.field.tenancy_fixed'|trans,
+            value: tenancy ? tenancy.oneLine : invoice.tenancyNumber,
+            readonly: true
+        } only %}
+    {% else %}
+        {% include 'components/select.html.twig' with {
+            id: 'tenancyId', name: 'tenancyId', label: 'billing.invoice.field.tenancy'|trans,
+            hint: 'billing.invoice.field.tenancy_hint'|trans,
+            choices: tenancies|map(t => { value: t.tenancyId, label: t.oneLine }),
+            value: posted ? submitted.tenancyId|default('') : '',
+            blank: 'billing.invoice.choose_tenancy'|trans
+        } only %}
+    {% endif %}
+
+    {# Eine Berichtigung spricht über den Zeitraum des Schreibens, das sie
+       berichtigt — verschöbe sie ihn, gäbe es Tage mit zwei Rechnungen und
+       Tage mit keiner. #}
+    {% set corrects = invoice|default(null) and invoice.edition.isCorrection %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'appliesFrom', name: 'appliesFrom', type: 'date',
+        label: 'billing.invoice.field.applies_from'|trans,
+        hint: (corrects
+            ? 'billing.invoice.field.applies_from_fixed'
+            : 'billing.invoice.field.applies_from_hint')|trans,
+        readonly: corrects,
+        value: posted
+            ? submitted.appliesFrom|default('')
+            : (invoice|default(null) ? invoice.validity.from|date('Y-m-d') : 'now'|date('Y-m-d'))
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'label', name: 'label', label: 'billing.invoice.field.label'|trans,
+        hint: 'billing.invoice.field.label_hint'|trans,
+        value: posted ? submitted.label|default('') : (invoice|default(null) ? invoice.label : '')
+    } only %}
+{% endblock %}

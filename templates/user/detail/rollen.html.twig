@@ -1,0 +1,28 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Welche Rollen dieses Konto trägt. Mindestens eine — ein Konto ohne Rolle
+    kann nichts und wäre eine Sackgasse.
+#}
+{% embed 'components/sections.html.twig' %}
+    {% block section_body %}
+        <form method="post" action="{{ path('app_user_roles', { number: user.number }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('user_roles_' ~ user.number) }}">
+
+            <fieldset class="ib-choices">
+                <legend class="ib-visually-hidden">{{ 'user.title.rollen'|trans }}</legend>
+                {% for role in roles %}
+                    <label class="ib-choice">
+                        <input type="checkbox" name="roles[]" value="{{ role.id }}"
+                               {{ assigned[role.id] is defined ? 'checked' : '' }}>
+                        {{ role.name.value }}
+                    </label>
+                {% endfor %}
+            </fieldset>
+
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'settings.save'|trans }}</button>
+            </div>
+        </form>
+    {% endblock %}
+{% endembed %}

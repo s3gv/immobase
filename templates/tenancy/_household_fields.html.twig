@@ -1,0 +1,17 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Felder eines Haushaltseintrags — einmal für das Ändern, einmal für das
+    Anlegen. Erwartet: step (HouseholdStep oder null)
+#}
+{% include 'components/field.html.twig' with {
+    id: 'startsOn-haushalt-' ~ (step ? step.id : 'neu'), name: 'startsOn', type: 'date',
+    label: 'tenancy.rent.from'|trans,
+    value: step ? step.startsOn|date('Y-m-d') : ''
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'people-' ~ (step ? step.id : 'neu'), name: 'people', type: 'number',
+    label: 'tenancy.field.household_size'|trans,
+    value: step ? step.people : ''
+} only %}

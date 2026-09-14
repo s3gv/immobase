@@ -1,0 +1,15 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'party/_detail.html.twig' %}
+
+{% block panel %}
+    {% if party.note %}
+        {# Zeilenumbrüche bleiben: was jemand als Liste geschrieben hat, soll
+           als Liste dastehen. #}
+        <p class="ib-note-text">{{ party.note|nl2br }}</p>
+    {% else %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'party.note.empty'|trans
+        } only %}
+    {% endif %}
+{% endblock %}

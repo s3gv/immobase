@@ -1,0 +1,17 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'components/select.html.twig' with {
+        id: 'meaDenominator', name: 'meaDenominator', label: 'property.mea.denominator'|trans,
+        hint: 'property.mea.denominator_hint'|trans,
+        choices: denominators|map(d => { value: d.value, label: d.value }),
+        value: property.shares.denominator.value,
+        error: errors.meaDenominator is defined ? errors.meaDenominator|trans : null
+    } only %}
+
+    {# Die Verteilung selbst steht an den Einheiten. Hier nur der Stand, damit
+       sichtbar ist, worauf sich der Nenner bezieht. #}
+    {% include 'property/_balance.html.twig' with { balance: balance } only %}
+{% endblock %}

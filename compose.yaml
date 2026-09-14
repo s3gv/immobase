@@ -1,0 +1,121 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 s3gv
+
+services:
+  app:
+    build:
+      context: .
+      target: app
+      args:
+        TIMEZONE: "${IMMOBASE_TIMEZONE:-Europe/Berlin}"
+    depends_on:
+      database:
+        condition: service_healthy
+    # Nach einem Neustart des Rechners laeuft ImmoBase wieder, ohne dass
+    # jemand es anstoesst — ausser es wurde ausdruecklich gestoppt.
+    restart: unless-stopped
+    # Beim Start: Datenbank migrieren, Hintergrundlauf, Webserver — siehe
+    # docker/frankenphp/start.sh. Kein eigener Container fuer den
+    # Hintergrundlauf: die Anwendung ist App und Datenbank.
+    #
+    # Plugins laufen als eigene PHP-Prozesse, nicht im Webserver: das ist die
+    # Lizenzgrenze. `init` raeumt beendete Prozesse ab — ohne es blieben die
+    # Reste eines abgestuerzten Plugins als Zombies liegen.
+    init: true
+    # Fuer die Netzsperre der Plugins (docker/plugin-runner/plugin-firewall).
+    # Die Anwendung selbst laeuft ohne root und bekommt die Faehigkeit nicht;
+    # sie steht nur dem Helfer zur Verfuegung, der eine feste Regelmenge
+    # schreibt. Fehlt sie, startet kein Plugin — die Anwendung laeuft weiter.
+    cap_add:
+      - NET_ADMIN
+    command: ["immobase-start"]
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-immobase}:${POSTGRES_PASSWORD:-immobase}@database:5432/${POSTGRES_DB:-immobase}?serverVersion=16&charset=utf8"
+      APP_ENV: "${APP_ENV:-prod}"
+      APP_SECRET: "${APP_SECRET:?APP_SECRET fehlt - install.sh schreibt ihn nach .env.local}"
+      APP_LOCALE: "${APP_LOCALE:-de}"
+      IMMOBASE_REGION: "${IMMOBASE_REGION:-auto}"
+      IMMOBASE_SOURCE_URL: "${IMMOBASE_SOURCE_URL:-https://github.com/s3gv/immobase}"
+      APP_VERSION: "${APP_VERSION:-0.1.0-dev}"
+      APP_COMMIT: "${APP_COMMIT:-unknown}"
+      # Verschlüsselt die Anhänge des Mieterportals in der Datenbank. Fehlt
+      # er, nimmt das Portal keine Dateien an — statt sie im Klartext
+      # abzulegen. install.sh erzeugt ihn mit.
+      #
+      # **Ohne Wert:** Docker reicht die Variable durch, wenn es sie gibt, und
+      # setzt sie sonst gar nicht. Eine leere Variable wäre etwas anderes als
+      # keine — sie überdeckte den Schlüssel aus .env.local.
+      IMMOBASE_FILE_KEY:
+      # Der Hintergrundlauf verschickt Benachrichtigungen — ohne diese Werte
+      # gingen sie an null://null. Der Link in der Mail entsteht ohne
+      # Anfrage; ohne DEFAULT_URI stünde darin „http://localhost", eine
+      # Adresse, die beim Empfänger nirgendwohin führt.
+      MAILER_DSN: "${MAILER_DSN:-null://null}"
+      MAILER_FROM: "${MAILER_FROM:-immobase@localhost}"
+      DEFAULT_URI: "${DEFAULT_URI:-http://localhost}"
+      # Schlichtes HTTP im Container. Ohne diese Zeile nimmt FrankenPHP seine
+      # Vorgabe und schaltet automatisches HTTPS ein — es leitet dann auf einen
+      # Port um, der hier gar nicht veröffentlicht ist, und die Anwendung ist
+      # nicht erreichbar.
+      #
+      # TLS ist Sache des Betreibers: ein Reverse-Proxy davor terminiert es.
+      # Das ist bei Selbst-Hosting der Regelfall, weil dort meist ohnehin schon
+      # einer läuft. Die Entwicklungsumgebung setzt in compose.override.yaml
+      # stattdessen einen echten Hostnamen mit "tls internal".
+      SERVER_NAME: ":80"
+      # Und darum auch kein automatisches HTTPS: ohne diese Zeile meldet Caddy
+      # bei jedem Start, dass es auf dem HTTP-Port keines einrichten kann.
+      CADDY_GLOBAL_OPTIONS: "auto_https off"
+      # Wem die Anwendung X-Forwarded-For und -Proto glaubt. Leer heisst:
+      # niemandem. install.sh traegt die privaten Netze ein, wenn ein
+      # Reverse-Proxy auf demselben Rechner davorsteht — und gibt den Port
+      # dann nur fuer diesen Rechner frei. Sonst koennte jeder, der den Port
+      # erreicht, sich eine Herkunft ausdenken und an der Anmeldebremse
+      # vorbeikommen.
+      TRUSTED_PROXIES: "${TRUSTED_PROXIES:-}"
+    # HTTP_PUBLISH ist ein Port (auf allen Adressen, IPv4 wie IPv6) oder
+    # 127.0.0.1:Port fuer einen Reverse-Proxy auf demselben Rechner.
+    ports:
+      - "${HTTP_PUBLISH:-8080}:80"
+    volumes:
+      # Caddys Datenverzeichnis muss persistent sein. Ohne Volume erzeugt
+      # Caddy bei jedem Neuerstellen des Containers eine neue Wurzel-CA —
+      # lokal müsste man ihr jedes Mal neu vertrauen, und produktiv gingen
+      # ausgestellte Zertifikate und der ACME-Kontostand verloren, was
+      # schnell in die Ratenbegrenzung von Let's Encrypt läuft.
+      - caddy_data:/data
+      - caddy_config:/config
+      # Was in var/ ueber ein Neuerstellen hinaus bleiben muss: Sitzungen,
+      # sonst ist nach jedem Update jeder abgemeldet, und der Zustand der
+      # Plugin-Prozesse. Nicht ganz var/: der Cache gehoert zum Image und
+      # muss mit dem Code wechseln.
+      - app_sessions:/app/var/sessions
+      - app_plugins:/app/var/plugins
+
+###> doctrine/doctrine-bundle ###
+  database:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    restart: unless-stopped
+    environment:
+      # Dieselben Vorgaben wie in DATABASE_URL oben. Das Passwort setzt
+      # install.sh; die Vorgabe gilt nur, solange niemand eines gesetzt hat.
+      POSTGRES_DB: ${POSTGRES_DB:-immobase}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-immobase}
+      POSTGRES_USER: ${POSTGRES_USER:-immobase}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-immobase}", "-U", "${POSTGRES_USER:-immobase}"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - database_data:/var/lib/postgresql/data:rw
+###< doctrine/doctrine-bundle ###
+
+volumes:
+  caddy_data:
+  caddy_config:
+  app_sessions:
+  app_plugins:
+###> doctrine/doctrine-bundle ###
+  database_data:
+###< doctrine/doctrine-bundle ###

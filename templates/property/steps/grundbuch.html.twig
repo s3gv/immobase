@@ -1,0 +1,25 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'components/field.html.twig' with {
+        id: 'court', name: 'court', label: 'property.registry.court'|trans,
+        value: property.landRegister.court, autofocus: true
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'sheet', name: 'sheet', label: 'property.registry.sheet'|trans,
+        value: property.landRegister.sheet
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'district', name: 'district', label: 'property.registry.district'|trans,
+        value: property.landRegister.district
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'parcel', name: 'parcel', label: 'property.registry.parcel'|trans,
+        value: property.landRegister.parcel
+    } only %}
+{% endblock %}

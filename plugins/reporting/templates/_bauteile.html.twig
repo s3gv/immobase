@@ -1,0 +1,72 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die zwei Diagrammformen dieses Plugins.
+
+    Waagerechte Balken für Vergleiche zwischen Dingen (Objekte, Kostenarten,
+    Altersstufen) — die Beschriftungen sind Namen, und die stehen senkrecht
+    gedreht oder abgeschnitten da.
+
+    Eine Linie für den Verlauf über Jahre. Das ist die einzige Stelle, an der
+    ein Diagramm etwas zeigt, das eine Tabelle nicht zeigt: die Richtung.
+
+    Ohne Bibliothek. Ein Balken ist ein Element mit einer Breite, eine Linie
+    ein SVG-Pfad — dafür lädt niemand hundert Kilobyte nach.
+#}
+
+{# rows: Liste aus { label, value, text, tone } #}
+{% macro balken(rows) %}
+    {% if rows is empty %}
+        <p class="ib-empty">Noch keine Daten.</p>
+    {% else %}
+        {% set top = max(rows|map(row => row.value)) %}
+        <ul class="aw-bars">
+            {% for row in rows %}
+                <li>
+                    <div class="aw-bar__head">
+                        <span class="aw-bar__label" title="{{ row.label }}">{{ row.label }}</span>
+                        <span class="aw-bar__value">{{ row.text }}</span>
+                    </div>
+                    <div class="aw-bar__track">
+                        {# Ein Wert über null bekommt einen sichtbaren Rest:
+                           ein Balken der Breite null sagt „nichts", und das
+                           ist etwas anderes als „wenig". #}
+                        <span class="aw-bar__fill{{ row.tone is defined and row.tone ? ' aw-bar__fill--' ~ row.tone : '' }}"
+                              style="width: {{ top > 0 ? max(row.value / top * 100, row.value > 0 ? 2 : 0)|round(1) : 0 }}%"></span>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endmacro %}
+
+{# points: Liste aus { label, value } — in der Reihenfolge der Zeit #}
+{% macro linie(points) %}
+    {% if points|length < 2 %}
+        <p class="ib-note">Ein Verlauf braucht mindestens zwei Jahre. Bisher gibt es {{ points|length }}.</p>
+    {% else %}
+        {% set top = max(points|map(point => point.value)) %}
+        {% set step = 100 / (points|length - 1) %}
+        {% set coords = [] %}
+        {% for point in points %}
+            {% set coords = coords|merge([
+                (loop.index0 * step)|round(2) ~ ',' ~ (top > 0 ? (100 - point.value / top * 90)|round(2) : 100)
+            ]) %}
+        {% endfor %}
+
+        {#
+            viewBox ohne festes Seitenverhältnis: die Linie soll die Breite
+            der Kachel füllen. Die Strichstärke bleibt trotzdem gleich —
+            dafür sorgt vector-effect im Stil.
+        #}
+        <svg class="aw-line" viewBox="0 0 100 100" preserveAspectRatio="none" role="img"
+             aria-label="Verlauf über {{ points|length }} Jahre">
+            <polygon class="aw-line__area" points="0,100 {{ coords|join(' ') }} 100,100" />
+            <polyline class="aw-line__stroke" points="{{ coords|join(' ') }}" />
+        </svg>
+
+        <p class="aw-line__years">
+            {% for point in points %}<span>{{ point.label }}</span>{% endfor %}
+        </p>
+    {% endif %}
+{% endmacro %}

@@ -1,0 +1,19 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'finance/_detail.html.twig' %}
+{% set edit_step = 'faelligkeit' %}
+
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['finance.item.field.interval'|trans, item.due.interval.labelKey|trans],
+            ['finance.item.field.due_day'|trans, item.due.day],
+            [
+                'finance.item.field.due_month'|trans,
+                item.due.month ? ('month.' ~ item.due.month)|trans : 'finance.item.no_month'|trans
+            ]
+        ],
+        empty: ''
+    } only %}
+{% endblock %}

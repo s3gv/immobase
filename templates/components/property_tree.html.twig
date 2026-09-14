@@ -1,0 +1,32 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das offene Objekt mit seinen Einheiten, unter dem Menüpunkt.
+
+    Erwartet: property, units
+
+    Eingerückt statt als eigene Liste: die Einheiten gehören zum Objekt, und
+    das Objekt gehört unter „Objekte". Zwei Ebenen sind genug — was darunter
+    käme, findet man über die Seite selbst.
+#}
+<ul class="ib-nav ib-nav--nested">
+    <li>
+        <a class="ib-nav__link ib-nav__link--branch{{ app.request.attributes.get('_route') starts with 'app_property' and app.request.attributes.get('unit') is null ? ' is-current' : '' }}"
+           href="{{ path('app_property_show', { number: property.number }) }}">
+            {{ property.name }}
+        </a>
+
+        {% if units is not empty %}
+            <ul class="ib-nav ib-nav--nested">
+                {% for unit in units %}
+                    <li>
+                        <a class="ib-nav__link ib-nav__link--leaf{{ app.request.attributes.get('unit') == unit.number ? ' is-current' : '' }}"
+                           href="{{ path('app_unit_show', { number: property.number, unit: unit.number }) }}">
+                            {{ unit.label }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </li>
+</ul>

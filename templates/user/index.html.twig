@@ -1,0 +1,103 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'user.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'user.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'user.subheading'|trans }}</p>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            'user.field.number'|trans,
+            'user.field.name'|trans,
+            'user.field.email'|trans,
+            'user.field.job_title'|trans,
+            'user.field.status'|trans,
+            'user.field.last_sign_in'|trans
+        ],
+        rows: users|map(u => {
+            cells: [
+                u.number,
+                u.displayName ~ ' · ' ~ u.assignedRoles|map(r => r.name.value)|sort|join(', '),
+                u.email.toString,
+                u.name.jobTitle ?: '—',
+                u.status.labelKey|trans,
+                u.lastSignInAt ? u.lastSignInAt|date('format.datetime'|trans) : 'user.never'|trans
+            ],
+            actions: [{ action: 'open', url: path('app_user_show', { number: u.number }) }]
+                |merge(is_granted('users.delete')
+                    ? (touchable[u.id]
+                        ? [{ action: 'delete', modal: 'delete-' ~ u.number }]
+                        : [{ action: 'delete', disabled: true, tooltip: 'user.protected.short'|trans }])
+                    : [])
+        }),
+        page: page,
+        action: path('app_user'),
+        url: url,
+        empty: 'user.empty'|trans ~ (filter.withPast ? '' : ' ' ~ 'index.past_hidden'|trans),
+        filter: filter,
+        statuses: statuses,
+        users: users,
+        touchable: touchable
+    } only %}
+        {% block actions %}
+            {# Einladen ist Bearbeiten. Wer nur nachsehen darf, sieht den
+               Knopf nicht — er führte zuverlässig in eine Fehlermeldung. #}
+            {% if is_granted('users.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_user_new'), labelled: true
+                } only %}
+            {% endif %}
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'user.filter.search'|trans,
+                value: filter.search, placeholder: 'user.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'status', name: 'status', label: 'user.field.status'|trans,
+                choices: statuses|map(s => { value: s.value, label: s.labelKey|trans }),
+                value: filter.status ? filter.status.value : '',
+                blank: 'user.filter.all_statuses'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'admins', name: 'admins', label: 'user.filter.scope'|trans,
+                choices: [{ value: '1', label: 'user.filter.only_administrators'|trans }],
+                value: filter.administratorsOnly ? '1' : '',
+                blank: 'user.filter.everyone'|trans
+            } only %}
+
+            {% include 'components/past_toggle.html.twig' with { shown: filter.withPast } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {#
+        Je Zeile eine Rückfrage — sie trägt Namen, Nummer und ihr eigenes
+        Token und lässt sich deshalb nicht zusammenfassen, ohne die Folgen
+        unbestimmt zu machen.
+
+        Ein gesperrter Löschknopf nennt seinen Grund und bleibt deshalb
+        stehen. Fehlt dagegen das Recht, steht er gar nicht erst da: „Geschützt"
+        wäre dann die falsche Auskunft.
+    #}
+    {% for u in users %}
+        {% if touchable[u.id] and is_granted('users.delete') %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'delete-' ~ u.number,
+                title: 'user.delete.title'|trans({'%name%': u.displayName}),
+                body: 'user.delete.body'|trans,
+                consequences: [
+                    'user.delete.consequence_number'|trans({'%number%': u.number}),
+                    'user.delete.consequence_access'|trans
+                ],
+                url: path('app_user_delete', { number: u.number }),
+                token: 'user_delete_' ~ u.number
+            } only %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}

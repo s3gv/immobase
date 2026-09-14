@@ -1,0 +1,12 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Symbol.
+
+    Erwartet: name — Dateiname aus assets/images/icons/ ohne .svg
+
+    Eingebettet statt per <img> geladen, damit stroke/fill="currentColor" die
+    Textfarbe erbt und mit dem Theme wechselt. Ein per <img> geladenes SVG ist
+    ein eigenes Dokument und kann das nicht.
+#}
+<span class="ib-icon">{{ source('@icons/' ~ name ~ '.svg')|raw }}</span>

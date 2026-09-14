@@ -1,0 +1,36 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Anteil als Ring.
+
+    Erwartet: share (0–100), label, caption
+
+    Für genau eine Aufteilung in zwei Teile — mehr Segmente wären ein
+    Tortendiagramm, und die liest niemand genauer als eine Liste.
+
+    Ein SVG und kein Bild: es skaliert, nimmt die Farben des Themes und
+    braucht kein JavaScript. Die Zahl steht in der Mitte, weil ein Ring ohne
+    Zahl nur eine Schätzung erlaubt.
+#}
+{% set circumference = 100 %}
+
+<div class="ib-ring">
+    <svg class="ib-ring__chart" viewBox="0 0 42 42" role="img"
+         aria-label="{{ label }}: {{ share }} %">
+        <circle class="ib-ring__rest" cx="21" cy="21" r="15.915" fill="none" stroke-width="4"></circle>
+        {#
+            Der Radius ist so gewählt, dass der Umfang 100 beträgt: dann ist
+            `stroke-dasharray` unmittelbar der Anteil in Prozent. Der Versatz
+            von 25 dreht den Anfang auf zwölf Uhr — eine zusätzliche Drehung
+            per CSS verschöbe ihn ein zweites Mal.
+        #}
+        <circle class="ib-ring__share" cx="21" cy="21" r="15.915" fill="none" stroke-width="4"
+                stroke-dasharray="{{ share }} {{ circumference - share }}"
+                stroke-dashoffset="25" stroke-linecap="butt"></circle>
+        <text class="ib-ring__number" x="21" y="21" text-anchor="middle" dominant-baseline="central">
+            {{ share }} %
+        </text>
+    </svg>
+
+    <p class="ib-ring__caption">{{ caption }}</p>
+</div>

@@ -1,0 +1,117 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wer mietet — einer oder mehrere, gleichberechtigt.
+
+    Kein Hauptmieter: wer im Vertrag steht, haftet gesamtschuldnerisch. Eine
+    Reihenfolge zu erfassen hieße, eine Rangfolge zu behaupten, die es nicht
+    gibt.
+#}
+{% extends 'tenancy/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.tenants is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.tenants|trans }}</p>
+    {% endif %}
+
+    <div class="ib-picker"
+         data-party-picker
+         data-search-url="{{ path('app_property_owner_search') }}"
+         data-empty="{{ 'property.owner.no_results'|trans }}"
+         data-duplicate="{{ 'tenancy.tenant.already_added'|trans }}"
+         data-remove="{{ 'tenancy.tenant.remove'|trans }}"
+         data-reference="{{ 'user.field.number'|trans }}"
+         data-row-name="tenants[]"
+         data-row-value="{id}">
+
+        <ul class="ib-picker__list" data-party-list>
+            {% for tenant in tenantsChosen %}
+                <li class="ib-picker__row" data-party-row="{{ tenant.partyId }}">
+                    <span class="ib-picker__name">
+                        {{ tenant.brief ? tenant.brief.displayName : tenant.partyId }}
+                        {% if tenant.brief %}
+                            <span class="ib-field__hint">
+                                {{ 'user.field.number'|trans }} {{ tenant.brief.reference }}
+                                {{ tenant.brief.address ? '· ' ~ tenant.brief.address : '' }}
+                            </span>
+                        {% endif %}
+                    </span>
+                    <input type="hidden" name="tenants[]" value="{{ tenant.partyId }}">
+                    <button class="ib-action ib-action--danger" type="button" data-party-remove
+                            aria-label="{{ 'tenancy.tenant.remove'|trans }}"
+                            data-tooltip="{{ 'tenancy.tenant.remove'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% if tenantsChosen is empty %}
+            <p class="ib-picker__empty" data-party-empty>{{ 'tenancy.tenant.none'|trans }}</p>
+        {% endif %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'tenant-search', name: 'tenantSearch',
+            label: 'tenancy.tenant.search'|trans,
+            hint: 'property.owner.search_hint'|trans,
+            autocomplete: 'off'
+        } only %}
+
+        <ul class="ib-picker__results" data-party-results hidden></ul>
+
+        <button class="ib-button ib-button--quiet" type="button" data-modal-open="tenant-create">
+            {{ 'property.owner.create_new'|trans }}
+        </button>
+
+        <template data-party-template>
+            <li class="ib-picker__row" data-party-row="">
+                <span class="ib-picker__name"></span>
+                <input type="hidden" name="tenants[]" value="">
+                <button class="ib-action ib-action--danger" type="button" data-party-remove
+                        aria-label="{{ 'tenancy.tenant.remove'|trans }}">
+                    {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                </button>
+            </li>
+        </template>
+    </div>
+
+{% endblock %}
+
+{% block before_form %}
+    {% if tenancy %}
+        {% include 'tenancy/_household.html.twig' with {
+            tenancy: tenancy, household: household, today: today, editable: true
+        } only %}
+    {% endif %}
+{% endblock %}
+
+{% block outside_form %}
+    {#
+        Der Umweg über die Stammdaten. Das Mietverhältnis ist gespeichert, also
+        geht nichts verloren — und der neue Kontakt kommt über ?neu= gleich in
+        die Liste zurück.
+    #}
+    {% embed 'components/modal.html.twig' with {
+        id: 'tenant-create', title: 'tenancy.tenant.create_title'|trans, action: action
+    } only %}
+        {% block body %}
+            <p>{{ 'tenancy.tenant.create_body'|trans }}</p>
+            <p class="ib-confirm__lead">{{ 'confirm.consequences'|trans }}</p>
+            <ul class="ib-confirm__list">
+                <li>{{ 'tenancy.tenant.create_consequence_saved'|trans }}</li>
+                <li>{{ 'property.owner.create_consequence_back'|trans }}</li>
+            </ul>
+        {% endblock %}
+
+        {% block actions %}
+            <button class="ib-button ib-button--quiet" type="button" data-modal-close autofocus>
+                {{ 'confirm.cancel'|trans }}
+            </button>
+            <a class="ib-button" href="{{ path('app_party_new', { weiter: action }) }}">
+                {{ 'property.owner.create_new'|trans }}
+            </a>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

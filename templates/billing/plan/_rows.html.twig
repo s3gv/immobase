@@ -1,0 +1,93 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Zeilen eines Wirtschaftsplans.
+
+    Je Zeile steht alles beieinander, was die Entscheidung trägt: was es
+    voriges Jahr gekostet hat, was geplant wird, wie weit das auseinandergeht
+    und warum. Der Vergleich ist keine Bequemlichkeit — ein Plan muss „nach
+    Grund und Höhe nachprüfbar" sein, und eine Zahl allein ist das nie.
+
+    **Keine Tabelle, und kein freier Umbruch.** Sieben Spalten passen in die
+    Spalte eines Ablaufs nie hinein, und eine Tabelle, die seitwärts scrollt,
+    versteckt genau das, worum es geht. Stattdessen ein festes Raster aus zwei
+    Zeilen: oben, was die Zahl ist, unten, wie sie verteilt wird und warum. So
+    steht jedes Feld immer an derselben Stelle — ein Umbruch, der mal hier und
+    mal dort passiert, lässt den Blick jedes Mal neu suchen.
+
+    Jedes Feld trägt seine eigene Beschriftung: über zwei Zeilen hinweg gäbe
+    es keine Kopfzeile, die noch passt.
+
+    Angesprochen wird jede Zeile über ihre eigene Kennung und nicht über ihre
+    Stelle in der Liste: wer eine entfernt, verschöbe sonst alle darunter.
+
+    Erwartet: rows (PlanPosition), kinds, keys
+    Optional: removable — ob die Kostenart wählbar und die Zeile entfernbar ist
+#}
+<div class="ib-plan__rows">
+    {% for row in rows %}
+        <div class="ib-plan__row" data-plan-row="{{ row.id }}">
+            {% if removable|default(false) %}
+                {% include 'components/select.html.twig' with {
+                    id: 'kind-' ~ row.id, name: 'rows[' ~ row.id ~ '][kind]',
+                    label: 'billing.plan.row.kind'|trans,
+                    choices: kinds|map(k => { value: k.id, label: k.label }),
+                    value: row.costKindId
+                } only %}
+            {% else %}
+                <div class="ib-field">
+                    <span class="ib-field__label">{{ 'billing.plan.row.kind'|trans }}</span>
+                    <p class="ib-field__static">{{ ('billing.plan.line_kind.' ~ row.lineKind.value)|trans }}</p>
+                </div>
+            {% endif %}
+
+            <div class="ib-field ib-plan__figure">
+                <span class="ib-field__label">{{ 'billing.plan.row.previous'|trans }}</span>
+                <p class="ib-field__static">{{ row.previous|money }}</p>
+            </div>
+
+            {#
+                Die Veränderung steht als Hinweis unter dem Betrag und nicht
+                in einer eigenen Spalte: sie wird gerechnet und nicht getippt.
+                Ein Feld dafür wäre eine zweite Wahrheit, die still
+                auseinanderläuft.
+            #}
+            {% include 'components/field.html.twig' with {
+                id: 'amount-' ~ row.id, name: 'rows[' ~ row.id ~ '][amount]',
+                label: 'billing.plan.row.planned'|trans,
+                hint: 'billing.plan.row.change'|trans({'%amount%': row.change|money}),
+                value: row.entered|money_number
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'key-' ~ row.id, name: 'rows[' ~ row.id ~ '][key]',
+                label: 'billing.plan.row.key'|trans,
+                choices: keys|map(k => { value: k.id, label: k.label }),
+                value: row.key.id
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'reason-' ~ row.id, name: 'rows[' ~ row.id ~ '][reason]',
+                label: 'billing.plan.row.reason'|trans,
+                placeholder: 'billing.plan.row.reason_hint'|trans,
+                value: row.reason
+            } only %}
+
+            {% if removable|default(false) %}
+                <div class="ib-plan__actions">
+                    <label class="ib-choice">
+                        <input type="checkbox" name="rows[{{ row.id }}][oneOff]" value="1"
+                               {{ row.isOneOff ? 'checked' : '' }}>
+                        {{ 'billing.plan.row.one_off'|trans }}
+                    </label>
+                    <button class="ib-action ib-action--danger" type="submit"
+                            name="remove" value="{{ row.id }}" formnovalidate
+                            aria-label="{{ 'billing.plan.row.remove'|trans }}"
+                            data-tooltip="{{ 'billing.plan.row.remove'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>

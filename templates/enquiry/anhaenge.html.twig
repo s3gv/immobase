@@ -1,0 +1,48 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Schritt 2: die Anhänge.
+
+    Alle Dateien der Anfrage auf einen Blick, mit Absender, Frist und
+    Ablaufvermerk. Im Gespräch stehen sie an ihrer Nachricht — hier stehen sie
+    beieinander, weil „wo war noch mal der Beleg?" eine eigene Frage ist.
+
+    **Eine abgelaufene Datei bleibt als Zeile stehen.** Sie verschwindet aus
+    der Datenbank, sobald der Aufräumlauf sie erwischt; bis dahin steht hier
+    ihr Name mit dem Vermerk, und herausgegeben wird sie nicht mehr.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {% set rows = [] %}
+    {% for message in enquiry.messages %}
+        {% for attachment in message.attachments %}
+            {% set rows = rows|merge([{
+                cells: [
+                    attachment.name,
+                    message.authorLabel,
+                    (attachment.sizeBytes / 1024)|round ~ ' KB',
+                    attachment.isExpired(today)
+                        ? 'portal.file.expired_short'|trans
+                        : 'portal.file.until_short'|trans({'%date%': attachment.deleteAfter|date_local})
+                ],
+                actions: attachment.isExpired(today) ? [] : [{
+                    action: 'open', url: path('app_enquiry_attachment', { id: attachment.id })
+                }]
+            }]) %}
+        {% endfor %}
+    {% endfor %}
+
+    <p class="ib-field__hint">{{ 'portal.file.retention'|trans({'%count%': retentionDays}) }}</p>
+
+    {% include 'components/table.html.twig' with {
+        headers: [
+            'enquiry.field.file'|trans,
+            'enquiry.field.sender'|trans,
+            'enquiry.field.size'|trans,
+            'enquiry.field.kept_until'|trans
+        ],
+        rows: rows,
+        empty: 'enquiry.no_files'|trans
+    } only %}
+{% endblock %}

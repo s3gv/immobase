@@ -1,0 +1,47 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein freigegebener Wirtschaftsplan.
+
+    Derselbe Rahmen wie im Ablauf, auf dem letzten Schritt — wer gerade noch
+    geprüft hat, findet dieselbe Seite wieder, nur ohne Knöpfe.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {% if document %}
+        {% include 'billing/_recipients.html.twig' with {
+            action: path('app_billing_plan_show', { id: plan.id }),
+            field: 'einheit',
+            value: document.id,
+            choices: documents|map(d => {
+                value: d.id,
+                label: d.unitNumber ~ ' · ' ~ d.unitLabel ~ ' · ' ~ d.recipient.label
+            })
+        } only %}
+
+        {% set planned = document.asPlanned %}
+        {% include 'billing/_plan_preview.html.twig' with {
+            who: document.recipient.label,
+            unit: document.unitNumber ~ ' · ' ~ document.unitLabel,
+            lines: planned.lines,
+            costs: planned.costs, reserve: planned.reserve, yearly: planned.yearly,
+            advance: planned.advance,
+            interval: plan.terms.interval.labelKey|trans,
+            firstDue: plan.terms.firstDueOn,
+            decision: plan.resolution.isRecorded
+                ? 'billing.plan.pdf.decided'|trans({'%day%': plan.resolution.decidedOn|date_local})
+                    ~ (plan.resolution.outcome ? ' · ' ~ plan.resolution.outcome : '')
+                : ''
+        } only %}
+    {% else %}
+        <p class="ib-empty">{{ 'billing.plan.nothing'|trans }}</p>
+    {% endif %}
+
+    <div class="ib-flow__actions">
+        <a class="ib-button ib-button--quiet" href="{{ path('app_billing_plan') }}">{{ 'flow.cancel'|trans }}</a>
+        <a class="ib-button" href="{{ path('app_billing_plan_pdf', { id: plan.id }) }}">
+            {{ 'billing.plan.download'|trans }}
+        </a>
+    </div>
+{% endblock %}

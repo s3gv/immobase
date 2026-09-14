@@ -1,0 +1,52 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wohin die Kostenposition gehört: Objekt, Kostenart, Verteilerschlüssel.
+
+    Die drei zusammen sind die Position. Fehlt eines, gibt es nichts zu
+    speichern — deshalb steht die Meldung über allen dreien und nicht an einem
+    Feld.
+#}
+{% extends 'finance/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.assignment is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.assignment|trans }}</p>
+    {% endif %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'propertyId', name: 'propertyId', label: 'finance.item.field.property'|trans,
+        choices: properties|map(p => { value: p.id, label: p.oneLine }),
+        value: posted ? submitted.propertyId|default('') : (item ? item.propertyId : ''),
+        blank: 'finance.item.choose_property'|trans
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'kindId', name: 'kindId', label: 'finance.item.field.kind'|trans,
+        hint: 'finance.item.field.kind_hint'|trans,
+        choices: kinds|map(k => {
+            value: k.id,
+            label: k.name ~ (k.isApportionable ? '' : ' · ' ~ 'finance.kind.apportionable_no'|trans)
+        }),
+        value: posted ? submitted.kindId|default('') : (item ? item.kind.id : ''),
+        blank: 'finance.item.choose_kind'|trans
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'keyId', name: 'keyId', label: 'finance.item.field.key'|trans,
+        hint: 'finance.item.field.key_hint'|trans,
+        choices: keys|map(k => {
+            value: k.id,
+            label: k.name ~ (k.propertyId ? ' · ' ~ keyProperties[k.propertyId]|default('') : '')
+        }),
+        value: posted ? submitted.keyId|default('') : (item ? item.key.id : ''),
+        blank: 'finance.item.choose_key'|trans
+    } only %}
+
+    <p class="ib-field__hint">
+        {{ 'finance.item.key_missing'|trans }}
+        <a href="{{ path('app_finance_key') }}">{{ 'finance.key.heading'|trans }}</a>
+    </p>
+{% endblock %}

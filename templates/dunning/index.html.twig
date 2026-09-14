@@ -1,0 +1,165 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Mahnwesen: was überfällig ist und was verfolgt wird.
+
+    Dieselbe Gestalt wie die übrigen Übersichten — oben die Kennzahlen,
+    darunter die Tafel, darunter die Liste. Wer eine Übersicht in ImmoBase
+    kennt, kennt alle.
+
+    **Die Tafel steht immer da**, auch wenn sie nichts zu melden hat. Ein
+    Kasten, der nur im Ernstfall erscheint, lässt den Rest der Zeit offen, ob
+    gerade nichts ansteht oder ob niemand nachgesehen hat. „Nichts überfällig"
+    ist eine Auskunft; eine leere Seite ist keine.
+
+    Sie ist abgeleitet und nicht gespeichert: solange niemand gemahnt hat,
+    steht alles schon in den Finanzen, und eine zweite Tabelle darüber liefe
+    auseinander.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'dunning.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'dunning.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'dunning.subheading'|trans }}</p>
+
+    <div class="ib-stats">
+        {% include 'components/stat_tile.html.twig' with {
+            value: pressure.open|money,
+            label: 'dunning.overview.open'|trans,
+            tone: pressure.open.isZero ? 'neutral' : 'danger'
+        } only %}
+
+        {% include 'components/stat_tile.html.twig' with {
+            value: pressure.letters,
+            label: 'dunning.overview.letters'|trans,
+            tone: pressure.letters > 0 ? 'warning' : 'success'
+        } only %}
+
+        {#
+            Nach der letzten Mahnung ist keine mehr fällig — dann bleibt das
+            Gericht. Eine eigene Kachel, weil es eine andere Entscheidung ist
+            als ein weiteres Schreiben.
+        #}
+        {% include 'components/stat_tile.html.twig' with {
+            value: pressure.forTheCourt,
+            label: 'dunning.overview.court'|trans,
+            tone: pressure.forTheCourt > 0 ? 'danger' : 'neutral'
+        } only %}
+
+        {% include 'components/stat_tile.html.twig' with {
+            value: rateFrom ? rateFrom|date_local : '—',
+            label: 'dunning.overview.rate'|trans,
+            tone: rateMissing ? 'warning' : 'neutral',
+            href: path('app_dunning_rate')
+        } only %}
+    </div>
+
+    <div class="ib-overview">
+        <section class="ib-overview__panel">
+            <h2 class="ib-flow__title">{{ 'dunning.overdue_heading'|trans }}</h2>
+            <p class="ib-field__hint">{{ 'dunning.overdue_hint'|trans }}</p>
+
+            <ul class="ib-group__list">
+                {% if overdue is empty %}
+                    {% include 'components/list_row.html.twig' with {
+                        tone: 'success',
+                        title: 'dunning.overdue_none_heading'|trans,
+                        meta: 'dunning.overdue_none'|trans
+                    } only %}
+                {% else %}
+                    {% for item in overdue %}
+                        {% embed 'components/list_row.html.twig' with {
+                            tone: 'warning',
+                            title: item.debtorName ~ ' · ' ~ item.subject,
+                            meta: item.unitLabel ~ ' · ' ~ item.open|money
+                                ~ ' · ' ~ 'dunning.days_overdue'|trans({'%count%': item.daysOverdue}),
+                            item: item
+                        } only %}
+                            {% block trailing %}
+                                {% if is_granted('dunning.edit') %}
+                                    {#
+                                        Unmittelbar in den Ablauf, mit Schuldner und
+                                        Forderungen vorbelegt: wer auf den Hinweis
+                                        klickt, will mahnen und nicht suchen.
+                                    #}
+                                    <form method="post"
+                                          action="{{ path('app_dunning_notice_from_payment', { paymentId: item.paymentId }) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('dunning') }}">
+                                        <button class="ib-button ib-button--quiet" type="submit">
+                                            {{ 'dunning.dun'|trans }}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </section>
+    </div>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            'dunning.debtor'|trans,
+            'dunning.subject'|trans,
+            'dunning.open'|trans,
+            'dunning.interest'|trans,
+            'dunning.state'|trans
+        ],
+        rows: states|map(s => {
+            cells: [
+                debtors[s.claim.id]|default('—'),
+                s.claim.subject,
+                s.open|money,
+                s.interest|money,
+                include('dunning/_state.html.twig', { state: s })
+            ],
+            actions: [{ action: 'open', url: path('app_dunning_show', { id: s.claim.id }) }]
+        }),
+        page: page,
+        action: path('app_dunning'),
+        url: url,
+        empty: (filter.isEmpty ? 'dunning.empty' : 'dunning.empty_filtered')|trans,
+        compact: true,
+        filter: filter,
+        properties: properties
+    } only %}
+        {% block actions %}
+            {% if is_granted('dunning.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_dunning_record'), labelled: true
+                } only %}
+            {% endif %}
+
+            <a class="ib-button ib-button--quiet" href="{{ path('app_dunning_rate') }}">
+                {{ 'dunning.rate.heading'|trans }}
+            </a>
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'dunning.filter.search'|trans,
+                value: filter.search, placeholder: 'dunning.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'objekt', name: 'objekt', label: 'billing.budget.property'|trans,
+                choices: properties|map(p => { value: p.id, label: p.oneLine }),
+                value: filter.propertyId, blank: 'billing.statement.filter.all_properties'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'zustand', name: 'zustand', label: 'dunning.state'|trans,
+                choices: [
+                    { value: 'open', label: 'dunning.state_value.open'|trans },
+                    { value: 'due', label: 'dunning.state_value.due'|trans },
+                    { value: 'running', label: 'dunning.state_value.running'|trans },
+                    { value: 'settled', label: 'dunning.state_value.settled'|trans }
+                ],
+                value: filter.state, blank: 'billing.statement.filter.all_states'|trans
+            } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

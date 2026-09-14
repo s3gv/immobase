@@ -1,0 +1,22 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_detail.html.twig' %}
+{% set edit_step = 'anschrift' %}
+
+{% block panel %}
+    {% if property.address.isKnown %}
+        {% include 'components/table.html.twig' with {
+            headers: ['user.review.field'|trans, 'user.review.value'|trans],
+            rows: [
+                ['property.field.street'|trans, property.address.street],
+                ['property.field.postal_code'|trans, property.address.postalCode],
+                ['property.field.city'|trans, property.address.city]
+            ],
+            empty: ''
+        } only %}
+    {% else %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'property.error.address_required'|trans
+        } only %}
+    {% endif %}
+{% endblock %}

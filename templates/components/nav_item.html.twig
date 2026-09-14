@@ -1,0 +1,42 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Eintrag der Hauptnavigation.
+
+    Erwartet: route (Routenname), label (fertig übersetzt), icon
+    Optional: match — Routenpräfix, unter dem der Eintrag markiert bleibt.
+                      Vorgabe ist die Route selbst.
+              badge — eine Zahl, die auf Offenes hinweist. Null zeigt nichts:
+                      ein Abzeichen mit einer Null wäre ein Hinweis auf
+                      nichts. Braucht badge_label für die Vorlesestimme, denn
+                      „3" allein sagt nicht, worum es geht.
+
+    Warum ein Präfix und kein Vergleich auf Gleichheit: ein Fachmodul hat
+    später mehr als eine Route. Wer von der Objektliste in ein einzelnes Objekt
+    wechselt, ist immer noch bei den Objekten — die Markierung darf dabei nicht
+    verschwinden. Markiert wird deshalb auch bei jeder Route, die mit dem
+    Präfix und einem Unterstrich weitergeht.
+
+    Damit das trägt, beginnen alle Routen eines Moduls mit demselben Präfix,
+    zum Beispiel app_property und app_property_show. Ohne diese Regel markiert
+    ein Eintrag fremde Seiten mit.
+#}
+{% set current_route = app.request.attributes.get('_route')|default('') %}
+{% set prefix = match|default(route) %}
+{% set is_current = current_route == prefix or current_route starts with prefix ~ '_' %}
+
+<li>
+    <a class="ib-nav__link{{ is_current ? ' is-current' : '' }}"
+       href="{{ path(route) }}"
+       {% if is_current %}aria-current="page"{% endif %}>
+        {% include 'components/icon.html.twig' with { name: icon } only %}
+        {{ label }}
+
+        {% if badge|default(0) > 0 %}
+            <span class="ib-nav__badge" title="{{ badge_label|default('') }}">
+                <span aria-hidden="true">{{ badge }}</span>
+                <span class="ib-visually-hidden">{{ badge_label|default(badge) }}</span>
+            </span>
+        {% endif %}
+    </a>
+</li>

@@ -1,0 +1,54 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'invitation/_layout.html.twig' %}
+
+{% block step_body %}
+    {% if factor.choice == '' %}
+        <p>{{ 'user.factor.intro'|trans }}</p>
+    {% elseif factor.choice == 'app' %}
+        <p>{{ 'user.factor.app_hint'|trans }}</p>
+
+        {# Der QR-Code als Bild, das Geheimnis darunter im Klartext: nicht
+           jedes Gerät kann scannen, und wer am selben Rechner sitzt, tippt es
+           lieber ab. #}
+        <img class="ib-qr" src="{{ path('app_totp_qr') }}" alt="{{ 'user.factor.qr_alt'|trans }}" width="200" height="200">
+        <p class="ib-secret"><code>{{ factor.secret }}</code></p>
+
+        {% include 'components/field.html.twig' with {
+            id: 'code', name: 'code', label: 'user.factor.code'|trans,
+            hint: 'user.factor.code_hint'|trans,
+            required: true, autofocus: true, autocomplete: 'one-time-code'
+        } only %}
+    {% else %}
+        <p>{{ 'user.factor.email_hint'|trans({'%email%': user.email.toString}) }}</p>
+
+        {% include 'components/field.html.twig' with {
+            id: 'code', name: 'code', label: 'user.factor.code'|trans,
+            required: true, autofocus: true, autocomplete: 'one-time-code'
+        } only %}
+    {% endif %}
+{% endblock %}
+
+{% block step_actions %}
+    {#
+        Überspringen steht klein und links, die eigentliche Handlung rechts.
+        Es soll möglich sein, ohne einladend zu wirken.
+    #}
+    <button class="ib-linkish ib-flow__skip" type="submit" name="skip" value="1" formnovalidate>
+        {{ 'user.factor.skip'|trans }}
+    </button>
+
+    {% if factor.choice == '' %}
+        <button class="ib-button ib-button--quiet" type="submit" name="choose" value="email">
+            {{ 'user.factor.choose_email'|trans }}
+        </button>
+        <button class="ib-button" type="submit" name="choose" value="app">
+            {{ 'user.factor.choose_app'|trans }}
+        </button>
+    {% else %}
+        <button class="ib-button ib-button--quiet" type="submit" name="choose" value="restart" formnovalidate>
+            {{ 'user.factor.other_way'|trans }}
+        </button>
+        <button class="ib-button" type="submit">{{ 'user.factor.confirm'|trans }}</button>
+    {% endif %}
+{% endblock %}

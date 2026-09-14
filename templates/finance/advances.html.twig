@@ -1,0 +1,64 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Vorauszahlungen: eine Zeile je Einheit.
+
+    Zwei Sorten nebeneinander — das Hausgeld zahlt der Eigentümer, die
+    Nebenkosten der Mieter. Das erste gehört den Finanzen, das zweite steht im
+    Mietvertrag: es wird gelesen und verlinkt, nicht bearbeitet.
+
+    Hier steht nur, was gerade gilt. Die Staffel steht auf der Einheit —
+    fünfzig Einheiten mit je einem offenen Formular sind keine Übersicht
+    mehr, sondern ein Stapel.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'finance.advance.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'finance.advance.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'finance.advance.subheading'|trans }}</p>
+
+    <form class="ib-index__filters" method="get" action="{{ path('app_finance_advance') }}" role="search">
+        {% include 'components/select.html.twig' with {
+            id: 'objekt', name: 'objekt', label: 'finance.item.field.property'|trans,
+            choices: properties|map(p => { value: p.number, label: p.oneLine }),
+            value: chosenProperty, blank: 'finance.item.filter.all_properties'|trans
+        } only %}
+
+        <div class="ib-index__filter-actions">
+            <button class="ib-button" type="submit">{{ 'index.filter'|trans }}</button>
+            <a class="ib-button ib-button--quiet" href="{{ path('app_finance_advance') }}">
+                {{ 'index.reset'|trans }}
+            </a>
+        </div>
+    </form>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: [
+            'finance.advance.field.unit'|trans,
+            'finance.item.field.property'|trans,
+            'finance.advance.house_money'|trans,
+            'finance.advance.operating_costs'|trans
+        ],
+        rows: units|map(unit => {
+            cells: [
+                unit.label,
+                unit.propertyNumber ~ ' · ' ~ unit.propertyName,
+                schedules[unit.id]|default(null) and schedules[unit.id].on(today)
+                    ? schedules[unit.id].on(today).amount|money
+                        ~ ' · ' ~ schedules[unit.id].on(today).interval.labelKey|trans
+                    : 'finance.advance.none'|trans,
+                advances[unit.id]|default(null)
+                    ? advances[unit.id].total|money
+                    : 'finance.advance.not_let'|trans
+            ],
+            actions: [{
+                action: 'open',
+                url: path('app_finance_advance_show', { unitId: unit.id })
+            }]
+        }),
+        empty: list_is_filtered() ? 'index.no_match'|trans : 'finance.advance.empty'|trans
+    } only %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Hinweis-Dialog für Skripte.
+
+    Steht auf jeder Seite bereit und ist leer, bis notice() ihn füllt. Er ist
+    der Ersatz für window.alert: der bringt das Aussehen des Browsers mit,
+    nennt die Adresse der Seite und hält den ganzen Reiter an, bis jemand
+    klickt. Hier ist es ein Dialog wie jeder andere.
+
+    Wird von shell.html.twig eingebunden — nicht einzeln einbinden.
+#}
+<dialog class="ib-modal" id="notice" aria-labelledby="notice-title">
+    <div class="ib-modal__panel">
+        <h2 class="ib-modal__title" id="notice-title" data-notice-title>{{ 'notice.title'|trans }}</h2>
+
+        <div class="ib-modal__body">
+            <p data-notice-body></p>
+        </div>
+
+        <div class="ib-modal__actions">
+            <button class="ib-button" type="button" data-modal-close autofocus>
+                {{ 'modal.close'|trans }}
+            </button>
+        </div>
+    </div>
+</dialog>

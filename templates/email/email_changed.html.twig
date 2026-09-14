@@ -1,0 +1,9 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'email/layout.html.twig' %}
+
+{% block body %}
+    <p>{{ 'email.email_changed.greeting'|trans }}</p>
+    <p>{{ 'email.email_changed.body'|trans }}</p>
+    <p>{{ 'email.email_changed.hint'|trans }}</p>
+{% endblock %}

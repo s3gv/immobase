@@ -1,0 +1,12 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Stand des Spiegels.
+
+    Steht auf jeder Auswertung. Über eine Grenze hinweg ist „die Zahl stimmt"
+    eine Frage davon, wie frisch die Daten sind — und eine Auswertung, die
+    das verschweigt, lässt den Leser raten.
+#}
+<p class="ib-subheading">
+    {% if stand %}Daten bis {{ stand }} Uhr.{% else %}Noch keine Daten gespiegelt.{% endif %}
+</p>

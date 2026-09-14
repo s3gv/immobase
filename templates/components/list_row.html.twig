@@ -1,0 +1,23 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Zeile in einer Liste.
+
+    Erwartet: title
+    Optional: meta, trailing, tone (neutral|success|warning|danger)
+
+    Gehört in ein <ul>.
+
+    Rechts steht entweder `trailing` als Text oder — per {% embed %} — der
+    Block `trailing`. Der Block ist für das, was kein Text sein kann: ein
+    Formular zum Beispiel. Als Zeichenkette übergeben käme es maskiert an,
+    und maskiertes HTML ist kein Knopf, sondern Zeichensalat.
+#}
+<li class="ib-row">
+    <span class="ib-row__dot ib-row__dot--{{ tone|default('neutral') }}" aria-hidden="true"></span>
+    <span class="ib-row__body">
+        <span class="ib-row__title">{{ title }}</span>
+        {% if meta is defined and meta %}<span class="ib-row__meta">{{ meta }}</span>{% endif %}
+    </span>
+    <span class="ib-row__trailing">{% block trailing %}{{ trailing|default('') }}{% endblock %}</span>
+</li>

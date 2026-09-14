@@ -1,0 +1,63 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+<header class="ib-topbar">
+    {#
+        Die zentrale Suche.
+
+        Ohne JavaScript bleibt es ein gewöhnliches Formular: Enter führt auf
+        die Trefferseite, und die kann alles, was die Vorschläge können —
+        sie braucht nur einen Seitenaufbau dafür.
+
+        `autocomplete=off`, weil der Browser sonst seine eigene Liste über
+        die Vorschläge legt.
+    #}
+    <form class="ib-search" role="search" method="get" action="{{ path('app_search') }}"
+          data-search data-suggest="{{ path('app_search_suggest') }}">
+        <label class="ib-visually-hidden" for="ib-search-field">{{ 'shell.search'|trans }}</label>
+        <input id="ib-search-field" type="search" name="q" autocomplete="off"
+               value="{{ app.request.attributes.get('_route') == 'app_search' ? app.request.query.get('q') : '' }}"
+               placeholder="{{ 'shell.search'|trans }}…"
+               aria-expanded="false" aria-controls="ib-search-suggestions"
+               data-all="{{ 'search.all_results'|trans }}"
+               data-nothing="{{ 'search.nothing_found_short'|trans }}">
+        <div class="ib-search__suggestions" id="ib-search-suggestions" role="listbox"
+             data-search-suggestions hidden></div>
+    </form>
+
+    <div class="ib-topbar__actions">
+        {% include 'components/reminder.html.twig' with { reminders: my_reminders() } only %}
+
+        {% include 'components/calculator.html.twig' %}
+
+        {% set other_locale = app.request.locale == 'de' ? 'en' : 'de' %}
+        <a class="ib-icon-button" href="{{ path('app_locale', { locale: other_locale }) }}" hreflang="{{ other_locale }}">
+            {{ other_locale|upper }}
+        </a>
+
+        <button type="button" class="ib-icon-button" data-theme-toggle aria-pressed="false"
+                title="{{ 'shell.toggle_theme'|trans }}">
+            <span class="ib-visually-hidden">{{ 'shell.toggle_theme'|trans }}</span>
+            ◐
+        </button>
+
+        {% if app.user %}
+            {# <details> statt eigenem JavaScript: Öffnen, Schließen und
+               Tastaturbedienung kommen vom Browser. #}
+            <details class="ib-account">
+                <summary class="ib-avatar" title="{{ app.user.displayName }}">
+                    <span class="ib-visually-hidden">{{ 'shell.user_menu'|trans }}</span>
+                    {{ app.user.displayName|slice(0, 1)|upper }}
+                </summary>
+                <div class="ib-account__menu">
+                    <p class="ib-account__name">{{ app.user.displayName }}</p>
+                    <p class="ib-account__mail">{{ app.user.userIdentifier }}</p>
+                    <a class="ib-account__action" href="{{ path('app_account') }}">
+                        {% include 'components/icon.html.twig' with { name: 'shield' } %}
+                        {{ 'user.account.heading'|trans }}
+                    </a>
+                    {% include 'components/logout.html.twig' only %}
+                </div>
+            </details>
+        {% endif %}
+    </div>
+</header>

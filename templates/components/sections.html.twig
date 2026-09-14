@@ -1,0 +1,69 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Seite in Abschnitten — links die Liste, rechts einer davon.
+
+    Sieht aus wie der Multi-Step-Baustein und ist doch etwas anderes: dort
+    führt ein Weg von vorn nach hinten, hier steht alles nebeneinander und
+    jeder Abschnitt speichert für sich. Gemeinsam ist die Gestalt, und darum
+    geht es — wer ein Formular in ImmoBase kennt, kennt alle.
+
+    Erwartet: heading      Überschrift der Seite (fertig übersetzt)
+              sections     Liste aus { key, label, url }; url = null heißt:
+                           sichtbar, aber (noch) nicht erreichbar
+              current      Schlüssel des angezeigten Abschnitts
+              title        Überschrift des Abschnitts
+    Optional: subheading, explanation, note (kleiner Text unter der Liste)
+              wide — für Abschnitte mit einer Tabelle statt eines Formulars
+              position — „Schritt 3 von 7"; nur dort, wo die Abschnitte ein
+                         Weg sind und keine Ablage
+
+    Block:    section_body
+
+    Mit {% embed %} benutzen.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ title != heading ? title ~ ' · ' : '' }}{{ heading }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ heading }}</h1>
+    {% if subheading|default(null) %}
+        <p class="ib-subheading">{{ subheading }}</p>
+    {% endif %}
+
+    <div class="ib-flow">
+        <nav class="ib-flow__steps" aria-label="{{ 'sections.navigation'|trans }}">
+            <ol>
+                {% for section in sections %}
+                    {% set is_current = section.key == current %}
+                    {% set is_pending = section.url is null %}
+                    <li class="ib-flow__step{{ is_current ? ' is-current' : '' }}{{ is_pending ? ' is-pending' : '' }}">
+                        {% if is_current or is_pending %}
+                            <span {{ is_current ? 'aria-current="page"' : '' }}>{{ section.label }}</span>
+                        {% else %}
+                            <a href="{{ section.url }}">{{ section.label }}</a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ol>
+
+            {% if note|default(null) %}
+                <p class="ib-flow__note">{{ note }}</p>
+            {% endif %}
+        </nav>
+
+        <div class="ib-flow__panel{{ wide|default(false) ? ' ib-flow__panel--wide' : '' }}">
+            {% if position|default(null) %}
+                <p class="ib-flow__position">{{ position }}</p>
+            {% endif %}
+
+            <h2 class="ib-flow__title">{{ title }}</h2>
+            {% if explanation|default(null) %}
+                <p class="ib-flow__explanation">{{ explanation }}</p>
+            {% endif %}
+
+            {% block section_body %}{% endblock %}
+        </div>
+    </div>
+{% endblock %}

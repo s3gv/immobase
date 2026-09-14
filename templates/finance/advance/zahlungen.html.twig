@@ -1,0 +1,104 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was von den Vorauszahlungen dieses Wirtschaftsjahres angekommen ist.
+
+    Als bezahlt vorbelegt: der Normalfall ist die Zahlung, und ihn abzuhaken
+    wäre zwölf Klicks im Jahr für nichts. Wer eine vermisst, schaltet um.
+#}
+{% extends 'finance/advance/_page.html.twig' %}
+
+{% block section_body %}
+    <form method="get" class="ib-index__filters">
+        <input type="hidden" name="abschnitt" value="zahlungen">
+        {% include 'components/select.html.twig' with {
+            id: 'jahr', name: 'jahr', label: 'finance.payment.fiscal_year'|trans,
+            choices: years|map(y => { value: y, label: y }),
+            value: chosenYear
+        } only %}
+        <noscript><button class="ib-button" type="submit">{{ 'finance.payment.show'|trans }}</button></noscript>
+    </form>
+
+    <p class="ib-field__hint">{{ 'finance.payment.explanation'|trans }}</p>
+
+    {% if payments is empty %}
+        <p class="ib-empty">{{ 'finance.payment.none'|trans }}</p>
+    {% else %}
+        <div class="ib-table-scroll">
+            <table class="ib-table ib-table--compact">
+                <thead>
+                    <tr>
+                        <th>{{ 'finance.payment.due_on'|trans }}</th>
+                        <th>{{ 'finance.payment.kind_column'|trans }}</th>
+                        <th class="ib-table__number">{{ 'finance.payment.expected'|trans }}</th>
+                        <th>{{ 'finance.payment.settled'|trans }}</th>
+                        <th class="ib-table__number">{{ 'finance.payment.received'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                        <tr>
+                            <td>{{ payment.dueOn|date_local }}</td>
+                            {#
+                                Bei einer Sonderumlage steht die Beschlussnummer
+                                darunter: zwei Maßnahmen dürfen dieselbe Einheit am
+                                selben Tag zur Kasse bitten, und dann ist sie das
+                                einzige, was die beiden Zeilen unterscheidet.
+                            #}
+                            <td>
+                                {{ payment.kind.labelKey|trans }}
+                                {% if payment.reference %}
+                                    <span class="ib-muted">{{ payment.reference }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="ib-table__number">{{ payment.expected|money }}</td>
+                            <td>
+                                {% if may_edit %}
+                                    <form method="post" class="ib-payment" data-auto-submit
+                                          action="{{ path('app_finance_payment', { id: payment.id }) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('finance') }}">
+                                        <input type="hidden" name="abschnitt" value="zahlungen">
+                                        <input type="hidden" name="year" value="{{ chosenYear }}">
+                                        <label class="ib-choice">
+                                            <input type="checkbox" name="settled" value="1"
+                                                   {{ payment.isSettled ? 'checked' : '' }}>
+                                            {{ 'finance.payment.settled'|trans }}
+                                        </label>
+                                        {% if not payment.isSettled %}
+                                            {% include 'components/field.html.twig' with {
+                                                id: 'part-' ~ payment.id, name: 'part', quiet: true,
+                                                label: 'finance.payment.part'|trans,
+                                                placeholder: 'finance.payment.part_placeholder'|trans,
+                                                value: payment.part ? payment.part|money_number : ''
+                                            } only %}
+                                            <button class="ib-button ib-button--quiet" type="submit">
+                                                {{ 'finance.payment.keep'|trans }}
+                                            </button>
+                                        {% else %}
+                                            {# Ohne JavaScript ist der Knopf der einzige Weg. #}
+                                            <button class="ib-button ib-button--quiet" type="submit"
+                                                    data-auto-submit-fallback>
+                                                {{ 'finance.payment.keep'|trans }}
+                                            </button>
+                                        {% endif %}
+                                    </form>
+                                {% else %}
+                                    {{ (payment.isSettled ? 'finance.payment.yes' : 'finance.payment.no')|trans }}
+                                {% endif %}
+                            </td>
+                            <td class="ib-table__number">{{ payment.received|money }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="2">{{ 'finance.payment.total'|trans }}</th>
+                        <th class="ib-table__number">{{ expectedTotal|money }}</th>
+                        <th></th>
+                        <th class="ib-table__number">{{ receivedTotal|money }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

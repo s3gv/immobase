@@ -1,0 +1,42 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Schritt einer Abrechnung.
+
+    Dieselbe Gestalt wie beim Objekt: links die Schritte, rechts einer davon.
+    Jeder Schritt hat schon gespeichert, also sind die Schritte Links.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {#
+        Was vor dem Formular steht, gehört nicht hinein: ein GET-Formular
+        innerhalb eines POST-Formulars gibt es in HTML nicht.
+    #}
+    {% block before_form %}{% endblock %}
+
+    <form method="post" action="{{ action }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+
+        {% block fields %}{% endblock %}
+
+        <div class="ib-flow__actions">
+            <a class="ib-button ib-button--quiet" href="{{ cancel }}">{{ 'flow.cancel'|trans }}</a>
+
+            {% if hasPrevious %}
+                <button class="ib-button ib-button--quiet" type="submit"
+                        name="direction" value="back" formnovalidate>
+                    {{ 'flow.back'|trans }}
+                </button>
+            {% endif %}
+
+            {% block forward %}
+                <button class="ib-button" type="submit" name="direction" value="forward">
+                    {{ 'flow.next'|trans }}
+                </button>
+            {% endblock %}
+        </div>
+    </form>
+
+    {% block outside_form %}{% endblock %}
+{% endblock %}

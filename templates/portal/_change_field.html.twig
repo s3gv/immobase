@@ -1,0 +1,32 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Feld eines Änderungsvorschlags.
+
+    Erwartet: field — App\Shared\Change\ChangeableField
+
+    Welches Eingabefeld gezeichnet wird, sagt die Art — mehr weiß die Vorlage
+    über das Feld nicht, und mehr soll sie auch nicht wissen: was es bedeutet,
+    weiß nur das Modul, dem es gehört.
+
+    Der Name trägt ein Präfix. Ohne es hieße ein Feld womöglich „subject" oder
+    „_token" und überschriebe, was daneben steht.
+#}
+{% set id = 'field_' ~ field.key %}
+
+{% if field.kind.value == 'choice' %}
+    {% include 'components/select.html.twig' with {
+        id: id, name: id, label: field.labelKey|trans, value: field.value,
+        choices: field.choices|map(c => { value: c.value, label: c.labelKey|trans })
+    } only %}
+{% elseif field.kind.value == 'lines' %}
+    {% include 'components/textarea.html.twig' with {
+        id: id, name: id, label: field.labelKey|trans, value: field.value, rows: 3,
+        hint: 'portal.change.one_per_line'|trans
+    } only %}
+{% else %}
+    {% include 'components/field.html.twig' with {
+        id: id, name: id, label: field.labelKey|trans, value: field.value,
+        type: field.kind.value == 'date' ? 'date' : 'text'
+    } only %}
+{% endif %}

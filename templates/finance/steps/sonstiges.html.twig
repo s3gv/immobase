@@ -1,0 +1,71 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was von der Regel abweicht — und die Notiz.
+
+    Beide Auswahlfelder stehen auf „wie üblich". Wer etwas anderes wählt,
+    trifft eine Entscheidung; die häufige Wahl braucht keine.
+#}
+{% extends 'finance/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'apportionable', name: 'apportionable',
+        label: 'finance.item.field.apportionable'|trans,
+        hint: 'finance.item.field.apportionable_hint'|trans({
+            '%kind%': item.kind.name,
+            '%default%': (item.kind.isApportionable
+                ? 'finance.kind.apportionable_yes'
+                : 'finance.kind.apportionable_no')|trans
+        }),
+        choices: [
+            { value: 'yes', label: 'finance.kind.apportionable_yes'|trans },
+            { value: 'no', label: 'finance.kind.apportionable_no'|trans }
+        ],
+        value: posted
+            ? submitted.apportionable|default('')
+            : (item.overridesApportionability ? (item.isApportionable ? 'yes' : 'no') : ''),
+        blank: 'finance.item.as_the_kind'|trans
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'split', name: 'split', label: 'finance.item.field.split'|trans,
+        hint: 'finance.item.field.split_hint'|trans,
+        choices: [
+            { value: 'by_day', label: 'finance.item.split.by_day'|trans },
+            { value: 'on_the_day', label: 'finance.item.split.on_the_day'|trans }
+        ],
+        value: posted
+            ? submitted.split|default('by_day')
+            : (item.splitsByDay ? 'by_day' : 'on_the_day')
+    } only %}
+
+    {#
+        Die Maßnahme steht hier und nicht in der Zuordnung: sie ändert an der
+        Rechnung nichts. Sie beantwortet die Frage danach — wofür war das
+        Geld, das die Eigentümer als Sonderumlage eingezahlt haben.
+
+        Gibt es keine beschlossene Maßnahme, steht das Feld gar nicht da.
+    #}
+    {% if decidedMeasures is not empty %}
+        {% include 'components/select.html.twig' with {
+            id: 'measure', name: 'measure',
+            label: 'finance.item.field.budget_measure'|trans,
+            hint: 'finance.item.field.budget_measure_hint'|trans,
+            choices: decidedMeasures|map(m => {
+                value: m.reference,
+                label: m.reference ~ ' · ' ~ m.label ~ ' · ' ~ m.firstYear
+            }),
+            value: posted ? submitted.measure|default('') : item.decidedMeasure.reference,
+            blank: 'finance.item.no_measure_chosen'|trans
+        } only %}
+    {% endif %}
+
+    {% include 'components/textarea.html.twig' with {
+        id: 'note', name: 'note', label: 'finance.item.field.note'|trans,
+        hint: 'finance.item.field.note_hint'|trans,
+        value: posted ? submitted.note|default('') : item.note
+    } only %}
+{% endblock %}

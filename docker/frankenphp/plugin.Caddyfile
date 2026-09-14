@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 s3gv
+#
+# Ein Plugin-Prozess: nur an 127.0.0.1, schlichtes HTTP, ohne
+# Verwaltungsschnittstelle. Port und Wurzel setzt der Core beim Start.
+{
+	admin off
+
+	servers {
+		protocols h1 h2c
+	}
+}
+
+:{$IMMOBASE_PLUGIN_PORT} {
+	bind 127.0.0.1
+	root {$IMMOBASE_PLUGIN_ROOT}
+	encode zstd br gzip
+
+	php_server
+}

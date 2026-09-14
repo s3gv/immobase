@@ -1,0 +1,83 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Mahnschreiben, wie es hinausgeht.
+
+    Dieselbe Gestalt für den Entwurf und für das ausgestellte Schreiben: beim
+    Entwurf eben gerechnet, beim ausgestellten aus dem gelesen, was
+    eingefroren wurde. Die Vorschau zeigt damit genau das, was hinausgeht —
+    und nicht ein zweites Schreiben, das ihm ähnelt.
+
+    Erwartet: notice, recipients, iban
+#}
+<div class="ib-preview">
+    <p class="ib-preview__who"><strong>{{ ('dunning.pdf.subject_' ~ notice.level.value)|trans }}</strong></p>
+
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['billing.invoice.field.number'|trans, notice.reference],
+            ['billing.invoice.issued_on'|trans, notice.issuedOn ? notice.issuedOn|date_local : '—'],
+            ['dunning.creditor'|trans,
+             recipients.creditorName ~ (recipients.creditorAddress ? ', ' ~ recipients.creditorAddress : '')],
+            ['dunning.debtor'|trans,
+             recipients.debtorName ~ (recipients.debtorAddress ? ', ' ~ recipients.debtorAddress : '')],
+            ['dunning.pay_by'|trans, notice.payBy|date_local]
+        ],
+        empty: ''
+    } only %}
+
+    <div class="ib-table-scroll">
+        <table class="ib-table ib-table--compact ib-plan__sheet">
+            <tbody>
+                {% for line in notice.lines %}
+                    <tr>
+                        <td>{{ line.subject }}<br><span class="ib-muted">{{ line.dueOn|date_local }}</span></td>
+                        <td class="ib-table__number">{{ line.amount|money }}</td>
+                    </tr>
+                {% endfor %}
+
+                {% if not notice.interest.isZero %}
+                    <tr>
+                        <td>{{ 'dunning.interest'|trans }}</td>
+                        <td class="ib-table__number">{{ notice.interest|money }}</td>
+                    </tr>
+                {% endif %}
+
+                {% if not notice.charges.costs.isZero %}
+                    <tr>
+                        <td>{{ 'dunning.costs'|trans }}</td>
+                        <td class="ib-table__number">{{ notice.charges.costs|money }}</td>
+                    </tr>
+                {% endif %}
+
+                {% if not notice.charges.flatFee.isZero %}
+                    <tr>
+                        <td>{{ 'dunning.flat_fee'|trans }}</td>
+                        <td class="ib-table__number">{{ notice.charges.flatFee|money }}</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th>{{ 'dunning.total'|trans }}</th>
+                    <th class="ib-table__number">{{ notice.total|money }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <p class="ib-preview__settled">
+        {{ 'dunning.pdf.pay_by'|trans({'%date%': notice.payBy|date_local, '%iban%': iban ?: '—'}) }}
+    </p>
+
+    <p class="ib-muted">{{ 'dunning.pdf.interest_note'|trans }}</p>
+
+    {% if notice.level.isLast %}
+        <p class="ib-muted">{{ 'dunning.pdf.court_note'|trans }}</p>
+    {% endif %}
+
+    {% if notice.note %}
+        <p>{{ notice.note }}</p>
+    {% endif %}
+</div>

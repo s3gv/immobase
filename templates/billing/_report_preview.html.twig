@@ -1,0 +1,131 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Vermögensbericht, wie er beim Eigentümer ankommt.
+
+    Erst der Stand der Erhaltungsrücklage mit seiner Entwicklung, dann die
+    Aufstellung des übrigen Vermögens — in der Reihenfolge, in der § 28 Abs. 4
+    WEG sie nennt.
+
+    **Die Rücklage wird unten nicht addiert.** Ihr Geld liegt auf einem der
+    Konten; wer sie noch einmal dazurechnete, zählte dasselbe Geld zweimal.
+    Was stattdessen danebensteht, ist die Deckung.
+
+    Erwartet: body (ReportedAssets), asOf, banks, liabilities, holdings
+#}
+<div class="ib-preview">
+    <p class="ib-preview__who">
+        <strong>{{ 'billing.report.pdf.reserve'|trans }}</strong><br>
+        {{ 'billing.report.as_of'|trans }}: {{ asOf|date_local }}
+    </p>
+
+    <div class="ib-table-scroll">
+        <table class="ib-table ib-table--compact ib-plan__sheet">
+            <tbody>
+                <tr>
+                    <td>{{ 'billing.report.reserve.opening'|trans }}</td>
+                    <td class="ib-table__number">{{ body.reserve.opening|money }}</td>
+                </tr>
+                <tr>
+                    <td>{{ 'billing.report.reserve.contributions'|trans }}</td>
+                    <td class="ib-table__number">{{ body.reserve.contributions|money }}</td>
+                </tr>
+                <tr>
+                    <td>{{ 'billing.report.reserve.levies'|trans }}</td>
+                    <td class="ib-table__number">{{ body.reserve.specialLevies|money }}</td>
+                </tr>
+                <tr>
+                    <td>{{ 'billing.report.reserve.interest'|trans }}</td>
+                    <td class="ib-table__number">{{ body.reserve.interest|money }}</td>
+                </tr>
+                <tr>
+                    <td>{{ 'billing.report.reserve.withdrawals'|trans }}</td>
+                    <td class="ib-table__number">{{ body.reserve.withdrawals|money }}</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th>{{ 'billing.report.reserve.closing'|trans }}</th>
+                    <th class="ib-table__number">{{ body.reserve.closing|money }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <p class="ib-preview__who"><strong>{{ 'billing.report.assets'|trans }}</strong></p>
+
+    <div class="ib-table-scroll">
+        <table class="ib-table ib-table--compact ib-plan__sheet">
+            <tbody>
+                {% for section in [
+                    { key: 'billing.report.pdf.bank', items: banks },
+                    { key: 'billing.report.pdf.liabilities', items: liabilities },
+                    { key: 'billing.report.pdf.holdings', items: holdings }
+                ] %}
+                    {% if section.items is not empty %}
+                        <tr>
+                            <th colspan="2">{{ section.key|trans }}</th>
+                        </tr>
+                        {% for item in section.items %}
+                            <tr>
+                                <td>
+                                    {{ item.label }}
+                                    {% if item.note %}<br><span class="ib-muted">{{ item.note }}</span>{% endif %}
+                                </td>
+                                <td class="ib-table__number">
+                                    {{ item.isValued ? item.amount|money : 'billing.report.pdf.unvalued'|trans }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+
+                {#
+                    Die Darlehen stehen in einem eigenen Block neben den erfassten
+                    Verbindlichkeiten: ihre Restschuld kommt aus dem Tilgungsplan
+                    und nicht aus einem Feld.
+                #}
+                {% if body.debts is not empty %}
+                    <tr>
+                        <th colspan="2">{{ 'billing.report.pdf.loans'|trans }}</th>
+                    </tr>
+                    {% for debt in body.debts %}
+                        <tr>
+                            <td>{{ debt.label }}</td>
+                            <td class="ib-table__number">{{ debt.outstanding|money }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+
+                {% if body.claims is not empty %}
+                    <tr>
+                        <th colspan="2">{{ 'billing.report.pdf.claims'|trans }}</th>
+                    </tr>
+                    {% for claim in body.claims %}
+                        <tr>
+                            <td>
+                                {{ 'billing.report.pdf.unit'|trans({'%number%': claim.unitNumber}) }}
+                                <br><span class="ib-muted">{{ 'billing.report.pdf.since'|trans({'%year%': claim.since}) }}</span>
+                            </td>
+                            <td class="ib-table__number">{{ claim.amount|money }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th>{{ 'billing.report.pdf.total'|trans }}</th>
+                    <th class="ib-table__number">{{ body.total|money }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    {% if body.missingFromTheReserve %}
+        <p class="ib-preview__settled">
+            {{ 'billing.report.pdf.not_covered'|trans({'%amount%': body.missingFromTheReserve|money}) }}
+        </p>
+    {% endif %}
+
+    <p class="ib-muted">{{ 'billing.report.pdf.no_resolution'|trans }}</p>
+</div>

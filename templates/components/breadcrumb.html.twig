@@ -1,0 +1,16 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{# Erwartet `trail` als Liste von { label, url } — der letzte Eintrag ohne url. #}
+<nav class="ib-breadcrumb" aria-label="{{ 'shell.breadcrumb'|trans }}">
+    <ol>
+        {% for crumb in trail %}
+            <li>
+                {% if crumb.url is defined and crumb.url %}
+                    <a href="{{ crumb.url }}">{{ crumb.label }}</a>
+                {% else %}
+                    <span aria-current="page">{{ crumb.label }}</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+</nav>

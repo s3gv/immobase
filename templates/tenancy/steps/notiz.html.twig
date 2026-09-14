@@ -1,0 +1,20 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein eigener Schritt für die Notiz, und ein großes Feld.
+
+    Nicht als Zeile im ersten Schritt: was hier steht, sind ganze Sätze — wo
+    die Kaution liegt, welche Absprache es zur Renovierung gab, wer den
+    Schlüssel für den Keller hat. Ein zweizeiliges Feld neben den Stammdaten
+    lädt dazu ein, all das gar nicht erst aufzuschreiben.
+#}
+{% extends 'tenancy/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'components/textarea.html.twig' with {
+        id: 'note', name: 'note', label: 'tenancy.field.note'|trans,
+        hint: 'tenancy.field.note_hint'|trans,
+        value: errors is not empty ? submitted.note|default('') : (tenancy ? tenancy.note : ''),
+        rows: 14, autofocus: true
+    } only %}
+{% endblock %}

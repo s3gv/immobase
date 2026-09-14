@@ -1,0 +1,116 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Berichte — vier Fragen auf einer Seite.
+
+    Ein Menüpunkt und keine vier: wer wissen will, wie es steht, will nicht
+    zwischen vier Seiten springen. Jede Kachel beantwortet eine Frage, zeigt
+    sie als Diagramm und nennt darunter die Zahlen — das Diagramm für den
+    ersten Blick, die Zahlen zum Nachrechnen.
+
+    Vier und kein Berichtsgenerator: ein Werkzeug, mit dem sich alles bauen
+    lässt, beantwortet keine Frage — es verschiebt die Arbeit zum Leser.
+#}
+{% import '_bauteile.html.twig' as teil %}
+
+{% include '_stil.html.twig' %}
+
+<h1 class="ib-heading">Berichte</h1>
+{% include '_stand.html.twig' %}
+
+<div class="aw-cards">
+    <article class="ib-card">
+        <div class="aw-card__head">
+            <h2 class="aw-card__title">Kostenentwicklung</h2>
+            <span class="ib-badge">{{ costs.year ?? '—' }}</span>
+        </div>
+        <p class="aw-card__note">Was alle Objekte zusammen gekostet haben, Jahr für Jahr.</p>
+
+        {{ teil.linie(costs.totals|map(row => { label: row.fiscal_year, value: row.amount })) }}
+
+        {% if costs.kinds is not empty %}
+            <p class="aw-card__note" style="margin-top: 1rem">Die größten Kostenarten in {{ costs.year }}.</p>
+            {{ teil.balken(costs.kinds|map(row => {
+                label: row.cost_kind,
+                value: row.amount,
+                text: row.amount|betrag ~ ' €'
+            })) }}
+        {% endif %}
+    </article>
+
+    <article class="ib-card">
+        <div class="aw-card__head">
+            <h2 class="aw-card__title">Forderungen</h2>
+        </div>
+        <p class="aw-card__note">Was offen ist — und wie lange schon.</p>
+
+        {{ teil.balken(claims.buckets|map(row => {
+            label: row.age,
+            value: row.amount,
+            text: row.claims ~ ' · ' ~ row.amount|betrag ~ ' €',
+            tone: row.age starts with 'über' ? 'danger' : (row.age starts with '31' ? 'warning' : '')
+        })) }}
+
+        <p class="ib-note">
+            {% if claims.settled.claims > 0 and claims.settled.days is not null %}
+                Ausgeglichen wurden {{ claims.settled.claims }} Forderungen, im Mittel
+                {{ claims.settled.days|number_format(1, ',', '.') }} Tage nach Fälligkeit.
+            {% else %}
+                Noch keine ausgeglichene Forderung — ein Mittelwert ließe sich daraus nicht bilden.
+            {% endif %}
+        </p>
+    </article>
+
+    <article class="ib-card">
+        <div class="aw-card__head">
+            <h2 class="aw-card__title">Vermietung</h2>
+        </div>
+        <p class="aw-card__note">Wie viel von jedem Objekt vermietet ist.</p>
+
+        {{ teil.balken(occupancy|map(row => {
+            label: row.property,
+            value: row.units > 0 ? row.rented / row.units * 100 : 0,
+            text: row.rented ~ ' von ' ~ row.units ~ (row.vacant > 0 ? ' · ' ~ row.vacant ~ ' leer' : ''),
+            tone: row.vacant > 0 ? 'warning' : 'success'
+        })) }}
+    </article>
+
+    <article class="ib-card">
+        <div class="aw-card__head">
+            <h2 class="aw-card__title">Rücklagen und Darlehen</h2>
+        </div>
+        <p class="aw-card__note">
+            Der Stand ist die Summe der Bewegungen ohne die stornierten — gerechnet
+            und nicht gespeichert.
+        </p>
+
+        {{ teil.balken(reserves|map(row => {
+            label: row.property,
+            value: row.balance,
+            text: row.balance|betrag ~ ' €',
+            tone: row.balance < 0 ? 'danger' : ''
+        })) }}
+
+        {% if loans is not empty %}
+            <p class="aw-card__note" style="margin-top: 1rem">Laufende Darlehen.</p>
+            <table class="ib-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Darlehen</th>
+                        <th scope="col">Betrag</th>
+                        <th scope="col">Zins</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in loans %}
+                        <tr>
+                            <td>{{ row.label }}<span class="aw-sub">{{ row.lender }}</span></td>
+                            <td>{{ row.amount|betrag }} €</td>
+                            <td>{{ (row.rate_bps / 100)|number_format(2, ',', '.') }} %</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </article>
+</div>

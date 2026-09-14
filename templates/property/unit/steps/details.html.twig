@@ -1,0 +1,34 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/unit/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.detail is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.detail|trans }}</p>
+    {% endif %}
+
+    {# Wie das Flächenfeld heißt, hängt an der Nutzungsart: eine Garage hat
+       keine Wohnfläche. #}
+    {% include 'components/field.html.twig' with {
+        id: 'area', name: 'area', label: unit.usage.areaLabelKey|trans,
+        value: posted ? submitted.area|default('') : unit.measures.area|decimal(false), autofocus: true
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'rooms', name: 'rooms', label: 'property.unit.field.rooms'|trans,
+        value: posted ? submitted.rooms|default('') : unit.measures.rooms|decimal(false)
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'parkingSpaces', name: 'parkingSpaces', type: 'number',
+        label: 'property.unit.field.parking_spaces'|trans,
+        value: posted ? submitted.parkingSpaces|default('') : unit.measures.parkingSpaces
+    } only %}
+
+    {% include 'components/textarea.html.twig' with {
+        id: 'note', name: 'note', label: 'property.unit.field.note'|trans,
+        value: posted ? submitted.note|default('') : unit.note
+    } only %}
+{% endblock %}

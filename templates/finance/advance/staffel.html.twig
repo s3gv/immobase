@@ -1,0 +1,33 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Hausgeldstufen dieser Einheit.
+
+    Nur das Hausgeld: die Nebenkosten stehen in der Mietstaffel und werden
+    dort geändert.
+#}
+{% extends 'finance/advance/_page.html.twig' %}
+
+{% block section_body %}
+    {% if is_granted('finance.edit') %}
+        {% include 'finance/_advance_steps.html.twig' with {
+            unit: unit, schedule: schedule,
+            current: schedule ? schedule.on(today) : null, intervals: intervals
+        } only %}
+    {% else %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'finance.advance.field.starts_on'|trans,
+                'finance.advance.field.amount'|trans,
+                'finance.advance.field.interval'|trans
+            ],
+            rows: (schedule ? schedule.steps : [])|map(step => [
+                step.startsOn|date_local,
+                step.amount|money,
+                step.interval.labelKey|trans
+            ]),
+            empty: 'finance.advance.none'|trans
+        } only %}
+    {% endif %}
+{% endblock %}

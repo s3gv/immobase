@@ -1,0 +1,117 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Übersicht der Kostenpositionen.
+
+    Gelöscht wird nur, wo nie ein Betrag erfasst wurde: sonst führte die
+    Rückfrage zuverlässig in eine Absage. Eine Position, die schon gelaufen
+    ist, wird auf ihrer eigenen Seite beendet.
+
+    Was ein Objekt kostet, sortiert und filterbar — Objekt, Kostenart und
+    Umlagefähigkeit sind die drei Fragen, die ein Verwalter an eine
+    Kostenliste hat.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'finance.item.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'finance.item.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'finance.item.subheading'|trans }}</p>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            { label: 'finance.item.field.number'|trans, field: 'nummer' },
+            'finance.item.field.property'|trans,
+            { label: 'finance.item.field.kind'|trans, field: 'kostenart' },
+            'finance.item.field.key'|trans,
+            { label: 'finance.item.field.interval'|trans, field: 'faelligkeit' },
+            'finance.item.field.apportionable'|trans
+        ],
+        rows: rows|map(row => {
+            cells: [
+                row.item.number,
+                row.property ? row.property.oneLine : row.item.propertyId,
+                row.item.kind.name,
+                row.item.key.name,
+                row.item.due.interval.labelKey|trans,
+                (row.item.isApportionable
+                    ? 'finance.kind.apportionable_yes'
+                    : 'finance.kind.apportionable_no')|trans
+                    ~ (row.item.overridesApportionability ? ' · ' ~ 'finance.item.overridden'|trans : '')
+                    ~ (row.item.isPast ? ' · ' ~ 'finance.item.ended_on'|trans({
+                        '%date%': row.item.endsOn|date_local
+                    }) : '')
+            ],
+            actions: [{ action: 'open', url: path('app_finance_item_show', { number: row.item.number }) }]
+                |merge(is_granted('finance.edit')
+                    ? [{ action: 'edit', url: path('app_finance_item_edit', { number: row.item.number }) }]
+                    : [])
+                |merge(is_granted('finance.delete') and row.item.years.isEmpty
+                    ? [{ action: 'delete', modal: 'item-delete-' ~ row.item.number }]
+                    : [])
+        }),
+        page: page,
+        action: path('app_finance_item'),
+        url: url,
+        empty: (filter.isEmpty ? 'finance.item.empty' : 'finance.item.empty_filtered')|trans,
+        compact: true,
+        sort: sort,
+        sort_urls: sortUrls,
+        filter: filter,
+        properties: properties,
+        kinds: kinds
+    } only %}
+        {% block actions %}
+            {% if is_granted('finance.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_finance_item_new'), labelled: true
+                } only %}
+            {% endif %}
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'finance.item.filter.search'|trans,
+                value: filter.search, placeholder: 'finance.item.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'objekt', name: 'objekt', label: 'finance.item.field.property'|trans,
+                choices: properties|map(p => { value: p.id, label: p.oneLine }),
+                value: filter.propertyId, blank: 'finance.item.filter.all_properties'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'art', name: 'art', label: 'finance.item.field.kind'|trans,
+                choices: kinds|map(k => { value: k.id, label: k.name }),
+                value: filter.kindId, blank: 'finance.item.filter.all_kinds'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'umlage', name: 'umlage', label: 'finance.item.field.apportionable'|trans,
+                choices: [
+                    { value: 'yes', label: 'finance.kind.apportionable_yes'|trans },
+                    { value: 'no', label: 'finance.kind.apportionable_no'|trans }
+                ],
+                value: filter.apportionable is null ? '' : (filter.apportionable ? 'yes' : 'no'),
+                blank: 'finance.item.filter.all_kinds'|trans
+            } only %}
+
+            {% include 'components/past_toggle.html.twig' with { shown: filter.withPast } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% if is_granted('finance.delete') %}
+        {% for row in rows|filter(row => row.item.years.isEmpty) %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'item-delete-' ~ row.item.number,
+                title: 'finance.item.delete.title'|trans({'%number%': row.item.number}),
+                body: 'finance.item.delete.body'|trans,
+                consequences: ['finance.item.delete.consequence_number'|trans({'%number%': row.item.number})],
+                url: path('app_finance_item_delete', { number: row.item.number }),
+                token: 'finance_item_delete_' ~ row.item.number
+            } only %}
+        {% endfor %}
+    {% endif %}
+{% endblock %}

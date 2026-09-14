@@ -1,0 +1,20 @@
+twig:
+    file_name_pattern: '*.twig'
+    paths:
+        # Die Umrisse werden eingebettet statt per <img> geladen. Ein per <img>
+        # geladenes SVG ist ein eigenes Dokument und kann currentColor nicht von
+        # der Seite erben — der Umriss bliebe schwarz und wäre im dunklen Theme
+        # unsichtbar.
+        '%kernel.project_dir%/assets/images/regions': regions
+        '%kernel.project_dir%/assets/images/icons': icons
+    globals:
+        background: '@App\Shared\Region\Background'
+        drift: '@App\Shared\Region\Drift'
+        attributions: '@App\Shared\Attribution\AttributionReader'
+        immobase_source_url: '%env(string:IMMOBASE_SOURCE_URL)%'
+        immobase_version: '%env(string:APP_VERSION)%'
+        immobase_commit: '%env(string:APP_COMMIT)%'
+
+when@test:
+    twig:
+        strict_variables: true

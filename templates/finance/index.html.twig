@@ -1,0 +1,187 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Startseite der Finanzen: wo die Kosten liegen.
+
+    Nicht eine flache Liste aller Posten, ein- und ausgehend gemischt — die
+    beantwortet keine Frage. Hier stehen die, die ein Verwalter wirklich hat:
+    was kostet das Jahr, wofür geht es drauf, welches Haus ist teuer, und was
+    davon trägt am Ende der Mieter.
+
+    Darunter weiter die Zeile je Objekt: die Übersicht beantwortet, wo man
+    hinsehen sollte, und die Liste bringt einen dorthin.
+
+    Die Bereiche der Finanzen stehen im Menü unter ihrem Punkt und nicht als
+    Knopfleiste hier: eine Knopfleiste sieht aus wie eine Handlung, ist aber
+    Navigation — und sie wäre nur von dieser einen Seite aus zu erreichen.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'finance.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'finance.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'finance.subheading'|trans }}</p>
+
+    {#
+        Das Wirtschaftsjahr steht über allem, weil es alles darunter
+        bestimmt. Zur Wahl steht, wozu es auch Zahlen gibt.
+    #}
+    <form class="ib-overview__year" method="get" action="{{ path('app_finance') }}" data-auto-submit>
+        {% include 'components/select.html.twig' with {
+            id: 'jahr', name: 'jahr', label: 'finance.overview.fiscal_year'|trans,
+            choices: years|map(y => { value: y, label: y }),
+            value: breakdown.fiscalYear
+        } only %}
+
+        <button class="ib-button ib-button--quiet" type="submit" data-auto-submit-fallback>
+            {{ 'index.filter'|trans }}
+        </button>
+    </form>
+
+    <div class="ib-stats">
+        {% include 'components/stat_tile.html.twig' with {
+            value: breakdown.total|money,
+            label: 'finance.overview.total'|trans({'%year%': breakdown.fiscalYear})
+        } only %}
+
+        {% include 'components/stat_tile.html.twig' with {
+            value: breakdown.apportionable|money,
+            label: 'finance.overview.apportionable'|trans, tone: 'success'
+        } only %}
+
+        {% include 'components/stat_tile.html.twig' with {
+            value: breakdown.ownCosts|money,
+            label: 'finance.overview.own_costs'|trans, tone: 'warning'
+        } only %}
+
+        {% include 'components/stat_tile.html.twig' with {
+            value: reserves|money,
+            label: 'finance.overview.reserves'|trans,
+            href: path('app_finance_reserve')
+        } only %}
+
+        {#
+            Was die Gemeinschaften schulden — und was das im gewählten Jahr
+            kostet. Beide Zahlen sind gerechnet: sie stehen in keinem Feld,
+            das jemand pflegt, sondern im Tilgungsplan.
+
+            Zins und Tilgung stehen zusammen in einer Kachel, weil zusammen
+            abfließt, was zusammen eingesammelt werden muss. Getrennt
+            ausgewiesen wird beides dort, wo es zählt — im Wirtschaftsplan.
+        #}
+        {% include 'components/stat_tile.html.twig' with {
+            value: loans.debt|money,
+            label: 'finance.overview.debt'|trans,
+            tone: 'warning',
+            href: path('app_finance_loan')
+        } only %}
+
+        {% include 'components/stat_tile.html.twig' with {
+            value: loans.burden.total|money,
+            label: 'finance.overview.burden'|trans({'%year%': breakdown.fiscalYear}),
+            href: path('app_finance_loan')
+        } only %}
+
+        {#
+            Was nicht gezahlt wurde — und wie viele Briefe das bedeutet.
+            Beides gehört zu den Kennzahlen und nicht unter die Auswertungen:
+            eine fällige Mahnung entsteht von selbst, und wer sie erst unter
+            zwei Diagrammen findet, findet sie zu spät.
+
+            Die Zahlen kommen aus einer Twig-Funktion des Mahnwesens: die
+            Finanzen sind die Quelle der Zahlungen, und ein Aufruf zurück
+            wäre der Zyklus.
+        #}
+        {% if is_granted('dunning.view') %}
+            {% set pressure = dunning_pressure() %}
+
+            {% include 'components/stat_tile.html.twig' with {
+                value: pressure.open|money,
+                label: 'dunning.overview.open'|trans,
+                tone: pressure.open.isZero ? 'neutral' : 'danger',
+                href: path('app_dunning')
+            } only %}
+
+            {% include 'components/stat_tile.html.twig' with {
+                value: pressure.letters,
+                label: 'dunning.overview.letters'|trans,
+                tone: pressure.letters > 0 ? 'warning' : 'success',
+                href: path('app_dunning')
+            } only %}
+        {% endif %}
+    </div>
+
+    {% if breakdown.isEmpty %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.overview.no_costs'|trans({'%year%': breakdown.fiscalYear})
+        } only %}
+    {% else %}
+        <div class="ib-overview">
+            <section class="ib-overview__panel">
+                <h2 class="ib-flow__title">{{ 'finance.overview.by_kind'|trans }}</h2>
+                <p class="ib-field__hint">{{ 'finance.overview.by_kind_hint'|trans }}</p>
+
+                {% include 'components/bar_chart.html.twig' with {
+                    rows: byKind, empty: 'finance.overview.no_costs'|trans({'%year%': breakdown.fiscalYear})
+                } only %}
+            </section>
+
+            <section class="ib-overview__panel">
+                <h2 class="ib-flow__title">{{ 'finance.overview.by_property'|trans }}</h2>
+                <p class="ib-field__hint">{{ 'finance.overview.by_property_hint'|trans }}</p>
+
+                {% include 'components/bar_chart.html.twig' with {
+                    rows: byProperty, empty: 'finance.overview.no_costs'|trans({'%year%': breakdown.fiscalYear})
+                } only %}
+            </section>
+
+            <section class="ib-overview__panel ib-overview__panel--narrow">
+                <h2 class="ib-flow__title">{{ 'finance.overview.apportionable_share'|trans }}</h2>
+                <p class="ib-field__hint">{{ 'finance.overview.apportionable_hint'|trans }}</p>
+
+                {% include 'components/split_ring.html.twig' with {
+                    share: breakdown.apportionableShare,
+                    label: 'finance.overview.apportionable'|trans,
+                    caption: 'finance.overview.ring_caption'|trans({
+                        '%apportionable%': breakdown.apportionable|money,
+                        '%own%': breakdown.ownCosts|money
+                    })
+                } only %}
+            </section>
+        </div>
+    {% endif %}
+
+    <h2 class="ib-flow__title">{{ 'finance.overview.per_property'|trans }}</h2>
+
+    {% if properties is empty %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.no_properties'|trans
+        } only %}
+    {% else %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'finance.item.field.property'|trans,
+                'finance.overview.items'|trans,
+                'finance.reserve.balance'|trans,
+                'finance.loan.field.debt'|trans
+            ],
+            rows: properties|map(p => {
+                cells: [
+                    p.oneLine,
+                    counts[p.id]|default(0),
+                    p.keepsAReserve ? balances[p.id].total|money : 'property.none'|trans,
+                    loans.byProperty[p.id] is defined
+                        ? loans.byProperty[p.id]|money
+                        : 'property.none'|trans
+                ],
+                actions: [{
+                    action: 'open',
+                    url: path('app_finance_item', { objekt: p.id })
+                }]
+            }),
+            empty: ''
+        } only %}
+    {% endif %}
+{% endblock %}

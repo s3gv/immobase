@@ -1,0 +1,15 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% embed 'components/sections.html.twig' %}
+    {% block section_body %}
+        {% include 'account/_second_factor.html.twig' with {
+            user: user,
+            recoveryCodesLeft: recoveryCodesLeft,
+            factor: factor,
+            factorMessage: factorMessage,
+            codesUrl: path('app_account_recovery_codes'),
+            factorOffUrl: path('app_account_factor_off'),
+            factorUrl: path('app_account_factor')
+        } only %}
+    {% endblock %}
+{% endembed %}

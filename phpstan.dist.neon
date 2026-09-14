@@ -1,0 +1,31 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+    - vendor/phpstan/phpstan-symfony/extension.neon
+    - vendor/phpstan/phpstan-doctrine/extension.neon
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+
+parameters:
+    level: max
+    paths:
+        - src
+        - tests
+        - tools
+    # Die Klassen des Referenz-Plugins, die ein Test einzeln laedt. Nur
+    # bekannt gemacht, nicht mit den Regeln des Cores geprueft: das Plugin
+    # ist ein eigenes Projekt.
+    scanDirectories:
+        - plugins/reporting/src
+    tmpDir: var/phpstan
+    treatPhpDocTypesAsCertain: false
+
+    # Warnungen sind Fehler. Eine nicht mehr passende Unterdrückung soll
+    # auffallen, statt still weiterzugelten.
+    reportUnmatchedIgnoredErrors: true
+
+    # Unser Code darf nichts Veraltetes benutzen. Deprecations aus
+    # Fremdbibliotheken untereinander koennen wir nicht beheben und werden
+    # von den Regeln ohnehin nicht gemeldet.
+    reportPossiblyNonexistentGeneralArrayOffset: true
+    reportPossiblyNonexistentConstantArrayOffset: true
+    reportAnyTypeWideningInVarTag: true

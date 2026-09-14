@@ -1,0 +1,54 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Einheit anlegen — Bezeichnung und Nutzungsart, mehr nicht.
+
+    Alles Weitere kommt in den Schritten danach; die Einheit existiert ab
+    hier und lässt sich jederzeit weiter füllen.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'property.unit.add'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    {# Nach einem Fehler zeigt das Formular das Abgeschickte, sonst den Stand. #}
+    {% set posted = errors is not empty %}
+
+    <h1 class="ib-heading">{{ 'property.unit.add'|trans }}</h1>
+    <p class="ib-subheading">{{ property.name }}</p>
+
+    {#
+        Kein ib-flow: das Raster hat links eine Spalte für die Schritte, und
+        die gibt es hier noch nicht — die Einheit entsteht ja erst. Der Kasten
+        allein bringt seine Breite selbst mit.
+    #}
+    <div>
+        <div class="ib-flow__panel">
+            <h2 class="ib-flow__title">{{ 'property.unit.section.basics'|trans }}</h2>
+            <p class="ib-flow__explanation">{{ 'property.unit.explanation.basics'|trans }}</p>
+
+            <form method="post" action="{{ action }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('unit_flow') }}">
+
+                {% include 'components/field.html.twig' with {
+                    id: 'label', name: 'label', label: 'property.unit.field.label'|trans,
+                    hint: 'property.unit.field.label_hint'|trans,
+                    value: posted ? submitted.label|default('') : '',
+                    error: errors.label is defined ? errors.label|trans : null,
+                    required: true, autofocus: true
+                } only %}
+
+                {% include 'components/select.html.twig' with {
+                    id: 'usage', name: 'usage', label: 'property.unit.field.usage'|trans,
+                    choices: usages|map(u => { value: u.value, label: u.labelKey|trans }),
+                    value: posted ? submitted.usage|default('residential') : 'residential'
+                } only %}
+
+                <div class="ib-flow__actions">
+                    <a class="ib-button ib-button--quiet" href="{{ cancel }}">{{ 'flow.cancel'|trans }}</a>
+                    <button class="ib-button" type="submit">{{ 'flow.next'|trans }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

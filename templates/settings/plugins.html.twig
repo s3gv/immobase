@@ -1,0 +1,99 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was unter plugins/ liegt und was davon läuft.
+
+    Gefundene Plugins stehen hier, auch wenn sie nicht aktiviert sind — und
+    fehlerhafte erst recht, mit der Stelle, an der es hakt. Ein Plugin, das
+    einfach nicht auftaucht, ließe den Betreiber raten, ob er es falsch
+    abgelegt hat.
+
+    Aktiviert wird nicht von hier: das ist eine eigene Seite mit einer eigenen
+    Frage.
+#}
+{% extends 'settings/_page.html.twig' %}
+
+{% block section_body %}
+    {% if plugins is empty %}
+        <p class="ib-empty">{{ 'plugin.empty'|trans }}</p>
+    {% endif %}
+
+    {% for plugin in plugins %}
+        {% set may_edit = is_granted('settings.edit') %}
+
+        <article class="ib-card ib-plugin">
+            <header class="ib-plugin__head">
+                <h3 class="ib-plugin__name">{{ plugin.label(app.request.locale) }}</h3>
+
+                <span class="ib-badge{{ plugin.isInstalled ? (plugin.state.value == 'active' ? ' ib-badge--success' : ' ib-badge--warning') : '' }}">
+                    {{ (plugin.isInstalled ? plugin.state.labelKey : 'plugin.state.found')|trans }}
+                </span>
+            </header>
+
+            <p class="ib-plugin__meta">
+                <code>{{ plugin.name }}</code>{% if plugin.version %} · {{ 'plugin.version'|trans({'%version%': plugin.version}) }}{% endif %}
+            </p>
+
+            {% if plugin.isBroken %}
+                <p class="ib-note ib-note--warning">
+                    {{ plugin.problem starts with 'plugin.' ? plugin.problem|trans : plugin.problem }}
+                </p>
+            {% elseif plugin.hasNewVersion %}
+                <p class="ib-note">{{ 'plugin.new_version'|trans({'%version%': plugin.manifest.version}) }}</p>
+            {% endif %}
+
+            {% if may_edit %}
+                <div class="ib-plugin__actions">
+                    {% if not plugin.isInstalled and not plugin.isBroken %}
+                        <a class="ib-button" href="{{ path('app_plugin_confirm', { name: plugin.name }) }}">
+                            {{ 'plugin.action.activate'|trans }}
+                        </a>
+                    {% endif %}
+
+                    {% if plugin.isInstalled %}
+                        {% if plugin.hasNewVersion and not plugin.isBroken %}
+                            <a class="ib-button" href="{{ path('app_plugin_confirm', { name: plugin.name }) }}">
+                                {{ 'plugin.action.update'|trans }}
+                            </a>
+                        {% endif %}
+
+                        <form method="post" action="{{ path('app_plugin_state', { name: plugin.name }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('plugins') }}">
+                            <input type="hidden" name="active" value="{{ plugin.state.value == 'active' ? '0' : '1' }}">
+                            <button class="ib-button ib-button--quiet" type="submit">
+                                {{ (plugin.state.value == 'active' ? 'plugin.action.suspend' : 'plugin.action.resume')|trans }}
+                            </button>
+                        </form>
+
+                        <button class="ib-button ib-button--danger" type="button"
+                                data-modal-open="plugin-remove-{{ plugin.name }}">
+                            {{ 'plugin.action.remove'|trans }}
+                        </button>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </article>
+
+        {# Entfernen nimmt das Schema und die Daten mit. Was dabei verloren
+           geht, steht in der Rückfrage und nicht erst hinterher in einer
+           Meldung.
+
+           „Löschen" wäre als Beschriftung zu eng: es verschwindet nicht nur
+           ein Datensatz, sondern eine Installation samt Speicher. #}
+        {% if may_edit and plugin.isInstalled %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'plugin-remove-' ~ plugin.name,
+                title: 'plugin.remove.title'|trans({'%name%': plugin.name}),
+                body: 'plugin.remove.body'|trans,
+                consequences: [
+                    'plugin.remove.consequence.tables'|trans,
+                    'plugin.remove.consequence.token'|trans,
+                    'plugin.remove.consequence.nav'|trans
+                ],
+                url: path('app_plugin_remove', { name: plugin.name }),
+                token: 'plugins',
+                confirm_label: 'plugin.action.remove'|trans
+            } only %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}

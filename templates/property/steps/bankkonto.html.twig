@@ -1,0 +1,47 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Konto, über das dieses Objekt läuft.
+
+    Alles freiwillig — ein Objekt entsteht lange bevor sein Konto feststeht.
+    IBAN und BIC werden aber geprüft, sobald etwas darin steht.
+#}
+{% extends 'property/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+    {% set account = property.accounting.account %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'iban', name: 'iban', label: 'property.bank.iban'|trans,
+        hint: 'property.bank.iban_hint'|trans,
+        value: posted ? submitted.iban|default('') : account.ibanInGroups,
+        error: errors.iban is defined ? errors.iban|trans : null,
+        autofocus: true
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'bic', name: 'bic', label: 'property.bank.bic'|trans,
+        value: posted ? submitted.bic|default('') : account.bic,
+        error: errors.bic is defined ? errors.bic|trans : null
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'holder', name: 'holder', label: 'property.bank.holder'|trans,
+        hint: 'property.bank.holder_hint'|trans,
+        value: posted ? submitted.holder|default('') : account.holder
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'creditorId', name: 'creditorId', label: 'property.bank.creditor_id'|trans,
+        hint: 'property.bank.creditor_id_hint'|trans,
+        value: posted ? submitted.creditorId|default('') : account.creditorId,
+        error: errors.creditorId is defined ? errors.creditorId|trans : null
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'label', name: 'label', label: 'property.bank.label'|trans,
+        hint: 'property.bank.label_hint'|trans,
+        value: posted ? submitted.label|default('') : account.label
+    } only %}
+{% endblock %}

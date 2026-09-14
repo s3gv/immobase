@@ -1,0 +1,17 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Felder eines Personeneintrags — einmal für das Ändern, einmal für das
+    Anlegen. Erwartet: step (UnitHousehold oder null)
+#}
+{% include 'components/field.html.twig' with {
+    id: 'startsOn-personen-' ~ (step ? step.id : 'neu'), name: 'startsOn', type: 'date',
+    label: 'tenancy.rent.from'|trans,
+    value: step ? step.startsOn|date('Y-m-d') : ''
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'people-personen-' ~ (step ? step.id : 'neu'), name: 'people', type: 'number',
+    label: 'property.unit.household.people'|trans,
+    value: step ? step.people : ''
+} only %}

@@ -1,0 +1,64 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'login.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block body %}
+    <main class="ib-login">
+        <div class="ib-login__panel">
+            <img class="ib-brand__mark ib-brand__mark--on-light" src="{{ asset('images/logo-on-light.svg') }}" alt="{{ 'app.name'|trans }}">
+            <img class="ib-brand__mark ib-brand__mark--on-dark" src="{{ asset('images/logo-on-dark.svg') }}" alt="{{ 'app.name'|trans }}">
+            <p class="ib-brand__tagline">{{ 'app.tagline'|trans }}</p>
+
+            <h1 class="ib-login__heading">{{ 'login.heading'|trans }}</h1>
+
+            {% include 'components/flashes.html.twig' %}
+
+            {# Die Meldung nennt bewusst nicht, ob Adresse oder Passwort falsch
+               war — sonst verrät das Formular, welche Adressen registriert sind. #}
+            {% if error %}
+                <p class="ib-flash ib-flash--error" role="alert">{{ error|trans }}</p>
+            {% endif %}
+
+            <form method="post" action="{{ path('app_login') }}">
+                {#
+                    `only` ist hier keine Kleinigkeit: ohne es erbt der
+                    Baustein die Variable `error` dieser Seite — und die ist
+                    die Ausnahme aus der Anmeldung. Der Feldbaustein hat
+                    ebenfalls ein `error` und hat sie ausgegeben: Klassennamen,
+                    Dateipfade und der ganze Stacktrace, auf einer Seite, die
+                    jedem offensteht.
+                #}
+                {% include 'components/field.html.twig' with {
+                    id: 'email', name: '_username', type: 'email',
+                    label: 'login.email'|trans, value: last_username,
+                    autocomplete: 'username', required: true, autofocus: true
+                } only %}
+                {% include 'components/field.html.twig' with {
+                    id: 'password', name: '_password', type: 'password',
+                    label: 'login.password'|trans,
+                    autocomplete: 'current-password', required: true
+                } only %}
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                <button class="ib-button ib-button--block" type="submit">{{ 'login.submit'|trans }}</button>
+            </form>
+
+            <p class="ib-login__hint">
+                <a class="ib-linkish" href="{{ path('app_password_forgotten') }}">{{ 'login.forgotten'|trans }}</a>
+            </p>
+        </div>
+
+        {# AGPL §13 gilt auch hier: wer vor der Anmeldung steht, benutzt die
+           Software bereits über ein Netzwerk. #}
+        <p class="ib-login__foot">
+            <button type="button" class="ib-linkish" data-modal-open="open-source">
+                {{ 'nav.open_source'|trans }}
+            </button>
+        </p>
+
+        {% include 'components/open_source_modal.html.twig' %}
+    </main>
+{% endblock %}

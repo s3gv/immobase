@@ -1,0 +1,19 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Schlüssel, die überall gelten.
+
+    Ihre Werte stehen schon im System und lassen sich hier nicht ändern —
+    Fläche ist überall Fläche. „Nach Verbrauch" steht mit dabei: er trägt
+    selbst keine Werte, die Mengen stehen an der Kostenposition.
+#}
+{% extends 'finance/keys/_page.html.twig' %}
+
+{% block section_body %}
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: ['finance.key.name'|trans, 'finance.key.source'|trans],
+        rows: system|map(key => [key.name, key.kind.explanationKey|trans]),
+        empty: ''
+    } only %}
+{% endblock %}

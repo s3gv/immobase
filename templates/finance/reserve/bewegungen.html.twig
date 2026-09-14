@@ -1,0 +1,97 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Bewegungen eines Rücklagenkontos.
+
+    Zuführung und Sonderumlage tragen die Einheit, die eingezahlt hat; Zinsen
+    und Entnahme hängen am Objekt.
+
+    Ein Filter grenzt die Liste ein und nicht das Konto: der Stand oben bleibt
+    der volle, daneben steht die Summe der Auswahl.
+
+    Storniert wird, nicht gelöscht: eine gebuchte Bewegung kann Grundlage
+    einer Abrechnung sein. Sie bleibt lesbar stehen und trägt nichts mehr
+    bei.
+
+    Die Sonderumlagen stehen mit in der Liste, sind aber nicht gebucht: sie
+    kommen aus einem Beschluss und zeigen, was auf die Raten ankam. Geändert
+    wird deshalb dort, wo die Zahlung steht — an der Einheit.
+#}
+{% extends 'finance/reserve/_page.html.twig' %}
+
+{% block reserve_body %}
+    {% if balance.isEmpty %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.reserve.empty'|trans
+        } only %}
+    {% else %}
+        <form class="ib-index__filters" method="get"
+              action="{{ path('app_finance_reserve_show', { number: property.number }) }}" role="search">
+            <input type="hidden" name="abschnitt" value="bewegungen">
+
+            {% include 'components/select.html.twig' with {
+                id: 'art', name: 'art', label: 'finance.reserve.field.kind'|trans,
+                choices: kinds|map(k => { value: k.value, label: k.labelKey|trans }),
+                value: filter.kind ? filter.kind.value : '',
+                blank: 'finance.reserve.filter.all_kinds'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'jahr', name: 'jahr', label: 'finance.reserve.field.year'|trans,
+                choices: years|map(y => { value: y, label: y }),
+                value: filter.year, blank: 'finance.reserve.filter.all_years'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'einheit', name: 'einheit', label: 'finance.reserve.field.unit'|trans,
+                choices: units|map(u => { value: u.id, label: u.label }),
+                value: filter.unitId, blank: 'finance.reserve.filter.all_units'|trans
+            } only %}
+
+            <div class="ib-index__filter-actions">
+                <button class="ib-button" type="submit">{{ 'index.filter'|trans }}</button>
+                <a class="ib-button ib-button--quiet"
+                   href="{{ path('app_finance_reserve_show', { number: property.number }) }}">
+                    {{ 'index.reset'|trans }}
+                </a>
+            </div>
+        </form>
+
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'finance.reserve.field.occurred_on'|trans,
+                'finance.reserve.field.kind'|trans,
+                'finance.reserve.field.unit'|trans,
+                'finance.reserve.field.amount'|trans
+            ],
+            rows: selection.movements|map(m => {
+                cells: [
+                    m.occurredOn|date_local,
+                    m.kind.labelKey|trans
+                        ~ (m.isReversed ? ' · ' ~ 'finance.reserve.is_reversed'|trans : ''),
+                    m.unitId ? unitNames[m.unitId]|default('—') : '—',
+                    m.isReversed ? '—' : m.effect|money
+                ],
+                actions: is_granted('finance.delete') and m.isBooked and not m.isReversed
+                    ? [{ action: 'delete', modal: 'reserve-reverse-' ~ m.id }]
+                    : []
+            }),
+            empty: 'finance.reserve.nothing_matches'|trans
+        } only %}
+
+        {% if is_granted('finance.delete') %}
+            {% for m in selection.movements|filter(m => m.isBooked and not m.isReversed) %}
+                {% include 'components/confirm.html.twig' with {
+                    id: 'reserve-reverse-' ~ m.id,
+                    title: 'finance.reserve.delete.title'|trans,
+                    body: 'finance.reserve.delete.body'|trans,
+                    consequences: ['finance.reserve.delete.consequence_balance'|trans],
+                    confirm_label: 'finance.reserve.reverse'|trans,
+                    url: path('app_finance_reserve_reverse', { number: property.number, id: m.id }),
+                    token: 'finance_reserve'
+                } only %}
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+{% endblock %}

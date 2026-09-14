@@ -1,0 +1,24 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Abschnitt eines Rücklagenkontos.
+
+    Der Stand steht über den Abschnitten und nicht in einem davon: es gibt
+    keinen Kontodatensatz, der Stand ist die Summe der Bewegungen — und die
+    Antwort auf die erste Frage, die jemand an diese Seite hat.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <p class="ib-note">
+        {{ 'finance.reserve.balance'|trans }}:
+        <strong>{{ balance.total|money }}</strong>
+        {% if not filter.isEmpty %}
+            <span class="ib-field__hint">
+                {{ 'finance.reserve.selection'|trans }}: {{ selection.total|money }}
+            </span>
+        {% endif %}
+    </p>
+
+    {% block reserve_body %}{% endblock %}
+{% endblock %}

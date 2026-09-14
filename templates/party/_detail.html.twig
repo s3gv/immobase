@@ -1,0 +1,93 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Abschnitt der Stammdatenseite.
+
+    Dieselbe Gestalt wie Objekt, Einheit und Mietverhältnis — links die
+    Abschnitte, rechts einer davon. Und dieselben Abschnitte wie im Ablauf:
+    wer einen Kontakt angelegt hat, findet ihn hier wieder, wo er ihn
+    eingegeben hat.
+
+    Ein Abschnitt füllt den Block `panel`.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {#
+        Jede Aktion hängt an ihrem Recht: was jemand nicht darf, steht gar
+        nicht erst da. Archivieren zählt zu „bearbeiten" — es entfernt
+        nichts, es räumt aus dem Weg.
+    #}
+    <div class="ib-index__actions">
+        {% if is_granted('parties.edit') %}
+            {% include 'components/action.html.twig' with {
+                action: 'edit', url: path('app_party_edit', { reference: party.reference }), labelled: true
+            } only %}
+        {% endif %}
+
+        {% if is_granted('parties.delete') %}
+            {% if links is empty %}
+                {% include 'components/action.html.twig' with {
+                    action: 'delete', modal: 'party-delete', labelled: true
+                } only %}
+            {% else %}
+                {# Abgeschaltet, weil Vorgänge daran hängen — der Hinweis beim
+                   Überfahren sagt warum, statt den Knopf kommentarlos zu sperren. #}
+                {% include 'components/action.html.twig' with {
+                    action: 'delete', disabled: true, labelled: true,
+                    tooltip: 'party.linked'|trans
+                } only %}
+            {% endif %}
+        {% endif %}
+
+        {% if is_granted('parties.edit') %}
+            <form method="post" action="{{ path('app_party_archive', { reference: party.reference }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('party_archive_' ~ party.reference) }}">
+                <button class="ib-action ib-action--labelled" type="submit">
+                    {% include 'components/icon.html.twig' with { name: party.archived ? 'arrow-right' : 'archive' } only %}
+                    <span>{{ (party.archived ? 'party.action.reactivate' : 'party.action.archive')|trans }}</span>
+                </button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if party.archived %}
+        <p class="ib-note">{{ 'party.archived_hint'|trans }}</p>
+    {% endif %}
+
+    {% block panel %}{% endblock %}
+
+    {#
+        Nicht nur „es hängt etwas daran", sondern was. Die Module melden das
+        über PartyLinkSource; es bis hierher zu tragen und dann zu verschweigen
+        wäre die halbe Auskunft — und die Frage „was denn?" bliebe offen.
+    #}
+    {% if links is not empty %}
+        <p class="ib-note">{{ 'party.linked'|trans }}</p>
+        <ul class="ib-confirm__list">
+            {% for link in links %}
+                <li>{{ link|trans }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if links is empty and is_granted('parties.delete') %}
+        {#
+            Was mitgeht, steht mit dabei — die Module melden es über
+            PartyBelongings. Ein laufendes Gespräch stillschweigend
+            wegzuräumen, auf dessen Antwort jemand wartet, ist genau die Sorte
+            Überraschung, die man einer Verwaltung nicht zumutet.
+        #}
+        {% include 'components/confirm.html.twig' with {
+            id: 'party-delete',
+            title: 'party.delete.title'|trans({'%name%': party.displayName}),
+            body: 'party.delete.body'|trans,
+            consequences: [
+                'party.delete.consequence_reference'|trans({'%reference%': party.reference}),
+                'party.delete.consequence_links'|trans
+            ]|merge(belongings),
+            url: path('app_party_delete', { reference: party.reference }),
+            token: 'party_delete_' ~ party.reference
+        } only %}
+    {% endif %}
+{% endblock %}

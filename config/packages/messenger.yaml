@@ -1,0 +1,20 @@
+framework:
+    messenger:
+        default_bus: domain.event.bus
+
+        buses:
+            domain.event.bus:
+                default_middleware:
+                    # Ein Event ohne Empfänger ist kein Fehler: dass niemand
+                    # zuhört, ist der Normalfall, solange kein Modul reagieren
+                    # muss.
+                    allow_no_handlers: true
+
+        transports:
+            # Synchron im selben Prozess. Der Wechsel auf asynchronen Transport
+            # ist später eine Konfigurationsänderung und wird hier nicht
+            # vorweggenommen.
+            sync: 'sync://'
+
+        routing:
+            'App\Shared\Event\DomainEvent': sync

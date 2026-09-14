@@ -1,0 +1,91 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 s3gv
+#
+# Ohne Verwaltungsschnittstelle: sie lauschte auf localhost:2019, ohne
+# Anmeldung — und Plugins laufen als eigene Prozesse im selben Container. Ein
+# Plugin koennte darueber den Webserver des Cores umkonfigurieren. Caddy
+# vermerkt die abgeschaltete Schnittstelle beim Start als Warnung; die bleibt.
+{
+	admin off
+	skip_install_trust
+
+	{$CADDY_GLOBAL_OPTIONS}
+
+	frankenphp {
+		{$FRANKENPHP_CONFIG}
+	}
+
+	# Wer Kopfzeilen oder Rumpf im Schneckentempo schickt, haelt sonst eine
+	# Verbindung beliebig lange offen — viele davon, und niemand sonst kommt
+	# mehr herein. Ohne Grenze fuers Schreiben: ein grosser PDF-Export darf
+	# dauern. Zweimal, weil ein Block mit Adresse den ohne ersetzt statt ihn
+	# zu ergaenzen.
+	servers {
+		timeouts {
+			read_header 10s
+			read_body 60s
+			idle 2m
+		}
+	}
+
+	servers :80 {
+		protocols h1 h2c
+		timeouts {
+			read_header 10s
+			read_body 60s
+			idle 2m
+		}
+	}
+
+	servers 127.0.0.1:2019 {
+		protocols h1
+	}
+
+	servers 127.0.0.1:2080 {
+		protocols h1
+	}
+}
+
+# Der Eingang fuer die Plugin-Prozesse: nur die Schnittstelle, nicht die
+# Anwendung. Die Netzsperre laesst Plugins im Container nur hierher — auf den
+# Port fuer den Browser kaemen sie an Anmeldung und Formulare und koennten dort
+# durchprobieren, was sonst nur von aussen ginge.
+http://127.0.0.1:2080 {
+	bind 127.0.0.1
+	root public/
+	header -Server
+
+	@interface path /api/v1/* /plugin-api/v1/*
+	handle @interface {
+		php_server
+	}
+
+	handle {
+		respond 404
+	}
+}
+
+# Fuer den Gesundheitscheck des Containers, nur von innen erreichbar. Das
+# Image fragte dafuer die Verwaltungsschnittstelle, und die ist aus.
+:2019 {
+	bind 127.0.0.1
+	respond /healthz 200
+}
+
+{$SERVER_NAME:localhost} {
+	root public/
+	encode zstd br gzip
+
+	# Kein Hinweis auf Webserver und Version.
+	header -Server
+
+	# Groesser nimmt PHP ohnehin nichts an (docker/php/immobase.ini); was
+	# darueber liegt, muss gar nicht erst ankommen.
+	request_body {
+		max_size 32MB
+	}
+
+	{$CADDY_SERVER_EXTRA_DIRECTIVES}
+
+	php_server
+}

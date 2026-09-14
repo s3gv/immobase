@@ -1,0 +1,60 @@
+{
+    "api": 1,
+    "name": "probe",
+    "version": "1.0.0",
+    "label": {
+        "de": "Prüfung",
+        "en": "Probe"
+    },
+    "permissions": [
+        {
+            "area": "probe",
+            "actions": [
+                "view"
+            ],
+            "label": {
+                "de": "Prüfung",
+                "en": "Probe"
+            }
+        }
+    ],
+    "reads": [
+        "properties.view",
+        "finance.view"
+    ],
+    "nav": [
+        {
+            "path": "/sheet",
+            "label": {
+                "de": "Prüfblatt",
+                "en": "Probe sheet"
+            },
+            "permission": "probe.view"
+        }
+    ],
+    "tables": [
+        {
+            "name": "mirror",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "primary": true
+                },
+                {
+                    "name": "amount",
+                    "type": "decimal"
+                },
+                {
+                    "name": "at",
+                    "type": "timestamp",
+                    "index": true
+                }
+            ]
+        }
+    ],
+    "events": [
+        "*.*"
+    ],
+    "webhook_path": "/webhook"
+}

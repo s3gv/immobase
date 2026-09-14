@@ -1,0 +1,117 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Abschnitt der Einheitenseite — dieselbe Gestalt wie beim Objekt.
+
+    Ein Abschnitt füllt den Block `panel`.
+
+    Nicht `body`: so heißt schon der Block, in dem die ganze Hülle steckt —
+    Seitenleiste, Kopfzeile, Brotkrumen. Ein Abschnitt, der ihn überschreibt,
+    rendert eine Tabelle auf leerem Grund.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <div class="ib-index__actions">
+        {% if is_granted('properties.edit') and edit_step|default(null) %}
+            {% include 'components/action.html.twig' with {
+                action: 'edit',
+                url: path('app_unit_edit', {
+                    number: property.number, unit: unit.number, step: edit_step
+                }),
+                labelled: true
+            } only %}
+        {% endif %}
+
+        {#
+            Abgeben statt löschen: verkauft, aus der Verwaltung genommen. Bei
+            Sondereigentumsverwaltung ist das der Normalfall — dort verwaltet
+            man einzelne Einheiten und verliert sie einzeln.
+        #}
+        {% if is_granted('properties.edit') %}
+            {% if unit.status.isActive %}
+                <button class="ib-button ib-button--quiet" type="button"
+                        data-modal-open="unit-closure-{{ unit.number }}">
+                    {{ 'property.unit.action.close'|trans }}
+                </button>
+            {% elseif not property.status.isPast %}
+                {# Ein abgewickeltes Objekt nimmt man als Ganzes zurück. #}
+                <button class="ib-button ib-button--quiet" type="button"
+                        data-modal-open="unit-reopen-{{ unit.number }}">
+                    {{ 'property.action.reopen'|trans }}
+                </button>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    {% if unit.status.isPast %}
+        <p class="ib-note">{{ 'property.unit.past.hint'|trans({
+            '%date%': unit.management.closure.day ? unit.management.closure.day|date_local : ''
+        }) }}</p>
+    {% endif %}
+
+    {% block panel %}{% endblock %}
+
+    {% if is_granted('properties.edit') and unit.status.isPast and not property.status.isPast %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'unit-reopen-' ~ unit.number,
+            title: 'property.unit.reopen.title'|trans({'%label%': unit.label}),
+            body: 'property.unit.reopen.body'|trans,
+            consequences: ['property.unit.reopen.consequence_tenancies'|trans],
+            url: path('app_unit_reopen', { number: property.number, unit: unit.number }),
+            token: 'unit_closure_' ~ unit.number,
+            confirm_label: 'property.action.reopen'|trans,
+            danger: false
+        } only %}
+    {% endif %}
+
+    {% if is_granted('properties.edit') and unit.status.isActive %}
+        {% embed 'components/modal.html.twig' with {
+            id: 'unit-closure-' ~ unit.number,
+            title: 'property.unit.close.title'|trans({'%label%': unit.label}),
+            property: property,
+            unit: unit,
+            closing: closing|default({})
+        } only %}
+            {% block body %}
+                <p>{{ 'property.unit.close.body'|trans }}</p>
+
+                <form id="unit-closure-form-{{ unit.number }}" method="post"
+                      action="{{ path('app_unit_close', { number: property.number, unit: unit.number }) }}">
+                    <input type="hidden" name="_token"
+                           value="{{ csrf_token('unit_closure_' ~ unit.number) }}">
+
+                    {% include 'components/field.html.twig' with {
+                        id: 'closedOn-einheit-' ~ unit.number, name: 'closedOn', type: 'date',
+                        label: 'property.field.closed_on'|trans,
+                        hint: 'property.unit.close.hint'|trans,
+                        value: 'now'|date('Y-m-d'),
+                        required: true
+                    } only %}
+                </form>
+
+                {% if closing|default({}) is not empty %}
+                    <p class="ib-confirm__lead">{{ 'property.close.taken_with'|trans }}</p>
+                    <ul class="ib-confirm__list">
+                        {% for key, count in closing %}
+                            <li>{{ key|trans({'%count%': count}) }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                <p class="ib-field__hint">{{ 'property.unit.close.consequence_history'|trans }}</p>
+            {% endblock %}
+
+            {% block actions %}
+                <button class="ib-button ib-button--quiet" type="button" data-modal-close autofocus>
+                    {{ 'confirm.cancel'|trans }}
+                </button>
+
+                <button class="ib-button ib-button--danger" type="submit"
+                        form="unit-closure-form-{{ unit.number }}">
+                    {{ 'property.unit.action.close'|trans }}
+                </button>
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+{% endblock %}

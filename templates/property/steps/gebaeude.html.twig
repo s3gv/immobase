@@ -1,0 +1,56 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.building is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.building|trans }}</p>
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'yearBuilt', name: 'yearBuilt', type: 'number', label: 'property.field.year_built'|trans,
+        value: posted ? submitted.yearBuilt|default('') : property.building.yearBuilt,
+        autofocus: true
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'livingArea', name: 'livingArea', label: 'property.field.living_area'|trans,
+        value: posted ? submitted.livingArea|default('') : property.building.livingArea|decimal(false)
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'commercialArea', name: 'commercialArea', label: 'property.field.commercial_area'|trans,
+        hint: 'property.field.commercial_area_hint'|trans,
+        value: posted ? submitted.commercialArea|default('') : property.building.commercialArea|decimal(false)
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'plotArea', name: 'plotArea', label: 'property.field.plot_area'|trans,
+        value: posted ? submitted.plotArea|default('') : property.building.plotArea|decimal(false)
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'floors', name: 'floors', type: 'number', label: 'property.field.floors'|trans,
+        value: posted ? submitted.floors|default('') : property.building.floors
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'hasLift', name: 'hasLift', label: 'property.field.lift'|trans,
+        choices: [
+            { value: 'yes', label: 'property.yes_no.yes'|trans },
+            { value: 'no', label: 'property.yes_no.no'|trans }
+        ],
+        value: posted
+            ? submitted.hasLift|default('')
+            : (property.building.hasLift is null ? '' : (property.building.hasLift ? 'yes' : 'no')),
+        blank: 'property.yes_no.unknown'|trans
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'parkingSpaces', name: 'parkingSpaces', type: 'number',
+        label: 'property.field.parking_spaces'|trans,
+        value: posted ? submitted.parkingSpaces|default('') : property.building.parkingSpaces
+    } only %}
+{% endblock %}

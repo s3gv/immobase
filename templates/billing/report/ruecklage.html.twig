@@ -1,0 +1,43 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Stand der Erhaltungsrücklage — der erste Pflichtbaustein.
+
+    Kein einziges Eingabefeld: die Anwendung kennt jede Buchung auf der
+    Rücklage und rechnet den Stand daraus. Der Schritt steht trotzdem eigens
+    da — was die Anwendung selbst weiß, soll man sehen, bevor man sich fragt,
+    warum man es nicht eintragen muss.
+
+    § 28 Abs. 4 WEG verlangt den Ist-Stand, nicht den Soll-Stand: der wäre
+    genau dann höher, wenn jemand nicht gezahlt hat, und dieser Fehlbetrag
+    steht schon als Forderung in der Aufstellung.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    <div class="ib-stats">
+        {% include 'components/stat_tile.html.twig' with {
+            value: body.reserve.closing|money, label: 'billing.report.reserve.closing'|trans
+        } only %}
+    </div>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: ['billing.report.reserve.movement'|trans, 'billing.report.reserve.amount'|trans],
+        rows: [
+            ['billing.report.reserve.opening'|trans, body.reserve.opening|money],
+            ['billing.report.reserve.contributions'|trans, body.reserve.contributions|money],
+            ['billing.report.reserve.levies'|trans, body.reserve.specialLevies|money],
+            ['billing.report.reserve.interest'|trans, body.reserve.interest|money],
+            ['billing.report.reserve.withdrawals'|trans, body.reserve.withdrawals|money],
+            ['billing.report.reserve.closing'|trans, body.reserve.closing|money]
+        ],
+        empty: ''
+    } only %}
+
+    {% if body.reserve.stoodStill %}
+        <p class="ib-field__hint">{{ 'billing.report.reserve.quiet'|trans }}</p>
+    {% endif %}
+
+    <p class="ib-field__hint">{{ 'billing.report.reserve.hint'|trans }}</p>
+{% endblock %}

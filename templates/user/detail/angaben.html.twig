@@ -1,0 +1,108 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was über ein Konto gespeichert ist — und was sich damit tun lässt.
+
+    Erster von bis zu drei Abschnitten; Rollen und Zusatzrechte stehen
+    daneben, wer sie ändern darf.
+#}
+{% embed 'components/sections.html.twig' %}
+    {% block section_body %}
+        {#
+            Der Einladungslink erscheint genau einmal — direkt nach dem Einladen.
+
+            Gespeichert wird nur sein Hash; ihn aufzubewahren, um ihn später noch
+            einmal zu zeigen, hieße einen benutzbaren Schlüssel im Klartext zu
+            lagern. Wer ihn verpasst, lädt erneut ein.
+        #}
+        {% for link in app.flashes('invite_link') %}
+            <div class="ib-note ib-note--link">
+                <p>{{ 'user.invite.copy_hint'|trans }}</p>
+                <input class="ib-field__input" type="text" value="{{ link }}" readonly
+                       data-select-on-focus aria-label="{{ 'user.invite.link'|trans }}">
+            </div>
+        {% endfor %}
+
+        {# Beim zweiten Faktor steht hier die ausgeschriebene Form: „Sicherheit:
+           Keiner" läse sich wie eine Bewertung. #}
+        {% include 'components/table.html.twig' with {
+            headers: ['user.review.field'|trans, 'user.review.value'|trans],
+            rows: [
+                ['user.field.email'|trans, user.email.toString],
+                ['user.field.name'|trans, user.name.known ? user.name.full : '—'],
+                ['user.field.job_title'|trans, user.name.jobTitle ?: '—'],
+                ['user.field.status'|trans, user.status.labelKey|trans],
+                ['user.step.factor.title'|trans, user.secondFactor.kind.labelKey|trans],
+                ['user.field.roles'|trans, user.assignedRoles|map(r => r.name.value)|sort|join(', ')],
+                ['user.field.last_sign_in'|trans, user.lastSignInAt ? user.lastSignInAt|date('format.datetime'|trans) : 'user.never'|trans]
+            ],
+            empty: ''
+        } only %}
+
+        {% if reason is not null %}
+            <p class="ib-note">{{ reason|trans }}</p>
+        {% endif %}
+
+        <div class="ib-flow__actions">
+            {% if user.status.value == 'invited' and is_granted('users.edit') %}
+                <form method="post" action="{{ path('app_user_invite_again', { number: user.number }) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('user_invite_' ~ user.number) }}">
+                    <button class="ib-action ib-action--labelled" type="submit">
+                        {% include 'components/icon.html.twig' with { name: 'arrow-right' } only %}
+                        <span>{{ 'user.invite.again'|trans }}</span>
+                    </button>
+                </form>
+            {% endif %}
+
+            {% if reason is null and is_granted('users.edit') %}
+                <form method="post" action="{{ path('app_user_activation', { number: user.number }) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('user_activation_' ~ user.number) }}">
+                    <button class="ib-action ib-action--labelled" type="submit">
+                        {% include 'components/icon.html.twig' with { name: user.status.value == 'deactivated' ? 'arrow-right' : 'archive' } only %}
+                        <span>{{ (user.status.value == 'deactivated' ? 'user.action.reactivate' : 'user.action.deactivate')|trans }}</span>
+                    </button>
+                </form>
+
+                {% if user.secondFactor.kind.value != 'none' %}
+                    {# Wer Gerät und Wiederherstellungscodes verloren hat, braucht
+                       jemanden, der abschaltet. Sonst bleibt nur die Datenbank. #}
+                    <form method="post" action="{{ path('app_user_reset_factor', { number: user.number }) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('user_factor_' ~ user.number) }}">
+                        <button class="ib-action ib-action--labelled" type="submit">
+                            {% include 'components/icon.html.twig' with { name: 'shield' } only %}
+                            <span>{{ 'user.factor.reset'|trans }}</span>
+                        </button>
+                    </form>
+                {% endif %}
+            {% endif %}
+
+            {% if is_granted('users.delete') %}
+                {% if reason is null %}
+                    {% include 'components/action.html.twig' with {
+                        action: 'delete', modal: 'user-delete', labelled: true
+                    } only %}
+                {% else %}
+                    {# Abgeschaltet mit Begründung: ein kommentarlos gesperrter Knopf
+                       sieht aus wie ein Fehler. #}
+                    {% include 'components/action.html.twig' with {
+                        action: 'delete', disabled: true, labelled: true
+                    } only %}
+                {% endif %}
+            {% endif %}
+        </div>
+
+        {% if reason is null and is_granted('users.delete') %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'user-delete',
+                title: 'user.delete.title'|trans({'%name%': user.displayName}),
+                body: 'user.delete.body'|trans,
+                consequences: [
+                    'user.delete.consequence_number'|trans({'%number%': user.number}),
+                    'user.delete.consequence_access'|trans
+                ],
+                url: path('app_user_delete', { number: user.number }),
+                token: 'user_delete_' ~ user.number
+            } only %}
+        {% endif %}
+    {% endblock %}
+{% endembed %}

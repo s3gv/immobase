@@ -1,0 +1,39 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    „Meine Rechte" — nur zu lesen.
+
+    Je Bereich eine Liste, je Recht eine Zeile: Bezeichnung und Herkunft
+    nebeneinander, die Erklärung klein darunter. Untereinander gesetzt waren
+    das drei Textzeilen je Recht, und elf davon las niemand mehr.
+
+    Die Herkunft steht dabei, weil sonst die nächste Frage offen bliebe: Wer
+    hat mir das gegeben, und an wen wende ich mich, wenn etwas fehlt?
+#}
+{% embed 'components/sections.html.twig' with { wide: true } %}
+    {% block section_body %}
+        {% if permissions is empty %}
+            {% include 'components/empty_state.html.twig' with { message: 'role.mine.empty'|trans } only %}
+        {% else %}
+            {% for area, origins in permissions|by_area_label %}
+                <section class="ib-group">
+                    <h3 class="ib-group__label">{{ ('permission.area.' ~ area)|permission_text }}</h3>
+                    <ul class="ib-group__list">
+                        {% for origin in origins %}
+                            {% include 'components/list_row.html.twig' with {
+                                title: origin.permission.labelKey|permission_text,
+                                meta: origin.permission.explanationKey|permission_text,
+                                trailing: origin.bySystemRole
+                                    ? 'role.extra.from_system'|trans
+                                    : origin.roles
+                                        |map(r => 'role.extra.from_role'|trans({'%role%': r}))
+                                        |merge(origin.direct ? ['role.extra.direct'|trans] : [])
+                                        |join(', ')
+                            } only %}
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endfor %}
+        {% endif %}
+    {% endblock %}
+{% endembed %}

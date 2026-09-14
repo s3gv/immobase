@@ -1,0 +1,10 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'email/layout.html.twig' %}
+
+{% block body %}
+    <p>{{ 'email.second_factor.greeting'|trans }}</p>
+    <p>{{ 'email.second_factor.body'|trans }}</p>
+    <p style="font-size:28px;letter-spacing:4px;font-weight:600;">{{ code }}</p>
+    <p>{{ 'email.second_factor.validity'|trans }}</p>
+{% endblock %}

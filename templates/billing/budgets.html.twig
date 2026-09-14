@@ -1,0 +1,100 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Alle Budgetpläne, die neuesten zuerst.
+
+    Entwürfe stehen mit in der Liste und tragen ihren Status: sie sind
+    angefangene Arbeit und gehören vor Augen.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'billing.budget.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'billing.budget.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'billing.budget.subheading'|trans }}</p>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            'billing.budget.reference'|trans,
+            'billing.budget.first_year'|trans,
+            'billing.budget.label'|trans,
+            'billing.budget.kind'|trans,
+            'billing.budget.status'|trans
+        ],
+        rows: budgets|map(b => {
+            cells: [
+                'BU-' ~ b.propertyNumber ~ '-' ~ b.measure.firstYear ~ '-' ~ b.edition.number ~ (b.edition.iteration > 1 ? '-' ~ b.edition.iteration : ''),
+                b.measure.firstYear,
+                b.measure.label ?: 'billing.budget.unnamed'|trans,
+                b.measure.kind.labelKey|trans,
+                b.stage.status.labelKey|trans
+            ],
+            actions: (b.stage.isOpen
+                ? (is_granted('billing.edit')
+                    ? [
+                        { action: 'edit', url: path('app_billing_budget_edit', { id: b.id, step: 'massnahme' }) },
+                        { action: 'delete', modal: 'billing-budget-delete-' ~ b.id }
+                      ]
+                    : [])
+                : [
+                    { action: 'open', url: path('app_billing_budget_show', { id: b.id }) },
+                    { action: 'download', url: path('app_billing_budget_pdf', { id: b.id }) }
+                  ])
+        }),
+        page: page,
+        action: path('app_billing_budget'),
+        url: url,
+        empty: 'billing.budget.empty'|trans,
+        filter: filter,
+        properties: properties,
+        years: years,
+        statuses: statuses
+    } only %}
+        {% block actions %}
+            {% if is_granted('billing.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_billing_budget_new'), labelled: true
+                } only %}
+            {% endif %}
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'billing.statement.filter.search'|trans,
+                value: filter.search, placeholder: 'billing.statement.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'objekt', name: 'objekt', label: 'billing.budget.property'|trans,
+                choices: properties|map(p => { value: p.number, label: p.oneLine }),
+                value: filter.propertyNumber, blank: 'billing.statement.filter.all_properties'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'jahr', name: 'jahr', label: 'billing.report.filter.year'|trans,
+                choices: years|map(y => { value: y, label: y }),
+                value: filter.firstYear, blank: 'billing.statement.filter.all_years'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'zustand', name: 'zustand', label: 'billing.budget.status'|trans,
+                choices: statuses|map(s => { value: s.value, label: s.labelKey|trans }),
+                value: filter.status ? filter.status.value : '',
+                blank: 'billing.statement.filter.all_states'|trans
+            } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% for b in budgets %}
+        {% if b.stage.isOpen and is_granted('billing.edit') %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'billing-budget-delete-' ~ b.id,
+                title: 'billing.budget.delete.title'|trans,
+                body: 'billing.budget.delete.body'|trans,
+                url: path('app_billing_budget_delete', { id: b.id }),
+                token: 'billing'
+            } only %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}

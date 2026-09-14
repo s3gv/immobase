@@ -1,0 +1,68 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Objekt, Maßnahme, Art und erstes Jahr.
+
+    Die **Art** ist die folgenreichste Angabe des ganzen Ablaufs: an ihr hängt,
+    wer die Kosten trägt. Eine Erhaltungsmaßnahme tragen immer alle; bei einer
+    baulichen Veränderung entscheidet die Mehrheit (§ 21 WEG).
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% if budget %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: ['user.review.field'|trans, 'user.review.value'|trans],
+            rows: [
+                ['billing.budget.property'|trans, budget.propertyNumber],
+                ['billing.budget.first_year'|trans, budget.measure.firstYear]
+            ],
+            empty: ''
+        } only %}
+    {% elseif properties is empty %}
+        <p class="ib-empty">{{ 'billing.budget.no_weg'|trans }}</p>
+    {% else %}
+        {% include 'components/select.html.twig' with {
+            id: 'property', name: 'property', label: 'billing.budget.property'|trans,
+            hint: 'billing.budget.property_hint'|trans,
+            choices: properties|map(p => { value: p.number, label: p.number ~ ' · ' ~ p.name }),
+            value: submitted.property|default(''),
+            blank: 'billing.budget.choose_property'|trans
+        } only %}
+
+        {% include 'components/select.html.twig' with {
+            id: 'firstYear', name: 'firstYear', label: 'billing.budget.first_year'|trans,
+            hint: 'billing.budget.first_year_hint'|trans,
+            choices: years|map(y => { value: y, label: y }),
+            value: submitted.firstYear|default(defaultYear)
+        } only %}
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'label', name: 'label', label: 'billing.budget.label'|trans,
+        hint: 'billing.budget.label_hint'|trans,
+        value: budget ? budget.measure.label : submitted.label|default('')
+    } only %}
+
+    {% include 'components/select.html.twig' with {
+        id: 'kind', name: 'kind', label: 'billing.budget.kind'|trans,
+        hint: 'billing.budget.kind_hint'|trans,
+        choices: kinds|map(k => { value: k.value, label: k.labelKey|trans }),
+        value: budget ? budget.measure.kind.value : submitted.kind|default('maintenance')
+    } only %}
+
+    {#
+        Die Amortisation ist eine Behauptung mit Folgen: rechnet sich die
+        Maßnahme in angemessener Zeit, tragen die Kosten nach § 21 Abs. 2 Nr. 2
+        WEG alle — auch ohne qualifizierte Mehrheit.
+    #}
+    {% if budget %}
+        {% include 'components/field.html.twig' with {
+            id: 'amortisesIn', name: 'amortisesIn', type: 'number',
+            label: 'billing.budget.amortises'|trans,
+            hint: 'billing.budget.amortises_hint'|trans,
+            value: budget.measure.amortisesIn
+        } only %}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,91 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was den Tilgungsplan verändert hat.
+
+    Eingetragen wird der Vorgang, nicht sein Ergebnis: der Plan nebenan
+    rechnet sich daraus jedes Mal neu. Wer statt dessen die Restschuld
+    fortschriebe, hätte eine Zahl, die jemand pflegen muss — und die neben der
+    Rechnung herliefe.
+#}
+{% extends 'finance/loan/_detail.html.twig' %}
+
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: [
+            'finance.loan.field.occurred_on'|trans,
+            'finance.loan.field.kind'|trans,
+            'finance.loan.field.value'|trans,
+            'finance.loan.field.note'|trans
+        ],
+        rows: loan.events|map(e => {
+            cells: [
+                e.occurredOn|date_local,
+                e.kind.labelKey|trans,
+                e.amount ? e.amount|money : (rates[e.id]|decimal(false) ~ ' %'),
+                e.note
+            ],
+            actions: is_granted('finance.edit')
+                ? [{ action: 'delete', modal: 'loan-event-' ~ e.id }]
+                : []
+        }),
+        empty: 'finance.loan.no_events'|trans
+    } only %}
+
+    {% if is_granted('finance.edit') %}
+        {% for event in loan.events %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'loan-event-' ~ event.id,
+                title: 'finance.loan.forget.title'|trans,
+                body: 'finance.loan.forget.body'|trans,
+                consequences: ['finance.loan.forget.consequence'|trans],
+                url: path('app_finance_loan_forget', { number: loan.number, id: event.id }),
+                token: 'finance_loan_event'
+            } only %}
+        {% endfor %}
+
+        <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'finance.loan.record'|trans }}</h3>
+        <p class="ib-flow__explanation">{{ 'finance.loan.record_hint'|trans }}</p>
+
+        <form method="post" action="{{ path('app_finance_loan_record', { number: loan.number }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('finance_loan_event') }}">
+
+            {% include 'components/select.html.twig' with {
+                id: 'kind', name: 'kind', label: 'finance.loan.field.kind'|trans,
+                choices: kinds|map(k => { value: k.value, label: k.labelKey|trans }),
+                value: 'extra_payment'
+            } only %}
+
+            <div class="ib-entry__pair">
+                {% include 'components/field.html.twig' with {
+                    id: 'occurredOn', name: 'occurredOn', type: 'date',
+                    label: 'finance.loan.field.occurred_on'|trans,
+                    value: 'now'|date('Y-m-d')
+                } only %}
+
+                {% include 'components/field.html.twig' with {
+                    id: 'amount', name: 'amount', label: 'finance.loan.field.extra'|trans,
+                    hint: 'finance.loan.field.extra_hint'|trans, value: ''
+                } only %}
+            </div>
+
+            {% include 'components/field.html.twig' with {
+                id: 'rate', name: 'rate', label: 'finance.loan.field.new_rate'|trans,
+                hint: 'finance.loan.field.new_rate_hint'|trans, value: ''
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'note', name: 'note', label: 'finance.loan.field.note'|trans, value: ''
+            } only %}
+
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'finance.loan.record'|trans }}</button>
+            </div>
+        </form>
+    {% else %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.loan.no_edit'|trans
+        } only %}
+    {% endif %}
+{% endblock %}

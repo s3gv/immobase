@@ -1,0 +1,101 @@
+security:
+    password_hashers:
+        App\Module\Auth\Domain\User:
+            algorithm: auto
+
+    providers:
+        app_users:
+            entity:
+                class: App\Module\Auth\Domain\User
+                property: email
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        # Die Schnittstelle der Plugins. Kein Formular, keine Sitzung, keine
+        # Weiterleitung auf /login — ein Plugin ist kein Browser, und eine
+        # Anmeldeseite als Antwort waere fuer es dasselbe wie Schweigen.
+        #
+        # Geprueft wird stattdessen im Eingang selbst: ein Token, ein aktives
+        # Plugin, und das Recht dieser Ressource in dem, was jemand bestaetigt
+        # hat. An einer Stelle fuer alle Ressourcen, und ein Test geht den
+        # ganzen Katalog durch und verlangt von jeder dieselbe Absage.
+        api:
+            pattern: ^/api/v1
+            stateless: true
+            security: false
+
+        main:
+            lazy: true
+            provider: app_users
+            # Sperrt eingeladene und deaktivierte Konten aus — mit derselben
+            # Meldung wie ein falsches Passwort.
+            user_checker: App\Module\Auth\UserInterface\Security\UserChecker
+
+            # Symfonys eigene Bremse gegen Durchprobieren: fünf Versuche je
+            # Adresse und IP in fünfzehn Minuten, dazu eine großzügigere
+            # Grenze je IP allein. Die Schlüssel sind mit APP_SECRET gehasht,
+            # damit im Cache keine Klartextadressen liegen.
+            #
+            # Sie greift bei jedem Anmeldeschritt mit Benutzerkennung — also
+            # auch beim zweiten Faktor. Der hat zusätzlich eine eigene Grenze,
+            # die am Konto hängt und nicht an der IP: wer das Passwort kennt,
+            # soll den sechsstelligen Code nicht von wechselnden Anschlüssen
+            # aus durchprobieren können.
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
+            # Eigener Authenticator statt form_login: bei eingerichtetem
+            # zweitem Faktor darf das richtige Passwort noch nicht anmelden.
+            # form_login meldet an dieser Stelle sofort an und kennt keinen
+            # Zwischenschritt.
+            custom_authenticators:
+                - App\Module\Auth\UserInterface\Security\LoginFormAuthenticator
+                # Der zweite Schritt ist ein eigener Authenticator und kein
+                # Controller mit Security::login(): so nimmt die Firewall die
+                # Anmeldung selbst vor — samt Sitzungswechsel gegen Session
+                # Fixation.
+                - App\Module\Auth\UserInterface\Security\SecondFactorAuthenticator
+            # Abmelden nur mit Token: ein Link liesse sich von jeder fremden
+            # Seite aus aufrufen und meldete den Besucher unbemerkt ab.
+            logout:
+                path: app_logout
+                target: app_login
+                enable_csrf: true
+
+    access_control:
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        # Der zweite Schritt der Anmeldung. Ohne wartenden Eintrag in der
+        # Sitzung leitet die Seite selbst zurück — sie ist kein Weg an der
+        # ersten Hürde vorbei.
+        - { path: ^/anmelden/bestaetigen$, roles: PUBLIC_ACCESS }
+        - { path: ^/zwei-faktor/qr$, roles: PUBLIC_ACCESS }
+        # Einladung und Passwort-Zurücksetzen: der Schlüssel in der Adresse
+        # ist der Ausweis, eine Anmeldung gibt es hier noch nicht.
+        - { path: ^/einladung/, roles: PUBLIC_ACCESS }
+        - { path: ^/passwort/, roles: PUBLIC_ACCESS }
+        # Teil der Plugin-Grenze. Ein Plugin läuft in einem eigenen Prozess
+        # und hat keine Sitzung des Cores.
+        - { path: ^/plugin-api/v1/theme\.css$, roles: PUBLIC_ACCESS }
+        # Dasselbe für die Datenschnittstelle. Die Zeile ist streng genommen
+        # überflüssig — die eigene Firewall darüber schaltet die Prüfung
+        # ohnehin ab —, aber ohne sie läse man die Fangzeile unten so, als
+        # wäre /api/v1 angemeldeten Menschen vorbehalten.
+        - { path: ^/api/v1, roles: PUBLIC_ACCESS }
+        # Abmelden und die Sprache wechseln darf jeder Angemeldete — auch ein
+        # Portalkonto, das ROLE_USER nicht hat. Ohne diese Zeilen käme es nicht
+        # mehr heraus und säße in der falschen Sprache fest.
+        - { path: ^/logout$, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/locale/, roles: IS_AUTHENTICATED_FULLY }
+        # Das Portal. ROLE_PORTAL hat nur, wer für eine Partei spricht —
+        # siehe User::getRoles(). Ein Mitarbeiterkonto kommt hier also
+        # ebenso wenig hinein wie ein Portalkonto in den Verwalterbereich.
+        - { path: ^/portal, roles: ROLE_PORTAL }
+        # Alles, was nicht ausdrücklich freigegeben ist, ist gesperrt. Neue
+        # Seiten sind damit standardmäßig geschützt statt standardmäßig offen
+        # — und weil ein Portalkonto ROLE_USER gar nicht erst bekommt, sperrt
+        # diese eine Zeile den ganzen Verwalterbereich für es aus. Auch die
+        # Seite, die es morgen erst gibt.
+        - { path: ^/, roles: ROLE_USER }

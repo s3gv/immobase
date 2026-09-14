@@ -1,0 +1,11 @@
+# Sperren fuer die Bremsen gegen Durchprobieren.
+#
+# Ohne sie lesen gleichzeitige Anfragen denselben Zaehlerstand, und fuenf
+# erlaubte Versuche werden zu so vielen, wie parallel ankommen — genug, um
+# einen sechsstelligen Code schneller durchzuprobieren als gedacht.
+#
+# Als Dateisperre in var/ und nicht im Vorgabeverzeichnis /tmp: dort koennte
+# ein Plugin-Prozess die Sperrdatei vorher anlegen oder festhalten und damit
+# die Anmeldung aufhalten. var/ sieht kein Plugin.
+framework:
+    lock: 'flock://%kernel.project_dir%/var/lock'

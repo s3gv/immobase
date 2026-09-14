@@ -1,0 +1,32 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Posten: worum es geht, wie viel, seit wann.
+
+    Zweimal dieselben vier Felder — beim Anlegen und beim Nachtragen. Die
+    Hinweise stehen nur beim ersten Mal, danach weiß man es.
+
+    Erwartet: submitted, hints
+#}
+{% include 'components/field.html.twig' with {
+    id: 'subject', name: 'subject', label: 'dunning.field.subject'|trans,
+    hint: hints ? 'dunning.field.subject_hint'|trans : '',
+    value: submitted.subject|default('')
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'amount', name: 'amount', label: 'dunning.field.amount'|trans,
+    value: submitted.amount|default('')
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'dueOn', name: 'dueOn', type: 'date', label: 'dunning.due_on'|trans,
+    hint: hints ? 'dunning.field.due_on_hint'|trans : '',
+    value: submitted.dueOn|default('')
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'defaultFrom', name: 'defaultFrom', type: 'date', label: 'dunning.default_from'|trans,
+    hint: hints ? 'dunning.field.default_from_hint'|trans : '',
+    value: submitted.defaultFrom|default('')
+} only %}

@@ -1,0 +1,28 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Jede Anschrift in ihrer eigenen Zeile, mit ihrer Art davor.
+
+    Vorher standen alle in einer Zeile, durch Mittelpunkte getrennt — bei
+    Hausanschrift und Postfach nebeneinander war nicht zu sehen, welche
+    welche ist. Genau dafür gibt es die Art.
+
+    Die erste gilt, wenn nur eine gemeint sein kann; das steht dabei, statt
+    aus der Reihenfolge erraten zu werden.
+#}
+{% extends 'party/_detail.html.twig' %}
+
+{% block panel %}
+    {# Der Zusatz steht in seiner eigenen Spalte und nicht in der Anschrift:
+       auf dem Kuvert ist er eine eigene Zeile, und hier soll zu sehen sein,
+       ob einer hinterlegt ist. #}
+    {% include 'components/table.html.twig' with {
+        headers: ['party.field.kind'|trans, 'party.field.addition'|trans, 'party.field.address'|trans],
+        rows: party.addresses.all|map(a => [a.kind.labelKey|trans, a.addition ?: '—', a.oneLine]),
+        empty: ''
+    } only %}
+
+    {% if party.addresses.count > 1 %}
+        <p class="ib-field__hint">{{ 'party.address.primary_hint'|trans }}</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,84 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein eigener Verteilerschlüssel mit seinen Anteilen.
+
+    Die Summe steht darunter und blockiert nicht — dieselbe Entscheidung wie
+    bei den Miteigentumsanteilen: wer gerade erst anfängt zu erfassen, hat
+    zwischendurch immer eine falsche Summe.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ key.name }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ key.name }}</h1>
+    <p class="ib-subheading">
+        {{ key.kind.labelKey|trans }}{% if property %} · {{ property.oneLine }}{% endif %}
+    </p>
+
+    {% if is_granted('finance.delete') %}
+        <div class="ib-index__actions">
+            <button class="ib-button ib-button--quiet" type="button" data-modal-open="key-delete">
+                {{ 'action.delete'|trans }}
+            </button>
+        </div>
+    {% endif %}
+
+    <p class="ib-note">{{ key.kind.explanationKey|trans }}</p>
+
+    {% if key.kind.needsShares %}
+        {% if is_granted('finance.edit') %}
+            <form method="post" action="{{ path('app_finance_key_shares', { id: key.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('finance_key') }}">
+
+                {% for unit in units %}
+                    {% include 'components/field.html.twig' with {
+                        id: 'share-' ~ unit.id, name: 'shares[' ~ unit.id ~ ']',
+                        label: unit.label,
+                        hint: unit.address,
+                        value: shares[unit.id] is defined ? shares[unit.id]|decimal(false) : ''
+                    } only %}
+                {% endfor %}
+
+                {#
+                    Die Summe kommt fertig aus dem Modell und wird hier nicht
+                    aufaddiert: in Twig wären es `float`, und aus 3,5 machte
+                    PHP beim Anzeigen eine 3.
+                #}
+                <p class="ib-field__hint">
+                    {{ 'finance.key.sum'|trans }}:
+                    <strong>{{ key.totalShare|decimal(false) }}</strong>
+                </p>
+
+                <div class="ib-flow__actions">
+                    <a class="ib-button ib-button--quiet" href="{{ path('app_finance_key') }}">
+                        {{ 'flow.cancel'|trans }}
+                    </a>
+                    <button class="ib-button" type="submit">{{ 'settings.save'|trans }}</button>
+                </div>
+            </form>
+        {% else %}
+            {% include 'components/table.html.twig' with {
+                compact: true,
+                headers: ['finance.key.unit'|trans, 'finance.key.share'|trans],
+                rows: units|map(unit => [
+                    unit.label,
+                    shares[unit.id] is defined ? shares[unit.id]|decimal(false) : '—'
+                ]),
+                empty: ''
+            } only %}
+        {% endif %}
+    {% endif %}
+
+    {% if is_granted('finance.delete') %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'key-delete',
+            title: 'finance.key.delete.title'|trans({'%name%': key.name}),
+            body: 'finance.key.delete.body'|trans,
+            consequences: ['finance.key.delete.consequence_shares'|trans({'%count%': key.shares|length})],
+            url: path('app_finance_key_delete', { id: key.id }),
+            token: 'finance_key'
+        } only %}
+    {% endif %}
+{% endblock %}

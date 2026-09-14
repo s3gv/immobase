@@ -1,0 +1,16 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'party/_detail.html.twig' %}
+
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        headers: ['party.review.field'|trans, 'party.review.value'|trans],
+        rows: [
+            ['party.field.reference'|trans, party.reference],
+            ['party.field.kind'|trans, party.kind.labelKey|trans],
+            ['party.field.roles'|trans, party.roles.all|map(r => r.labelKey|trans)|join(', ')],
+            ['party.field.status'|trans, party.status.labelKey|trans]
+        ],
+        empty: ''
+    } only %}
+{% endblock %}

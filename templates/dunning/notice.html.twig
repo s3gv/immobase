@@ -1,0 +1,21 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein ausgestelltes Mahnschreiben.
+
+    Derselbe Rahmen wie im Ablauf, auf dem letzten Schritt — wer gerade noch
+    geprüft hat, findet dieselbe Seite wieder, nur ohne Knöpfe.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <div class="ib-index__actions">
+        <a class="ib-button ib-button--quiet" href="{{ path('app_dunning_notice_pdf', { id: notice.id }) }}">
+            {{ 'dunning.download'|trans }}
+        </a>
+    </div>
+
+    {% include 'dunning/_preview.html.twig' with {
+        notice: notice, recipients: recipients, iban: iban
+    } only %}
+{% endblock %}

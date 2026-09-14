@@ -1,0 +1,78 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Erfüllt AGPL §13: Wer die Software über ein Netzwerk benutzt, muss Zugang
+    zum Quellcode der laufenden Fassung angeboten bekommen. Bei einer
+    selbstgehosteten Webanwendung ist das der Regelfall — und wird regelmäßig
+    übersehen.
+
+    Die Adresse kommt aus der Konfiguration. Fest verdrahtet würde sie jedem
+    Selbst-Hoster, der eine Zeile ändert, eine Lizenzverletzung einbauen: die
+    Lizenz verlangt den Quellcode der *laufenden* Fassung.
+
+    Der Dialog liegt auch auf der Anmeldeseite. Wer davorsteht, benutzt die
+    Software bereits über ein Netzwerk.
+#}
+{% embed 'components/modal.html.twig' with {
+    id: 'open-source',
+    wide: true,
+    title: 'open_source.title'|trans,
+    immobase_source_url: immobase_source_url,
+    immobase_version: immobase_version,
+    immobase_commit: immobase_commit,
+    attributions: { manual: attributions.manual, packages: attributions.packages }
+} only %}
+    {% block body %}
+        <p>{{ 'open_source.intro'|trans }}</p>
+
+        <h3 class="ib-modal__section">{{ 'open_source.source_heading'|trans }}</h3>
+        <p class="ib-attribution__link">
+            <a href="{{ immobase_source_url }}" rel="noopener noreferrer" target="_blank">{{ immobase_source_url }}</a>
+        </p>
+        <p>{{ 'open_source.source_hint'|trans }}</p>
+        <p>{{ 'open_source.version'|trans }}: {{ immobase_version }} ({{ immobase_commit }})</p>
+
+        <h3 class="ib-modal__section">{{ 'open_source.license_heading'|trans }}</h3>
+        <p>
+            AGPL-3.0-or-later —
+            <a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener noreferrer" target="_blank">
+                {{ 'open_source.license_text'|trans }}
+            </a>
+        </p>
+
+        {% if attributions.manual is not empty %}
+            <h3 class="ib-modal__section">{{ 'open_source.third_party_heading'|trans }}</h3>
+            <ul class="ib-attributions">
+                {% for work in attributions.manual %}
+                    <li>
+                        <p class="ib-attribution__name">{{ work.name }} — {{ work.license }}</p>
+                        {# Wortlaut aus der Lizenz, unverändert wiedergegeben. #}
+                        <p class="ib-attribution__note">{{ work.note }}</p>
+                        {% if work.modification is defined %}
+                            <p class="ib-attribution__note">{{ work.modification }}</p>
+                        {% endif %}
+                        <p class="ib-attribution__link">
+                            {% for link in work.links %}
+                                <a href="{{ link.url }}" rel="noopener noreferrer" target="_blank">{{ link.label }}</a>
+                            {% endfor %}
+                        </p>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% if attributions.packages is not empty %}
+            <h3 class="ib-modal__section">
+                {{ 'open_source.packages_heading'|trans }} ({{ attributions.packages|length }})
+            </h3>
+            <ul class="ib-attributions ib-attributions--dense">
+                {% for package in attributions.packages %}
+                    <li>
+                        <a href="{{ package.url }}" rel="noopener noreferrer" target="_blank">{{ package.name }}</a>
+                        {{ package.version }} — {{ package.license }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endblock %}
+{% endembed %}

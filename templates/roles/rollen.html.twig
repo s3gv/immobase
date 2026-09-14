@@ -1,0 +1,101 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Rollen dieser Installation.
+
+    Erster von zwei Abschnitten; die Rechte dazu stehen im zweiten. Sie
+    zusammen auf eine Seite zu stapeln hätte die Rollen aus dem Bild
+    geschoben, sobald die Matrix ein paar Bereiche mehr trägt.
+#}
+{% embed 'components/sections.html.twig' %}
+    {% block section_body %}
+        {% set may_edit = is_granted('roles.edit') %}
+        {% set may_delete = is_granted('roles.delete') %}
+
+        {% include 'components/table.html.twig' with {
+            headers: ['role.name'|trans, 'role.users'|trans, 'role.permissions'|trans],
+            rows: roles|map(role => {
+                cells: [role.name, role.users, role.count],
+                actions: role.isSystem ? [] : (
+                    (may_edit ? [{ action: 'edit', modal: 'role-rename-' ~ role.id }] : [])
+                    |merge(may_delete
+                        ? (role.reason
+                            ? [{ action: 'delete', disabled: true, tooltip: role.reason|trans }]
+                            : [{ action: 'delete', modal: 'role-delete-' ~ role.id }])
+                        : [])
+                )
+            }),
+            empty: 'role.empty'|trans
+        } only %}
+
+        <p class="ib-field__hint">{{ 'role.system_hint'|trans }}</p>
+
+        {% if may_edit %}
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="button" data-modal-open="role-new">
+                    {{ 'role.new'|trans }}
+                </button>
+            </div>
+
+            {% embed 'components/modal.html.twig' with { id: 'role-new', title: 'role.new'|trans } only %}
+                {% block body %}
+                    <form method="post" action="{{ path('app_role_new') }}" id="role-new-form">
+                        <input type="hidden" name="_token" value="{{ csrf_token('role_new') }}">
+                        {% include 'components/field.html.twig' with {
+                            id: 'role-new-name', name: 'name', label: 'role.name'|trans,
+                            hint: 'role.new_hint'|trans, required: true
+                        } only %}
+                    </form>
+                {% endblock %}
+
+                {% block actions %}
+                    <button class="ib-button ib-button--quiet" type="button" data-modal-close>
+                        {{ 'confirm.cancel'|trans }}
+                    </button>
+                    <button class="ib-button" type="submit" form="role-new-form">{{ 'role.new'|trans }}</button>
+                {% endblock %}
+            {% endembed %}
+
+            {% for role in roles|filter(r => not r.isSystem) %}
+                {% embed 'components/modal.html.twig' with {
+                    id: 'role-rename-' ~ role.id, title: 'role.rename'|trans, role: role
+                } only %}
+                    {% block body %}
+                        <form method="post" action="{{ path('app_role_rename', { id: role.id }) }}" id="role-rename-form-{{ role.id }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('role_rename_' ~ role.id) }}">
+                            {% include 'components/field.html.twig' with {
+                                id: 'role-rename-' ~ role.id ~ '-name', name: 'name',
+                                label: 'role.name'|trans, value: role.name, required: true
+                            } only %}
+                        </form>
+                    {% endblock %}
+
+                    {% block actions %}
+                        <button class="ib-button ib-button--quiet" type="button" data-modal-close>
+                            {{ 'confirm.cancel'|trans }}
+                        </button>
+                        <button class="ib-button" type="submit" form="role-rename-form-{{ role.id }}">
+                            {{ 'role.rename'|trans }}
+                        </button>
+                    {% endblock %}
+                {% endembed %}
+            {% endfor %}
+        {% endif %}
+
+        {% if may_delete %}
+            {% for role in roles|filter(r => not r.isSystem and r.reason is null) %}
+                {% include 'components/confirm.html.twig' with {
+                    id: 'role-delete-' ~ role.id,
+                    title: 'role.delete.title'|trans({'%name%': role.name}),
+                    body: 'role.delete.body'|trans,
+                    consequences: [
+                        'role.delete.consequence_permissions'|trans,
+                        'role.delete.consequence_final'|trans
+                    ],
+                    url: path('app_role_delete', { id: role.id }),
+                    token: 'role_delete_' ~ role.id
+                } only %}
+            {% endfor %}
+        {% endif %}
+    {% endblock %}
+{% endembed %}

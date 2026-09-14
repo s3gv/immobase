@@ -1,0 +1,30 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Seitenweise Navigation.
+
+    Erwartet: page (int), pages (int), url (Adresse mit __PAGE__ als Platzhalter)
+
+    Ersetzt wird der Platzhalter und nicht per sprintf gefüllt: in der Adresse
+    stehen kodierte Suchbegriffe, und `%C3` hielte sprintf für ein Format.
+
+    Vor und zurück nehmen dieselben Symbole wie überall sonst im System.
+    Zeigt sich nur, wenn es mehr als eine Seite gibt.
+#}
+{% if pages > 1 %}
+    <nav class="ib-pagination" aria-label="{{ 'pagination.label'|trans }}">
+        {% if page > 1 %}
+            {% include 'components/action.html.twig' with { action: 'previous', url: url|replace({'__PAGE__': page - 1}), rel: 'prev' } only %}
+        {% else %}
+            {% include 'components/action.html.twig' with { action: 'previous', disabled: true } only %}
+        {% endif %}
+
+        <span>{{ 'pagination.position'|trans({'%page%': page, '%pages%': pages}) }}</span>
+
+        {% if page < pages %}
+            {% include 'components/action.html.twig' with { action: 'next', url: url|replace({'__PAGE__': page + 1}), rel: 'next' } only %}
+        {% else %}
+            {% include 'components/action.html.twig' with { action: 'next', disabled: true } only %}
+        {% endif %}
+    </nav>
+{% endif %}

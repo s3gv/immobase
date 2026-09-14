@@ -1,0 +1,30 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% embed 'components/sections.html.twig' %}
+    {% block section_body %}
+        <form method="post" action="{{ path('app_account_email') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('account_email') }}">
+
+            {% include 'components/field.html.twig' with {
+                id: 'email_current_address', name: 'ignored', type: 'email',
+                label: 'user.email.current'|trans, value: user.email.toString,
+                readonly: true
+            } only %}
+
+            {% include 'components/field.html.twig' with {
+                id: 'email', name: 'email', type: 'email',
+                label: 'user.email.new'|trans, required: true, autocomplete: 'off'
+            } only %}
+            {% include 'components/field.html.twig' with {
+                id: 'email_current', name: 'current', type: 'password',
+                label: 'user.field.current_password'|trans,
+                hint: 'user.field.current_password_hint'|trans,
+                required: true, autocomplete: 'current-password'
+            } only %}
+
+            <div class="ib-flow__actions">
+                <button class="ib-button" type="submit">{{ 'user.email.submit'|trans }}</button>
+            </div>
+        </form>
+    {% endblock %}
+{% endembed %}

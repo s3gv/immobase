@@ -1,0 +1,79 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Einheiten eines Objekts als Liste.
+
+    Erwartet: property, units (aus PropertyView), may_edit, may_delete
+
+    Die Rückfragen vor dem Löschen stehen NICHT hier, sondern in
+    _unit_confirms.html.twig: sie bringen je ein eigenes <form> mit, und ein
+    verschachteltes Formular schließt in HTML das äußere. Im Schritt
+    „Einheiten" stünde der Abschließen-Knopf danach außerhalb seines
+    Formulars — und täte nichts.
+#}
+{% if units is empty %}
+    {% include 'components/empty_state.html.twig' with { message: 'property.unit.empty'|trans } only %}
+{% else %}
+    {#
+        Eine Einheit, an der etwas hängt, lässt sich nicht löschen — der Knopf
+        steht deaktiviert da und sagt beim Überfahren warum.
+
+        Kurze Überschriften: „Miteigentumsanteile" allein ist breiter als die
+        Spalte darunter je wird, und ein einziges langes Wort zwingt die ganze
+        Tabelle ins waagerechte Rollen. „Fläche" statt „Wohnfläche" ist zudem
+        das richtigere Wort — in der Liste stehen auch Garagen.
+    #}
+    {% include 'components/table.html.twig' with {
+        headers: [
+            'property.unit.field.number_short'|trans,
+            'property.unit.field.label'|trans,
+            'property.unit.field.usage'|trans,
+            'property.unit.field.area'|trans,
+            'property.mea.abbreviation'|trans,
+            'property.unit.field.owners'|trans,
+            'property.field.status'|trans
+        ],
+        compact: true,
+        rows: units|map(row => {
+            cells: [
+                row.unit.number,
+                row.unit.label,
+                row.unit.usage.labelKey|trans,
+                row.unit.measures.area ? row.unit.measures.area|decimal : 'property.none'|trans,
+                property.modes.needMea ? row.unit.mea|share : 'property.none'|trans,
+                row.owners is empty
+                    ? 'property.none'|trans
+                    : row.owners|map(o => o.brief ? o.brief.displayName : '?')|join(', '),
+                row.unit.status.labelKey|trans
+            ],
+            actions: [{
+                action: 'open',
+                url: path('app_unit_show', { number: property.number, unit: row.unit.number })
+            }]
+            |merge(may_edit ? [{
+                action: 'edit',
+                url: path('app_unit_edit', { number: property.number, unit: row.unit.number })
+            }] : [])
+            |merge(may_delete
+                ? (row.links is empty and row.unit.status.isActive
+                    ? [{ action: 'delete', modal: 'unit-delete-' ~ row.unit.number }]
+                    : [{
+                        action: 'delete', disabled: true,
+                        tooltip: (row.links is empty
+                            ? 'property.unit.not_deletable'
+                            : 'property.unit.linked')|trans
+                    }])
+                : [])
+        }),
+        empty: 'property.unit.empty'|trans
+    } only %}
+{% endif %}
+
+{# Einem abgewickelten Objekt fügt man keine Einheit mehr hinzu. #}
+{% if may_edit and not property.status.isPast %}
+    <div class="ib-flow__actions">
+        <a class="ib-button ib-button--quiet" href="{{ path('app_unit_new', { number: property.number }) }}">
+            {{ 'property.unit.add'|trans }}
+        </a>
+    </div>
+{% endif %}

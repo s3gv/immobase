@@ -1,0 +1,54 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Liste gleichartiger Kontaktangaben mit Hinzufügen, Entfernen und
+    „das ist die wichtigste".
+
+    Erwartet: field (Name im Formular), entries (Liste), label, single, add,
+              required — ob die erste Zeile ausgefüllt sein muss. Die Liste
+              weiß nicht, wovon sie eine ist: eine E-Mail-Adresse wird
+              gebraucht, eine Telefonnummer nicht. Ohne diese Angabe stand am
+              Telefonfeld ein Pflichtstern, den der Schritt darüber
+              ausdrücklich verneint — und der Browser ließ niemanden weiter.
+              primary, type
+    Optional: error
+
+    Die erste Angabe ist die wichtigste — die Reihenfolge trägt die Bedeutung.
+#}
+<fieldset class="ib-entries__group">
+    <legend class="ib-field__label">{{ label }}</legend>
+
+    {% if error %}<p class="ib-field__error" role="alert">{{ error }}</p>{% endif %}
+
+    <ul class="ib-entries">
+        {% for index, entry in entries %}
+            <li class="ib-entry ib-entry--inline">
+                {% include 'components/field.html.twig' with {
+                    id: field ~ index, name: field ~ '[' ~ index ~ ']',
+                    label: single, value: entry, type: type,
+                    required: required|default(false) and loop.first
+                } only %}
+
+                <div class="ib-entry__actions">
+                    {% if loop.first %}
+                        {% include 'components/badge.html.twig' with { label: primary, tone: 'success' } only %}
+                    {% else %}
+                        <button class="ib-linkish" type="submit" name="promote" value="{{ field }}:{{ index }}" formnovalidate>
+                            {{ 'party.action.make_primary'|trans }}
+                        </button>
+                    {% endif %}
+                    <button class="ib-action ib-action--danger" type="submit" name="remove"
+                            value="{{ field }}:{{ index }}" formnovalidate
+                            aria-label="{{ 'action.delete'|trans }}" data-tooltip="{{ 'action.delete'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                    </button>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <button class="ib-action ib-action--labelled" type="submit" name="add" value="{{ field }}:" formnovalidate>
+        {% include 'components/icon.html.twig' with { name: 'plus' } only %}
+        <span>{{ add }}</span>
+    </button>
+</fieldset>

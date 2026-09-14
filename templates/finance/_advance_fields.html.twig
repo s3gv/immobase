@@ -1,0 +1,24 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Felder einer Hausgeldstufe — einmal für das Ändern, einmal für das
+    Anlegen. Erwartet: step (HouseMoney oder null), intervals
+#}
+{% include 'components/field.html.twig' with {
+    id: 'startsOn-' ~ (step ? step.id : 'neu'), name: 'startsOn', type: 'date',
+    label: 'finance.advance.field.starts_on'|trans,
+    value: step ? step.startsOn|date('Y-m-d') : ''
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'amount-' ~ (step ? step.id : 'neu'), name: 'amount',
+    label: 'finance.advance.field.amount'|trans,
+    value: step ? step.amount|money_number : ''
+} only %}
+
+{% include 'components/select.html.twig' with {
+    id: 'interval-' ~ (step ? step.id : 'neu'), name: 'interval',
+    label: 'finance.advance.field.interval'|trans,
+    choices: intervals|filter(i => i.value != 'once')|map(i => { value: i.value, label: i.labelKey|trans }),
+    value: step ? step.interval.value : 'monthly'
+} only %}

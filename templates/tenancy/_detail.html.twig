@@ -1,0 +1,146 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Abschnitt der Mietseite.
+
+    Dieselben fünf Abschnitte wie im Ablauf, nur ist hier nichts ein Weg: man
+    springt, statt weiterzugehen. Wer das Anlegen kennt, findet sich zurecht.
+
+    Ein Abschnitt füllt den Block `panel`.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <div class="ib-index__actions">
+        {% if is_granted('tenancies.edit') %}
+            {% include 'components/action.html.twig' with {
+                action: 'edit',
+                url: path('app_tenancy_edit', { number: tenancy.number, step: edit_step|default('mietverhaeltnis') }),
+                labelled: true
+            } only %}
+        {% endif %}
+
+        {#
+            Drei Zustände, drei Angebote: der Entwurf wird aktiv, das Aktive
+            wird beendet, das Beendete kann zurückgeholt werden.
+        #}
+        {% if is_granted('tenancies.edit') %}
+            {% if tenancy.status.isActive %}
+                <button class="ib-button ib-button--quiet" type="button"
+                        data-modal-open="tenancy-end-{{ tenancy.number }}">
+                    {{ 'tenancy.action.end'|trans }}
+                </button>
+            {% else %}
+                <button class="ib-button ib-button--quiet" type="button"
+                        data-modal-open="tenancy-status-{{ tenancy.number }}">
+                    {{ (tenancy.status.isDraft ? 'tenancy.action.activate' : 'tenancy.action.reopen')|trans }}
+                </button>
+            {% endif %}
+        {% endif %}
+
+        {#
+            Gelöscht wird nur, was nie gelaufen ist. Abgerechnet wird das
+            vergangene Jahr, manchmal das vorletzte — dafür braucht es den
+            damaligen Stand, und der verschwindet sonst mit einem Klick.
+        #}
+        {% if is_granted('tenancies.delete') %}
+            {% if tenancy.status.isDraft and links is empty %}
+                <button class="ib-button ib-button--quiet" type="button"
+                        data-modal-open="tenancy-delete-{{ tenancy.number }}">
+                    {{ 'action.delete'|trans }}
+                </button>
+            {% else %}
+                <span class="ib-field__hint">
+                    {{ (links is empty ? 'tenancy.not_deletable' : 'tenancy.linked')|trans }}
+                </span>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    {% if tenancy.status.isDraft %}
+        <p class="ib-note">{{ 'tenancy.draft.hint'|trans }}</p>
+    {% elseif tenancy.status.isPast %}
+        <p class="ib-note">{{ 'tenancy.past.hint'|trans({
+            '%date%': tenancy.term.endsOn ? tenancy.term.endsOn|date_local : ''
+        }) }}</p>
+    {% endif %}
+
+    {% block panel %}{% endblock %}
+
+    {% if is_granted('tenancies.edit') and not tenancy.status.isActive %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'tenancy-status-' ~ tenancy.number,
+            title: (tenancy.status.isDraft ? 'tenancy.activate.title' : 'tenancy.reopen.title')|trans,
+            body: (tenancy.status.isDraft ? 'tenancy.activate.body' : 'tenancy.reopen.body')|trans,
+            consequences: tenancy.status.isDraft
+                ? ['tenancy.activate.consequence_let'|trans, 'tenancy.activate.consequence_final'|trans]
+                : ['tenancy.reopen.consequence_let'|trans, 'tenancy.reopen.consequence_term'|trans],
+            url: path('app_tenancy_activate', { number: tenancy.number }),
+            token: 'tenancy_status_' ~ tenancy.number,
+            confirm_label: (tenancy.status.isDraft ? 'tenancy.action.activate' : 'tenancy.action.reopen')|trans,
+            danger: false
+        } only %}
+    {% endif %}
+
+    {#
+        Beenden fragt nach dem Tag, und zwar verpflichtend: abgerechnet wird
+        das vergangene Jahr, und ein Mietverhältnis ohne Ende trägt keinen
+        Zeitraum, in den sich etwas einordnen ließe. Deshalb ein eigener
+        Dialog mit Feld statt der schlichten Rückfrage.
+    #}
+    {% if is_granted('tenancies.edit') and tenancy.status.isActive %}
+        {% embed 'components/modal.html.twig' with {
+            id: 'tenancy-end-' ~ tenancy.number,
+            title: 'tenancy.end.title'|trans({'%number%': tenancy.number}),
+            tenancy: tenancy
+        } only %}
+            {% block body %}
+                <p>{{ 'tenancy.end.body'|trans }}</p>
+
+                <form id="tenancy-end-form-{{ tenancy.number }}" method="post"
+                      action="{{ path('app_tenancy_end', { number: tenancy.number }) }}">
+                    <input type="hidden" name="_token"
+                           value="{{ csrf_token('tenancy_status_' ~ tenancy.number) }}">
+
+                    {% include 'components/field.html.twig' with {
+                        id: 'endsOn-' ~ tenancy.number, name: 'endsOn', type: 'date',
+                        label: 'tenancy.field.ends_on'|trans,
+                        hint: 'tenancy.end.hint'|trans,
+                        value: tenancy.term.endsOn ? tenancy.term.endsOn|date('Y-m-d') : 'now'|date('Y-m-d'),
+                        required: true
+                    } only %}
+                </form>
+
+                <p class="ib-confirm__lead">{{ 'confirm.consequences'|trans }}</p>
+                <ul class="ib-confirm__list">
+                    <li>{{ 'tenancy.end.consequence_free'|trans }}</li>
+                    <li>{{ 'tenancy.end.consequence_history'|trans }}</li>
+                </ul>
+            {% endblock %}
+
+            {% block actions %}
+                <button class="ib-button ib-button--quiet" type="button" data-modal-close autofocus>
+                    {{ 'confirm.cancel'|trans }}
+                </button>
+
+                <button class="ib-button" type="submit" form="tenancy-end-form-{{ tenancy.number }}">
+                    {{ 'tenancy.action.end'|trans }}
+                </button>
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+
+    {% if is_granted('tenancies.delete') and tenancy.status.isDraft and links is empty %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'tenancy-delete-' ~ tenancy.number,
+            title: 'tenancy.delete.title'|trans({'%number%': tenancy.number}),
+            body: 'tenancy.delete.body'|trans,
+            consequences: [
+                'tenancy.delete.consequence_tenants'|trans({'%count%': tenants|length}),
+                'tenancy.delete.consequence_number'|trans({'%number%': tenancy.number})
+            ],
+            url: path('app_tenancy_delete', { number: tenancy.number }),
+            token: 'tenancy_delete_' ~ tenancy.number
+        } only %}
+    {% endif %}
+{% endblock %}

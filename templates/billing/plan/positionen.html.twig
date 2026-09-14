@@ -1,0 +1,29 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Gesamtwirtschaftsplan: was das Objekt im Planjahr kosten wird.
+
+    Vorbelegt aus dem Ist des Vorjahres — so plant die Praxis, und ein leeres
+    Formular wäre die Aufforderung, fünfzehn Zahlen aus dem Kopf einzutragen.
+
+    Das Häkchen „einmalig" steht gegen den häufigsten Fehler: eine
+    Dachreparatur, unbesehen fortgeschrieben, hebt die Vorschüsse eines ganzen
+    Jahres.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% if positions is empty %}
+        <p class="ib-empty">{{ 'billing.plan.row.none'|trans }}</p>
+    {% else %}
+        {% include 'billing/plan/_rows.html.twig' with {
+            rows: positions, kinds: kinds, keys: keys, removable: true
+        } only %}
+    {% endif %}
+
+    <p class="ib-flow__hint">
+        <button class="ib-button ib-button--quiet" type="submit" name="add" value="1" formnovalidate>
+            {{ 'billing.plan.row.add'|trans }}
+        </button>
+    </p>
+{% endblock %}

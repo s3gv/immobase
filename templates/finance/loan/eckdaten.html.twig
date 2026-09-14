@@ -1,0 +1,33 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'finance/loan/_detail.html.twig' %}
+{% set edit_step = 'eckdaten' %}
+
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['finance.item.field.property'|trans, property ? property.oneLine : ''],
+            ['finance.loan.field.label'|trans, loan.label ?: 'property.none'|trans],
+            ['finance.loan.field.lender'|trans, loan.lender ?: 'property.none'|trans]
+        ]|merge(loan.reference ? [['finance.loan.field.reference'|trans, loan.reference]] : []),
+        empty: ''
+    } only %}
+
+    {#
+        Die Notiz bekommt ihre Überschrift, statt unter der Tabelle zu
+        schweben: sonst steht dort ein Absatz, von dem niemand weiß, was er
+        ist — und er klebt an der Zeile darüber.
+    #}
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'finance.loan.field.note'|trans }}</h3>
+
+    {% if loan.note %}
+        {# Zeilenumbrüche bleiben: was jemand als Liste geschrieben hat, soll
+           als Liste dastehen. #}
+        <p class="ib-note-text">{{ loan.note|nl2br }}</p>
+    {% else %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.loan.no_note'|trans
+        } only %}
+    {% endif %}
+{% endblock %}

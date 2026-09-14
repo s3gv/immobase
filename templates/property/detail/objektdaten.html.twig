@@ -1,0 +1,19 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_detail.html.twig' %}
+{% set edit_step = 'bezeichnung' %}
+
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['property.field.number'|trans, property.number],
+            ['property.field.name'|trans, property.name],
+            ['property.field.modes'|trans, property.modes.all|map(m => m.labelKey|trans)|join(', ')],
+            ['property.field.status'|trans, property.status.labelKey|trans],
+            ['property.field.units'|trans, units|length],
+            ['property.field.note'|trans, property.note ?: 'property.none'|trans]
+        ],
+        empty: ''
+    } only %}
+{% endblock %}

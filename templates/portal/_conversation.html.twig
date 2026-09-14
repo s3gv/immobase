@@ -1,0 +1,57 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Gesprächsfenster — dasselbe im Portal wie im Verwalterbereich.
+
+    Erwartet: enquiry, today, attachment_route
+
+    Eine Vorlage für beide Seiten, weil es dasselbe Gespräch ist. Zwei
+    Vorlagen wären zwei Wahrheiten darüber, wie eine Nachricht aussieht — und
+    die eine wäre nach drei Monaten die ältere.
+
+    Nachrichten stehen in der Zeit von oben nach unten: das Neueste steht
+    unten, direkt über dem Antwortfeld. Wer antwortet, hat das gerade Gelesene
+    vor sich.
+
+    **Eine abgelaufene Datei nimmt ihre Nachricht nicht mit.** An ihrer Stelle
+    steht der Name mit dem Vermerk. „Wie besprochen, siehe Anhang" ohne alles
+    wäre eine Unterhaltung, die niemand mehr versteht.
+#}
+<ol class="ib-chat">
+    {% for message in enquiry.messages %}
+        <li class="ib-chat__message{{ message.isFromStaff ? ' ib-chat__message--staff' : '' }}">
+            <p class="ib-chat__head">
+                <span class="ib-chat__who">{{ message.authorLabel }}</span>
+                <time class="ib-chat__when" datetime="{{ message.writtenAt|date('c') }}">
+                    {{ message.writtenAt|datetime_local }}
+                </time>
+            </p>
+
+            {% if message.body %}
+                <p class="ib-chat__body">{{ message.body|nl2br }}</p>
+            {% endif %}
+
+            {% if message.attachments is not empty %}
+                <ul class="ib-chat__files">
+                    {% for attachment in message.attachments %}
+                        <li class="ib-chat__file">
+                            {% if attachment.isExpired(today) %}
+                                <span class="ib-chat__file-name">{{ attachment.name }}</span>
+                                <span class="ib-chat__expired">{{ 'portal.file.expired'|trans }}</span>
+                            {% else %}
+                                <a class="ib-chat__file-name" href="{{ path(attachment_route, { id: attachment.id }) }}">
+                                    {% include 'components/icon.html.twig' with { name: 'download' } only %}
+                                    {{ attachment.name }}
+                                </a>
+                                <span class="ib-chat__size">{{ (attachment.sizeBytes / 1024)|round }} KB</span>
+                                <span class="ib-chat__until">
+                                    {{ 'portal.file.until'|trans({'%date%': attachment.deleteAfter|date_local}) }}
+                                </span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ol>

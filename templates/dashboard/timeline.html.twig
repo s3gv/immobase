@@ -1,0 +1,67 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Jahr als Balken.
+
+    Der Verlauf folgt den Jahreszeiten — kühles Blau im Januar, Grün im
+    Frühjahr, Gold im Sommer, Bernstein im Herbst, zurück ins Blau. Er
+    erklärt sich damit selbst und ist das einzige farbige Element der Seite.
+
+    Im Balken die Wochen als Haarlinien, ganz schwach: sie geben ein Gefühl
+    für den Abstand und behaupten nichts. Darunter die Monate. Der
+    Heute-Strich trägt sein Datum, die Termine sitzen als Punkte darauf.
+
+    Alle Orte sind in Prozent ausgerechnet — von DrawsTheYear und nicht hier:
+    eine Vorlage, die mit Schaltjahren rechnet, prüft niemand.
+#}
+<section class="ib-year" aria-label="{{ 'timeline.heading'|trans({'%year%': timeline.year}) }}">
+    <div class="ib-year__bar">
+        <div class="ib-year__weeks" aria-hidden="true">
+            {% for at in timeline.weeks %}
+                <span class="ib-year__week" style="left: {{ at }}%"></span>
+            {% endfor %}
+        </div>
+
+        <div class="ib-year__today" style="left: {{ timeline.at }}%">
+            <span class="ib-year__date">{{ timeline.today|date_local }}</span>
+        </div>
+
+        {% for mark in timeline.marks %}
+            <div class="ib-year__mark" style="left: {{ mark.at }}%">
+                <button class="ib-year__pin{{ mark.count > 1 ? ' ib-year__pin--many' : '' }}"
+                        type="button" aria-expanded="false"
+                        aria-label="{{ 'timeline.marker'|trans({'%count%': mark.count}) }}">
+                    {% if mark.count > 1 %}<span aria-hidden="true">{{ mark.count }}</span>{% endif %}
+                </button>
+
+                {#
+                    Die Liste bleibt offen, solange die Maus über ihr ist, und
+                    scrollt, wenn viel darin steht. Eine Liste, die beim
+                    Hineinfahren zuklappt, kann man nicht lesen.
+                #}
+                <div class="ib-year__list" role="group" hidden>
+                    {% for entry in mark.entries %}
+                        <div class="ib-year__entry{{ entry.isPast ? ' is-past' : '' }}">
+                            <span class="ib-year__when">
+                                <span class="ib-year__day">{{ entry.at|date_local }}</span>
+                                <span class="ib-year__time">{{ entry.at|date('H:i') }}</span>
+                            </span>
+                            <span class="ib-year__what">
+                                <span class="ib-year__subject">{{ entry.subject }}</span>
+                                {% if entry.about %}
+                                    <span class="ib-year__about">{{ entry.about }}</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="ib-year__months" aria-hidden="true">
+        {% for month in timeline.months %}
+            <span class="ib-year__month" style="left: {{ month.at }}%">{{ month.label }}</span>
+        {% endfor %}
+    </div>
+</section>

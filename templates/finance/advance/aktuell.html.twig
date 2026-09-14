@@ -1,0 +1,56 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was diese Einheit heute zahlt — beide Sorten nebeneinander.
+
+    Das Hausgeld gehört den Finanzen. Die Nebenkosten stehen im Mietvertrag
+    und werden von dort gelesen: eine zweite Fassung zu führen hieße,
+    dieselbe Zahl zweimal zu haben.
+#}
+{% extends 'finance/advance/_page.html.twig' %}
+
+{% block section_body %}
+    {% set current = schedule ? schedule.on(today) : null %}
+
+    <p>
+        <strong>{{ 'finance.advance.house_money'|trans }}:</strong>
+        {% if current %}
+            {{ current.amount|money }} · {{ current.interval.labelKey|trans }}
+            <span class="ib-field__hint">
+                {{ 'finance.advance.since'|trans({'%date%': current.startsOn|date_local}) }}
+            </span>
+        {% else %}
+            <span class="ib-field__hint">{{ 'finance.advance.none'|trans }}</span>
+        {% endif %}
+    </p>
+
+    <p>
+        <strong>{{ 'finance.advance.operating_costs'|trans }}:</strong>
+        {% if advance %}
+            {{ advance.total|money }}
+            {% if advance.vatRateBps > 0 %}
+                <span class="ib-field__hint">{{ 'finance.advance.incl_vat'|trans({'%rate%': advance.vatRateBps|percent}) }}</span>
+            {% endif %}
+            {#
+                Verlinkt nur, wer dort auch hindarf. Ein Link, der zuverlässig
+                in eine Fehlermeldung führt, ist schlechter als keiner.
+            #}
+            {% if is_granted('tenancies.view') %}
+                <a href="{{ advance.url }}">
+                    {{ 'tenancy.number'|trans({'%number%': advance.tenancyNumber}) }}
+                </a>
+            {% else %}
+                {{ 'tenancy.number'|trans({'%number%': advance.tenancyNumber}) }}
+            {% endif %}
+            <span class="ib-field__hint">{{ 'finance.advance.from_tenancy'|trans }}</span>
+        {% else %}
+            <span class="ib-field__hint">{{ 'finance.advance.not_let'|trans }}</span>
+        {% endif %}
+    </p>
+
+    <div class="ib-flow__actions">
+        <a class="ib-button ib-button--quiet" href="{{ path('app_finance_advance') }}">
+            {{ 'finance.advance.back'|trans }}
+        </a>
+    </div>
+{% endblock %}

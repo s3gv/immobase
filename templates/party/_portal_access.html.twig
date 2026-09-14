@@ -1,0 +1,76 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Der Portalzugang dieser Partei.
+
+    Steht bei der Erreichbarkeit, weil er an einer E-Mail-Adresse hängt: ohne
+    sie gibt es keinen Einladungslink, und der Knopf sagt das, statt
+    kommentarlos gesperrt zu sein.
+
+    Per Vorgabe hat niemand einen Zugang. Freigeschaltet wird einzeln — wer
+    hundert Einladungen auf einmal verschickt, verschickt auch hundert
+    falsche.
+
+    Erwartet: party, account (kann null sein)
+#}
+{% if is_granted('parties.edit') %}
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'party.portal.heading'|trans }}</h3>
+
+    {% if account is null %}
+        {% if party.contact.emails is empty %}
+            <p class="ib-field__hint">{{ 'party.portal.needs_an_email'|trans }}</p>
+        {% else %}
+            <p class="ib-field__hint">{{ 'party.portal.none_yet'|trans }}</p>
+
+            <form method="post" action="{{ path('app_party_portal_invite', { reference: party.reference }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('party_portal_' ~ party.reference) }}">
+
+                {% include 'components/select.html.twig' with {
+                    id: 'portal-email', name: 'email',
+                    label: 'party.portal.address'|trans,
+                    hint: 'party.portal.address_hint'|trans,
+                    choices: party.contact.emails|map(e => { value: e, label: e }),
+                    value: party.contact.emails|first
+                } only %}
+
+                <div class="ib-flow__actions">
+                    <button class="ib-button" type="submit">{{ 'party.portal.invite'|trans }}</button>
+                </div>
+            </form>
+        {% endif %}
+    {% else %}
+        {% include 'components/table.html.twig' with {
+            headers: ['user.review.field'|trans, 'user.review.value'|trans],
+            rows: [
+                ['party.portal.address'|trans, account.email],
+                ['party.portal.state'|trans, account.statusKey|trans],
+                ['party.portal.last_sign_in'|trans,
+                 account.lastSignInAt ? account.lastSignInAt|date_local : 'party.portal.never'|trans]
+            ],
+            empty: ''
+        } only %}
+
+        {# ib-index__actions und nicht ib-flow__actions: dort setzt der
+           Abschnittsrahmen zwischen zwei Formulare einen Trenner, und die
+           beiden Knöpfe stünden versetzt untereinander. #}
+        <div class="ib-index__actions">
+            <form method="post" action="{{ path('app_party_portal_invite', { reference: party.reference }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('party_portal_' ~ party.reference) }}">
+                <button class="ib-button ib-button--quiet" type="submit">
+                    {{ 'party.portal.invite_again'|trans }}
+                </button>
+            </form>
+
+            {# Auch eine Einladung lässt sich zurücknehmen: wer versehentlich
+               eingeladen hat, soll sie nicht erst annehmen lassen müssen. #}
+            {% if not account.isRevoked %}
+                <form method="post" action="{{ path('app_party_portal_revoke', { reference: party.reference }) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('party_portal_' ~ party.reference) }}">
+                    <button class="ib-button ib-button--quiet" type="submit">
+                        {{ 'party.portal.revoke'|trans }}
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endif %}

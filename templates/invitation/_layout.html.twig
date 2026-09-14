@@ -1,0 +1,73 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Gerüst des Einrichtungsablaufs.
+
+    Sieht aus wie templates/flow/flow.html.twig und ist trotzdem eigen: dieser
+    Ablauf hat kein Zurück und keinen Zwischenstand in der Sitzung. Jeder
+    Schritt speichert sofort, und der zweite Faktor braucht eigene Knöpfe
+    (App, E-Mail, Überspringen) statt eines einzelnen „Weiter".
+
+    Den gemeinsamen Baustein dafür zu verbiegen hätte ihn für beide Seiten
+    schlechter gemacht.
+#}
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="ib-shell ib-shell--bare">
+        <main class="ib-content">
+            <h1 class="ib-heading">{{ heading|trans }}</h1>
+
+            {% include 'components/flashes.html.twig' %}
+
+            <div class="ib-flow">
+                <nav class="ib-flow__steps" aria-label="{{ 'flow.steps'|trans }}">
+                    <ol>
+                        {% for candidate in definition.steps %}
+                            {% set is_current = candidate.key == step.key %}
+                            <li class="ib-flow__step{{ is_current ? ' is-current' : '' }}{{ state.hasVisited(candidate.key) and not is_current ? ' is-done' : '' }}">
+                                <span {{ is_current ? 'aria-current="step"' : '' }}>{{ candidate.labelKey|trans }}</span>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </nav>
+
+                <div class="ib-flow__panel">
+                    <p class="ib-flow__position">
+                        {{ 'flow.step_position'|trans({
+                            '%position%': definition.positionOf(step.key),
+                            '%count%': definition.stepCount
+                        }) }}
+                    </p>
+
+                    <h2 class="ib-flow__title">{{ step.titleKey|trans }}</h2>
+                    <p class="ib-flow__explanation">{{ step.explanationKey|trans }}</p>
+
+                    {#
+                        Ein Hinweis ist kein Fehler. "Scannen Sie den Code"
+                        rot zu zeichnen wie "Das Passwort ist zu kurz" macht
+                        die Farbe bedeutungslos — und dann liest sie niemand
+                        mehr.
+                    #}
+                    {% if error %}
+                        {% set is_error = '.error.' in error %}
+                        <p class="{{ is_error ? 'ib-field__error' : 'ib-flash ib-flash--success' }}"
+                           role="{{ is_error ? 'alert' : 'status' }}">{{ error|trans }}</p>
+                    {% endif %}
+
+                    <form method="post" action="{{ action }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('flow_invitation') }}">
+
+                        {% block step_body %}{% endblock %}
+
+                        <div class="ib-flow__actions">
+                            {% block step_actions %}
+                                <button class="ib-button" type="submit">{{ 'flow.next'|trans }}</button>
+                            {% endblock %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Trefferseite der zentralen Suche.
+
+    Eine Gruppe je Art, in der Reihenfolge, in der sich die Module gemeldet
+    haben. Innerhalb einer Gruppe entscheidet das Modul, was oben steht — was
+    ein guter Treffer ist, weiß es besser als diese Seite.
+
+    Wer eine Gruppe ausgeschöpft sieht, kommt über „Alle anzeigen" in die
+    Liste des Moduls. Dort wird geblättert: über Module hinweg zu blättern
+    hieße, alle Treffer aller Module zu holen, um die dritte Seite zu zeigen.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'search.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'search.heading'|trans }}</h1>
+
+    {% if term is null %}
+        {% include 'components/empty_state.html.twig' with {
+            message: typed is empty
+                ? 'search.nothing_typed'|trans
+                : 'search.too_short'|trans({'%least%': 2})
+        } only %}
+    {% else %}
+        <p class="ib-subheading">{{ 'search.for'|trans({'%term%': term.raw}) }}</p>
+
+        {% if groups is empty %}
+            {% include 'components/empty_state.html.twig' with {
+                message: 'search.nothing_found'|trans({'%term%': term.raw})
+            } only %}
+            <p class="ib-muted">{{ 'search.where'|trans }}</p>
+        {% else %}
+            {% for group in groups %}
+                <section class="ib-card ib-search__group">
+                    <header class="ib-card__head">
+                        <h2 class="ib-card__title">{{ group.kindKey|trans }}</h2>
+                        {% if group.mayHaveMore and group.listUrl %}
+                            <a class="ib-linkish" href="{{ group.listUrl }}">{{ 'search.all'|trans }}</a>
+                        {% endif %}
+                    </header>
+                    <div class="ib-card__body">
+                        <ul class="ib-group__list">
+                            {% for hit in group.hits %}
+                                <li class="ib-row">
+                                    <span class="ib-row__body">
+                                        <a class="ib-row__title" href="{{ hit.url }}">{{ hit.title }}</a>
+                                        {% if hit.subtitle %}
+                                            <span class="ib-row__meta">{{ hit.subtitle }}</span>
+                                        {% endif %}
+                                    </span>
+                                    <span class="ib-row__trailing">{{ hit.reference }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </section>
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+{% endblock %}

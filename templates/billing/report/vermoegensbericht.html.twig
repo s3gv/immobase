@@ -1,0 +1,51 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Objekt, Berichtsjahr, Bezeichnung.
+
+    Zur Wahl stehen nur WEG-Objekte: ohne Gemeinschaft gibt es kein
+    Gemeinschaftsvermögen, über das zu berichten wäre. Und nur abgelaufene
+    Jahre — § 28 Abs. 4 WEG verlangt den Bericht nach Ablauf des Jahres, und
+    über einen Stichtag, der noch bevorsteht, lässt sich nichts sagen.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% if report %}
+        {# Objekt und Berichtsjahr stehen fest, sobald es den Bericht gibt:
+           sie stecken in der Referenz jedes Schreibens. #}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: ['user.review.field'|trans, 'user.review.value'|trans],
+            rows: [
+                ['billing.report.property'|trans, report.propertyNumber],
+                ['billing.report.fiscal_year'|trans, report.period.year],
+                ['billing.report.as_of'|trans, report.asOf|date_local]
+            ],
+            empty: ''
+        } only %}
+    {% elseif properties is empty %}
+        <p class="ib-empty">{{ 'billing.report.no_weg'|trans }}</p>
+    {% else %}
+        {% include 'components/select.html.twig' with {
+            id: 'property', name: 'property', label: 'billing.report.property'|trans,
+            hint: 'billing.report.property_hint'|trans,
+            choices: properties|map(p => { value: p.number, label: p.number ~ ' · ' ~ p.name }),
+            value: submitted.property|default(''),
+            blank: 'billing.report.choose_property'|trans
+        } only %}
+
+        {% include 'components/select.html.twig' with {
+            id: 'fiscalYear', name: 'fiscalYear', label: 'billing.report.fiscal_year'|trans,
+            hint: 'billing.report.fiscal_year_hint'|trans,
+            choices: years|map(y => { value: y, label: y }),
+            value: submitted.fiscalYear|default(defaultYear)
+        } only %}
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'label', name: 'label', label: 'billing.report.label'|trans,
+        hint: 'billing.report.label_hint'|trans,
+        value: report ? report.label : submitted.label|default('')
+    } only %}
+{% endblock %}

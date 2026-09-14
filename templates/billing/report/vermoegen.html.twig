@@ -1,0 +1,101 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Aufstellung des wesentlichen Gemeinschaftsvermögens.
+
+    Drei Blöcke werden erfasst — Guthaben, Verbindlichkeiten, Gegenstände —,
+    einer wird gerechnet: die offenen Hausgelder. Erfasst wird, was die
+    Anwendung nicht wissen kann; sie führt keine Buchhaltung, und eine
+    gerechnete Zahl wäre hier eine erfundene.
+
+    „Wesentlich" zieht niemand als Grenze in den Code: was erfasst wird,
+    entscheidet die Verwaltung.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% if missing is not empty %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'billing.report.missing'|trans }}</p>
+        </div>
+    {% endif %}
+
+    <h3 class="ib-flow__title">{{ 'billing.report.pdf.bank'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.report.bank_hint'|trans }}</p>
+
+    {% if banks is empty %}
+        <p class="ib-empty">{{ 'billing.report.row.none'|trans }}</p>
+    {% else %}
+        {% include 'billing/report/_items.html.twig' with { rows: banks, missing: missing } only %}
+    {% endif %}
+
+    <p class="ib-flow__hint">
+        <button class="ib-button ib-button--quiet" type="submit" name="add" value="bank" formnovalidate>
+            {{ 'billing.report.row.add_bank'|trans }}
+        </button>
+    </p>
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.report.pdf.liabilities'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.report.liabilities_hint'|trans }}</p>
+
+    {% if liabilities is not empty %}
+        {% include 'billing/report/_items.html.twig' with { rows: liabilities, missing: missing } only %}
+    {% endif %}
+
+    <p class="ib-flow__hint">
+        <button class="ib-button ib-button--quiet" type="submit" name="add" value="liability" formnovalidate>
+            {{ 'billing.report.row.add_liability'|trans }}
+        </button>
+    </p>
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.report.pdf.holdings'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.report.holdings_hint'|trans }}</p>
+
+    {% if holdings is not empty %}
+        {% include 'billing/report/_items.html.twig' with { rows: holdings, missing: missing } only %}
+    {% endif %}
+
+    <p class="ib-flow__hint">
+        <button class="ib-button ib-button--quiet" type="submit" name="add" value="holding" formnovalidate>
+            {{ 'billing.report.row.add_holding'|trans }}
+        </button>
+    </p>
+
+    {#
+        Die Darlehen sind kein Formular: ihre Restschuld steht im Tilgungsplan
+        der Finanzen und wird zum Stichtag gerechnet. Getippt würde sie einmal
+        im Jahr abgeschrieben — und wäre danach die zweite Wahrheit.
+    #}
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.report.pdf.loans'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.report.loans_hint'|trans }}</p>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: ['billing.report.loan.label'|trans, 'billing.report.loan.outstanding'|trans],
+        rows: body.debts|map(d => [d.label, d.outstanding|money]),
+        empty: 'billing.report.loan.none'|trans
+    } only %}
+
+    {#
+        Die Forderungen stehen hier, sind aber kein Formular: sie kommen aus
+        den Vorauszahlungen. Mit Nummer und ohne Namen — jeder Eigentümer
+        trägt das Ausfallrisiko mit und darf wissen, wie hoch es ist.
+    #}
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.report.pdf.claims'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.report.claims_hint'|trans }}</p>
+
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: [
+            'billing.report.claim.unit'|trans,
+            'billing.report.claim.since'|trans,
+            'billing.report.claim.amount'|trans
+        ],
+        rows: body.claims|map(c => [
+            'billing.report.pdf.unit'|trans({'%number%': c.unitNumber}),
+            c.since,
+            c.amount|money
+        ]),
+        empty: 'billing.report.claim.none'|trans
+    } only %}
+{% endblock %}

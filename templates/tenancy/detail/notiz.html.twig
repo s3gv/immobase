@@ -1,0 +1,16 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'tenancy/_detail.html.twig' %}
+{% set edit_step = 'notiz' %}
+
+{% block panel %}
+    {% if tenancy.note %}
+        {# Zeilenumbrüche bleiben: was jemand als Liste geschrieben hat, soll
+           als Liste dastehen. #}
+        <p class="ib-note-text">{{ tenancy.note|nl2br }}</p>
+    {% else %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'tenancy.note.empty'|trans
+        } only %}
+    {% endif %}
+{% endblock %}

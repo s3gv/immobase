@@ -1,0 +1,28 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Auswahlfeld.
+
+    Erwartet: id, name, label, choices (Liste von { value, label })
+    Optional: value  — die vorausgewählte Angabe
+              blank  — Beschriftung für „keine Einschränkung"; fehlt sie,
+                       gibt es keinen leeren Eintrag
+              hint, error
+#}
+<div class="ib-field{{ error|default(null) ? ' is-invalid' : '' }}">
+    <label class="ib-field__label{{ quiet|default(false) ? ' ib-visually-hidden' : '' }}" for="{{ id }}">{{ label }}</label>
+    <select class="ib-field__input" id="{{ id }}" name="{{ name }}"
+            {% if hint|default(null) %}aria-describedby="{{ id }}-hint"{% endif %}
+            {% if error|default(null) %}aria-invalid="true"{% endif %}>
+        {% if blank is defined and blank is not null %}
+            <option value="">{{ blank }}</option>
+        {% endif %}
+        {% for choice in choices %}
+            <option value="{{ choice.value }}" {{ choice.value == value|default('') ? 'selected' : '' }}>
+                {{ choice.label }}
+            </option>
+        {% endfor %}
+    </select>
+    {% if hint|default(null) %}<p class="ib-field__hint" id="{{ id }}-hint">{{ hint }}</p>{% endif %}
+    {% if error|default(null) %}<p class="ib-field__error" role="alert">{{ error }}</p>{% endif %}
+</div>

@@ -1,0 +1,75 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Tabelle.
+
+    Erwartet: headers (Liste), rows (Liste)
+    Optional: empty (Text, wenn es keine Zeilen gibt)
+              compact — engere Spalten fuer Tabellen mit vielen davon
+              sort, sort_urls — Sortierung, siehe unten
+
+    Eine Überschrift ist entweder Text oder { label, field }. Trägt sie ein
+    Feld und steht dieses in `sort_urls`, wird sie zum Knopf: ein Klick
+    sortiert danach, ein zweiter dreht die Richtung um. Die Adressen kommen
+    fertig aus dem Controller, weil nur der weiß, welche Filter mitwandern
+    müssen.
+
+    Eine Zeile ist entweder eine schlichte Liste von Zellen oder, wenn sie
+    Aktionen tragen soll, { cells: [...], actions: [...] }. Eine Aktion ist
+    { action: 'edit', url: '…' } — siehe components/action.html.twig.
+
+    Aktionen stehen rechts in der Zeile und immer in derselben Reihenfolge.
+    Die Spalte hat bewusst keine sichtbare Überschrift: was die Symbole tun,
+    sagt der Hinweis beim Überfahren.
+
+    Breite Tabellen scrollen in ihrem eigenen Kasten, damit die Seite nicht
+    waagerecht scrollt.
+#}
+{% if rows|length == 0 %}
+    {% include 'components/empty_state.html.twig' with { message: empty|default('') } %}
+{% else %}
+    {% set has_actions = rows|filter(row => row.actions is defined and row.actions)|length > 0 %}
+    <div class="ib-table-scroll">
+        <table class="ib-table{{ compact|default(false) ? ' ib-table--compact' : '' }}">
+            <thead>
+                <tr>
+                    {% for header in headers %}
+                        {% set field = header.field|default(null) %}
+                        {% set label = header.label|default(header) %}
+                        {% if field and sort_urls|default({})[field] is defined %}
+                            <th scope="col" aria-sort="{{ sort.ariaFor(field) }}">
+                                <a class="ib-table__sort{{ sort.isOn(field) ? ' is-on' : '' }}"
+                                   href="{{ sort_urls[field] }}">
+                                    {{ label }}
+                                    {% include 'components/icon.html.twig' with {
+                                        name: sort.isOn(field) and sort.isDescending ? 'chevron-down' : 'chevron-up'
+                                    } only %}
+                                </a>
+                            </th>
+                        {% else %}
+                            <th scope="col">{{ label }}</th>
+                        {% endif %}
+                    {% endfor %}
+                    {% if has_actions %}<th scope="col"><span class="ib-visually-hidden">{{ 'table.actions'|trans }}</span></th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    {% set cells = row.cells is defined ? row.cells : row %}
+                    <tr>
+                        {% for cell in cells %}<td>{{ cell }}</td>{% endfor %}
+                        {% if has_actions %}
+                            <td class="ib-table__actions">
+                                <div class="ib-actions">
+                                    {% for entry in row.actions|default([]) %}
+                                        {% include 'components/action.html.twig' with entry only %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}

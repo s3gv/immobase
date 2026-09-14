@@ -1,0 +1,116 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Übersicht der Mietverhältnisse.
+
+    Entwürfe und beendete Mietverhältnisse stehen mit in der Liste und tragen
+    ihren Status: das eine ist angefangene Arbeit, das andere die Geschichte
+    einer Einheit.
+
+    Gelöscht wird nur, was nie gelaufen ist — der Knopf steht deshalb nur an
+    Entwürfen.
+
+    Leerstand steht nirgends — eine Einheit ohne aktives Mietverhältnis steht
+    leer, und das ergibt sich aus dieser Liste, statt ein zweites Mal gepflegt
+    zu werden.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'tenancy.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'tenancy.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'tenancy.subheading'|trans }}</p>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            { label: 'tenancy.field.number'|trans, field: 'nummer' },
+            'tenancy.field.unit'|trans,
+            'tenancy.field.tenants'|trans,
+            { label: 'tenancy.field.starts_on'|trans, field: 'beginn' },
+            { label: 'tenancy.field.ends_on'|trans, field: 'ende' },
+            { label: 'tenancy.field.total'|trans, field: 'miete' },
+            { label: 'tenancy.field.status'|trans, field: 'status' }
+        ],
+        rows: rows|map(row => {
+            cells: [
+                row.tenancy.number,
+                row.unit ? row.unit.oneLine : row.tenancy.unitId,
+                row.tenants is empty
+                    ? 'tenancy.none'|trans
+                    : row.tenants|map(t => t.brief ? t.brief.displayName : '?')|join(', '),
+                row.tenancy.term.startsOn ? row.tenancy.term.startsOn|date_local : 'tenancy.none'|trans,
+                row.tenancy.term.endsOn ? row.tenancy.term.endsOn|date_local : 'tenancy.open_ended'|trans,
+                row.rent ? row.rent.total|money : 'tenancy.no_rent'|trans,
+                row.tenancy.status.labelKey|trans
+            ],
+            actions: [{ action: 'open', url: path('app_tenancy_show', { number: row.tenancy.number }) }]
+                |merge(is_granted('tenancies.edit')
+                    ? [{ action: 'edit', url: path('app_tenancy_edit', { number: row.tenancy.number }) }]
+                    : [])
+                |merge(is_granted('tenancies.delete') and row.tenancy.status.isDraft
+                    ? [{ action: 'delete', modal: 'tenancy-delete-' ~ row.tenancy.number }]
+                    : [])
+        }),
+        page: page,
+        action: path('app_tenancy'),
+        url: url,
+        empty: (filter.isEmpty ? 'tenancy.empty' : 'tenancy.empty_filtered')|trans
+            ~ (filter.withPast ? '' : ' ' ~ 'index.past_hidden'|trans),
+        compact: true,
+        sort: sort,
+        sort_urls: sortUrls,
+        filter: filter,
+        statuses: statuses,
+        properties: properties,
+        chosenProperty: chosenProperty
+    } only %}
+        {% block actions %}
+            {% if is_granted('tenancies.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_tenancy_new'), labelled: true
+                } only %}
+            {% endif %}
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'tenancy.filter.search'|trans,
+                value: filter.searching ? app.request.query.get('q') : '',
+                placeholder: 'tenancy.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'objekt', name: 'objekt', label: 'tenancy.filter.property'|trans,
+                choices: properties|map(p => { value: p.number, label: p.oneLine }),
+                value: chosenProperty,
+                blank: 'tenancy.filter.all_properties'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'status', name: 'status', label: 'tenancy.field.status'|trans,
+                choices: statuses|map(s => { value: s.value, label: s.labelKey|trans }),
+                value: filter.status ? filter.status.value : '',
+                blank: 'tenancy.filter.all_statuses'|trans
+            } only %}
+
+            {% include 'components/past_toggle.html.twig' with { shown: filter.withPast } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% if is_granted('tenancies.delete') %}
+        {% for row in rows|filter(row => row.tenancy.status.isDraft) %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'tenancy-delete-' ~ row.tenancy.number,
+                title: 'tenancy.delete.title'|trans({'%number%': row.tenancy.number}),
+                body: 'tenancy.delete.body'|trans,
+                consequences: [
+                    'tenancy.delete.consequence_tenants'|trans({'%count%': row.tenants|length}),
+                    'tenancy.delete.consequence_number'|trans({'%number%': row.tenancy.number})
+                ],
+                url: path('app_tenancy_delete', { number: row.tenancy.number }),
+                token: 'tenancy_delete_' ~ row.tenancy.number
+            } only %}
+        {% endfor %}
+    {% endif %}
+{% endblock %}

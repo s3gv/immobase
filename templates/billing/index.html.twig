@@ -1,0 +1,303 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Startseite der Abrechnungen.
+
+    Oben die Kennzahlen, darunter zwei Auswertungen nebeneinander — dieselbe
+    Gestalt wie in den Finanzen: wer eine Übersicht in ImmoBase kennt, kennt
+    alle.
+
+    **Beide Auswertungen stehen immer da**, auch wenn sie nichts zu melden
+    haben. Ein Kasten, der nur im Fehlerfall erscheint, lässt den Rest der
+    Zeit offen, ob gerade nichts ansteht oder ob niemand nachgesehen hat.
+    „Nichts zu korrigieren" ist eine Auskunft; eine leere Seite ist keine.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'billing.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'billing.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'billing.subheading'|trans }}</p>
+
+    <div class="ib-stats">
+        {% include 'components/stat_tile.html.twig' with {
+            value: drafts, label: 'billing.overview.drafts'|trans
+        } only %}
+        {% include 'components/stat_tile.html.twig' with {
+            value: released, label: 'billing.overview.released'|trans
+        } only %}
+        {#
+            Dieselben Farben wie unter jeder Abrechnung: Nachzahlung rot,
+            Guthaben grün. Wer beides schon auf dem Schreiben so gesehen hat,
+            liest die Kachel ohne die Beschriftung.
+        #}
+        {% include 'components/stat_tile.html.twig' with {
+            value: balance|money, label: 'billing.overview.balance'|trans, tone: 'danger'
+        } only %}
+        {% include 'components/stat_tile.html.twig' with {
+            value: credits|money, label: 'billing.overview.credits'|trans, tone: 'success'
+        } only %}
+        {#
+            Was die Gemeinschaft je Zahlung einnimmt — die Zahl, die eine
+            Verwaltung im Herbst sucht, wenn sie wissen will, ob geplant ist.
+        #}
+        {% include 'components/stat_tile.html.twig' with {
+            value: plans.advances|money,
+            label: 'billing.plan.overview.advances'|trans ~ ' · ' ~ 'billing.plan.overview.year'|trans({'%year%': plans.year})
+        } only %}
+        {#
+            Der Vermögensbericht ist Pflicht und hat keine Frist, an die
+            jemand erinnert — deshalb steht er hier und nicht nur im Menü.
+        #}
+        {% include 'components/stat_tile.html.twig' with {
+            value: reports.released,
+            label: 'billing.report.overview.released'|trans ~ ' · ' ~ 'billing.report.overview.year'|trans({'%year%': reports.year})
+        } only %}
+        {#
+            Was sich die Gemeinschaft vorgenommen hat — die Summe der
+            beschlossenen Maßnahmen. Die Zahl, die eine Verwaltung sucht, wenn
+            jemand fragt, was ansteht.
+        #}
+        {% include 'components/stat_tile.html.twig' with {
+            value: budgets.planned|money,
+            label: 'billing.budget.overview.planned'|trans,
+            href: path('app_billing_budget')
+        } only %}
+    </div>
+
+    <div class="ib-overview">
+        <section class="ib-overview__panel">
+            <h2 class="ib-flow__title">{{ 'billing.correction.heading'|trans }}</h2>
+            <p class="ib-field__hint">{{ 'billing.correction.hint'|trans }}</p>
+
+            {#
+                Gezählt wird bei der Anmeldung und beim Öffnen dieser Seite.
+                Wer gerade nebenan einen Betrag geändert hat, will nicht bis
+                zur nächsten Anmeldung warten — dafür der Knopf.
+            #}
+            <form method="post" action="{{ path('app_billing_recheck') }}" class="ib-overview__recheck">
+                <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+                <button class="ib-button" type="submit">
+                    {{ 'billing.correction.recheck'|trans }}
+                </button>
+            </form>
+
+            <ul class="ib-group__list">
+                {% if correctable is empty %}
+                    {#
+                        Auch das Nichts bekommt seine Zeile: derselbe Punkt,
+                        dieselbe Höhe wie eine Meldung. Ein Kasten, der im
+                        Ruhezustand anders aussieht als im Ernstfall, lässt
+                        den Blick jedes Mal neu suchen.
+                    #}
+                    {% include 'components/list_row.html.twig' with {
+                        tone: 'success',
+                        title: 'billing.correction.none_heading'|trans,
+                        meta: 'billing.correction.none'|trans
+                    } only %}
+                {% else %}
+                    {% for statement in correctable %}
+                        {#
+                            Eine Korrektur ist ein Klick: Werte und Empfänger
+                            sind bekannt, der Knopf führt direkt in die
+                            Vorschau. Er steht rechts in der Zeile und als
+                            Formular — ein POST braucht eines.
+                        #}
+                        {% embed 'components/list_row.html.twig' with {
+                            tone: 'warning',
+                            title: statement.propertyNumber ~ '-' ~ statement.fiscalYear ~ '-' ~ statement.number,
+                            meta: 'billing.correction.affected'|trans({'%count%': corrections[statement.id]}),
+                            statement: statement
+                        } only %}
+                            {% block trailing %}
+                                {% if is_granted('billing.edit') %}
+                                    <form method="post"
+                                          action="{{ path('app_billing_statement_correct', { id: statement.id }) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+                                        <button class="ib-button ib-button--quiet" type="submit">
+                                            {{ 'billing.correction.create'|trans }}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </section>
+
+        <section class="ib-overview__panel">
+            <h2 class="ib-flow__title">{{ 'billing.plan.overview.heading'|trans }}</h2>
+            <p class="ib-field__hint">{{ 'billing.plan.overview.hint'|trans }}</p>
+
+            <ul class="ib-group__list">
+                {% if plans.correctable is empty %}
+                    {% include 'components/list_row.html.twig' with {
+                        tone: 'success',
+                        title: 'billing.plan.overview.none_heading'|trans,
+                        meta: 'billing.plan.overview.none'|trans
+                    } only %}
+                {% else %}
+                    {% for plan in plans.correctable %}
+                        {% embed 'components/list_row.html.twig' with {
+                            tone: 'warning',
+                            title: 'WP-' ~ plan.propertyNumber ~ '-' ~ plan.period.year ~ '-' ~ plan.edition.number,
+                            meta: 'billing.plan.overview.affected'|trans({'%count%': plans.corrections[plan.id]}),
+                            plan: plan
+                        } only %}
+                            {% block trailing %}
+                                {% if is_granted('billing.edit') %}
+                                    <form method="post"
+                                          action="{{ path('app_billing_plan_correct', { id: plan.id }) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('billing') }}">
+                                        <button class="ib-button ib-button--quiet" type="submit">
+                                            {{ 'billing.plan.overview.create'|trans }}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </section>
+
+        {#
+            Die Budgetplanung stand bisher nur als eine Zahl oben. Was sie
+            wirklich zu melden hat, steht hier: was noch auf einen Beschluss
+            wartet, und wogegen nie eine Rechnung gebucht wurde. Das Zweite
+            fragt niemand — eine Sonderumlage ist ein Vorschuss, und ein
+            Vorschuss ohne Rechnung ist Geld, das irgendwo liegt.
+        #}
+        <section class="ib-overview__panel">
+            <h2 class="ib-flow__title">{{ 'billing.budget.overview.heading'|trans }}</h2>
+            <p class="ib-field__hint">{{ 'billing.budget.overview.hint'|trans }}</p>
+
+            <ul class="ib-group__list">
+                {% include 'components/list_row.html.twig' with {
+                    tone: budgets.drafts == 0 ? 'success' : 'info',
+                    title: 'billing.budget.overview.drafts'|trans,
+                    meta: budgets.drafts == 0
+                        ? 'billing.budget.overview.no_drafts'|trans
+                        : 'billing.budget.overview.some_drafts'|trans({'%count%': budgets.drafts})
+                } only %}
+
+                {% if budgets.unspent is empty %}
+                    {% include 'components/list_row.html.twig' with {
+                        tone: 'success',
+                        title: 'billing.budget.overview.spent_heading'|trans,
+                        meta: 'billing.budget.overview.all_spent'|trans
+                    } only %}
+                {% else %}
+                    {#
+                        Höchstens fünf: eine Liste, die den Kasten sprengt,
+                        liest niemand mehr. Wie viele es sind, sagt die letzte
+                        Zeile — und die Liste selbst steht nebenan.
+                    #}
+                    {% for budget in budgets.unspent|slice(0, 5) %}
+                        {% embed 'components/list_row.html.twig' with {
+                            tone: 'warning',
+                            title: budget.measure.label,
+                            meta: 'billing.budget.overview.unspent'|trans({
+                                '%year%': budget.measure.firstYear
+                            }),
+                            budget: budget
+                        } only %}
+                            {% block trailing %}
+                                {% include 'components/action.html.twig' with {
+                                    action: 'open',
+                                    url: path('app_billing_budget_show', { id: budget.id })
+                                } only %}
+                            {% endblock %}
+                        {% endembed %}
+                    {% endfor %}
+
+                    {% if budgets.unspent|length > 5 %}
+                        {% include 'components/list_row.html.twig' with {
+                            tone: 'neutral',
+                            title: 'billing.budget.overview.more'|trans({
+                                '%count%': budgets.unspent|length - 5
+                            })
+                        } only %}
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </section>
+
+        {#
+            Die Dauermietrechnung gilt, bis sich ein Bestandteil ändert — und
+            dann muss die neue **vorher** beim Mieter sein. Wer eine Mietstufe
+            übersieht, hat eine Rechnung im Umlauf, die einen falschen Betrag
+            nennt. Gemeldet wird nur, wo schon einmal eine ausgestellt wurde.
+        #}
+        <section class="ib-overview__panel">
+            <h2 class="ib-flow__title">{{ 'billing.invoice.heading'|trans }}</h2>
+            <p class="ib-field__hint">{{ 'billing.invoice.overview.hint'|trans }}</p>
+
+            <ul class="ib-group__list">
+                {% include 'components/list_row.html.twig' with {
+                    tone: invoices.drafts == 0 ? 'success' : 'info',
+                    title: 'billing.invoice.overview.drafts'|trans,
+                    meta: invoices.drafts == 0
+                        ? 'billing.invoice.overview.no_drafts'|trans
+                        : 'billing.invoice.overview.some_drafts'|trans({'%count%': invoices.drafts})
+                } only %}
+
+                {% if invoices.pending is empty %}
+                    {% include 'components/list_row.html.twig' with {
+                        tone: 'success',
+                        title: 'billing.invoice.overview.covered_heading'|trans,
+                        meta: 'billing.invoice.overview.all_covered'|trans
+                    } only %}
+                {% else %}
+                    {% for step in invoices.pending %}
+                        {% embed 'components/list_row.html.twig' with {
+                            tone: 'warning',
+                            title: step.tenancy.oneLine,
+                            meta: 'billing.invoice.overview.uncovered'|trans({
+                                '%date%': step.from|date_local
+                            }),
+                            step: step
+                        } only %}
+                            {% block trailing %}
+                                {% include 'components/action.html.twig' with {
+                                    action: 'open',
+                                    url: path('app_tenancy_show', { number: step.tenancy.number, abschnitt: 'miete' })
+                                } only %}
+                            {% endblock %}
+                        {% endembed %}
+                    {% endfor %}
+
+                    {% if invoices.more > 0 %}
+                        {% include 'components/list_row.html.twig' with {
+                            tone: 'neutral',
+                            title: 'billing.invoice.overview.more'|trans({'%count%': invoices.more})
+                        } only %}
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </section>
+
+        <section class="ib-overview__panel">
+            <h2 class="ib-flow__title">{{ 'billing.overview.deadlines'|trans }}</h2>
+
+            {#
+                Die Frist steht hier, weil sie sonst niemand sieht: eine
+                Nebenkostenabrechnung muss dem Mieter bis zum 31. Dezember des
+                Folgejahres zugehen, danach ist die Nachforderung verloren.
+            #}
+            <p class="ib-field__hint">{{ 'billing.overview.deadline'|trans({'%year%': deadline}) }}</p>
+
+            <ul class="ib-group__list">
+                {% include 'components/list_row.html.twig' with {
+                    tone: overdue is empty ? 'success' : 'danger',
+                    title: 'billing.overview.overdue_heading'|trans,
+                    meta: overdue is empty
+                        ? 'billing.overview.none_overdue'|trans
+                        : 'billing.overview.overdue'|trans({'%count%': overdue|length})
+                } only %}
+            </ul>
+        </section>
+    </div>
+{% endblock %}

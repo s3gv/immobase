@@ -1,0 +1,99 @@
+###> environment ###
+/.env.local
+/.env.local.php
+/.env.*.local
+###< environment ###
+
+###> symfony ###
+/var/
+/vendor/
+# Ein Plugin bringt seine Abhaengigkeiten selbst mit — in seinem eigenen
+# Image, nicht hier. Die composer.lock daneben gehoert dagegen dazu: ohne sie
+# baut niemand dasselbe Plugin zweimal.
+/plugins/*/vendor/
+/public/bundles/
+###< symfony ###
+
+###> tooling ###
+/.phpstan.cache/
+/.deptrac.cache
+/coverage/
+###< tooling ###
+
+###> docker ###
+/docker/**/data/
+###< docker ###
+
+###> local installer output ###
+/.immobase-install.state
+###< local installer output ###
+
+###> os ###
+.DS_Store
+*.swp
+*~
+###< os ###
+
+###> symfony/framework-bundle ###
+/config/secrets/prod/prod.decrypt.private.php
+###< symfony/framework-bundle ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.php
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###
+
+###> interne Arbeitsdateien — dürfen NIEMALS ins öffentliche Repo ###
+# Dieses Repository wird veröffentlicht. Alles hier drunter ist interne
+# Arbeitsgrundlage, Werkzeugkonfiguration oder rein lokale Einrichtung.
+# tools/check-publication-hygiene.php erzwingt das — die Liste hier ist die
+# Bequemlichkeit, die Prüfung ist die Absicherung.
+
+# Spezifikationen, Pläne, Arbeitsnotizen
+/docs/superpowers/
+/docs/internal/
+
+# KI-Werkzeuge
+/CLAUDE.md
+/AGENTS.md
+/GEMINI.md
+/.claude/
+/.cursor/
+/.cursorrules
+/.aider*
+/.github/copilot-instructions.md
+/.windsurfrules
+
+# Editoren und Entwicklungsumgebungen
+/.idea/
+/.vscode/
+/.fleet/
+/.zed/
+/.phpactor.json
+*.iml
+
+# Schlüssel und Zertifikate
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+
+# Rein lokale Einrichtung
+/.env.*.local
+/.env.local
+/*.local.yaml
+/*.local.php
+###< interne Arbeitsdateien ###
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###

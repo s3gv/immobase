@@ -1,0 +1,31 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="ib-shell ib-shell--bare">
+        <main class="ib-content">
+            <h1 class="ib-heading">{{ 'user.recovery.heading'|trans }}</h1>
+            <p class="ib-subheading">{{ 'user.recovery.explanation'|trans }}</p>
+
+            {% include 'components/flashes.html.twig' %}
+
+            {# Genau einmal sichtbar. Gespeichert wird nur der Hash — wer sie
+               jetzt nicht mitnimmt, erzeugt später neue. #}
+            <ul class="ib-codes">
+                {% for code in codes %}
+                    <li><code>{{ code }}</code></li>
+                {% endfor %}
+            </ul>
+
+            <p class="ib-note">{{ 'user.recovery.once'|trans }}</p>
+
+            <div class="ib-form__actions">
+                <button class="ib-button ib-button--quiet" type="button" data-print>
+                    {{ 'user.recovery.print'|trans }}
+                </button>
+                <a class="ib-button" href="{{ back|default(path('app_login')) }}">{{ 'user.recovery.continue'|trans }}</a>
+            </div>
+        </main>
+    </div>
+{% endblock %}

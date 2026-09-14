@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 s3gv
+#
+# Nur für die lokale Entwicklung. Docker Compose liest diese Datei automatisch
+# mit. Sie gehört ins Repository und enthält bewusst keine Geheimnisse.
+#
+# Der Datenbank-Port wird ausschließlich hier veröffentlicht. In compose.yaml
+# steht er absichtlich nicht: eine produktive Installation soll PostgreSQL
+# nicht nach außen anbieten.
+
+services:
+  app:
+    build:
+      target: dev
+    # Die Entwicklungsumgebung startet nur, wenn man sie startet.
+    restart: "no"
+    # !override statt Ergaenzung: die Volumes fuer Sitzungen und
+    # Plugin-Zustand aus compose.yaml wuerden sonst ueber dem eingebundenen
+    # var/ liegen, und die Protokolle der Plugins waeren nicht mehr im
+    # Arbeitsverzeichnis zu sehen.
+    volumes: !override
+      # Quellcode einbinden: Änderungen wirken sofort, ohne Neubau. Damit
+      # nutzt der Container auch das lokale vendor/ mit Dev-Abhängigkeiten.
+      - .:/app
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      # Der Hostname mit TLS für den Browser. Die Plugin-Prozesse erreichen
+      # den Core wie im Betrieb über den internen Listener auf 127.0.0.1:2080
+      # (siehe Caddyfile). Keine Umleitung von 80 auf 443 — der Browser ruft
+      # https://immobase.dev-local direkt auf.
+      SERVER_NAME: "immobase.dev-local"
+      CADDY_GLOBAL_OPTIONS: "auto_https disable_redirects"
+      IMMOBASE_REGION: "${IMMOBASE_REGION:-auto}"
+      APP_ENV: "dev"
+      # Fest auf Mailpit: docker compose liest für Platzhalter die .env des
+      # Projekts, und dort steht null://null als Vorgabe für Installationen
+      # ohne Mailserver. Ein Platzhalter hier hieße, dass die
+      # Entwicklungsumgebung stillschweigend nichts verschickt.
+      MAILER_DSN: "smtp://mailer:1025"
+      MAILER_FROM: "immobase@localhost"
+      DEFAULT_URI: "https://immobase.dev-local"
+      # Der Schlüssel für die Anhänge im Portal — **ohne Wert**, mit Absicht.
+      #
+      # Docker reicht die Variable dann aus der Umgebung durch, wenn es sie
+      # gibt, und setzt sie sonst gar nicht. Eine leere Variable wäre etwas
+      # anderes als keine: Symfonys Dotenv überschreibt nichts, was schon in
+      # der Umgebung steht, und der Schlüssel aus .env.local käme nie an. Die
+      # Anwendung meldete dann „es fehlt der Schlüssel", obwohl er dasteht.
+      #
+      # Ein echter Schlüssel gehört nicht ins Repository, auch kein
+      # Entwicklungsschlüssel — er steht in .env.local.
+      IMMOBASE_FILE_KEY:
+      # Ohne diese Zeile versucht Caddy, für immobase.dev-local ein
+      # Zertifikat bei Let's Encrypt zu holen — es erkennt nur .localhost und
+      # IP-Adressen automatisch als intern. Der Versuch scheitert (kein
+      # gültiger Public Suffix), aber vorher registriert Caddy einen
+      # ACME-Account und ruft dafür ins Internet.
+      CADDY_SERVER_EXTRA_DIRECTIVES: "tls internal"
+    # Nur von diesem Rechner aus erreichbar. Auf allen Adressen stuende die
+    # Entwicklungsumgebung — Datenbank mit bekanntem Passwort, Mailpit mit
+    # jedem Einladungslink — jedem im selben WLAN offen. `!override`, damit
+    # der Port 8080 aus compose.yaml nicht zusaetzlich dazukommt.
+    ports: !override
+      - "127.0.0.1:443:443"
+      - "127.0.0.1:443:443/udp"
+
+  database:
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+
+  # Mailpit faengt alle E-Mails ab und zeigt sie unter http://localhost:8025.
+  # Nur fuer die Entwicklung: so laesst sich eine Einladung ansehen, ohne
+  # dass sie jemanden erreicht.
+  mailer:
+    image: axllent/mailpit
+    ports:
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILPIT_WEB_PORT:-8025}:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1

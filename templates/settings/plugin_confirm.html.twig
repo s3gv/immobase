@@ -1,0 +1,118 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Aktivieren heißt vertrauen.
+
+    Ein aktiviertes Plugin läuft an unseren Daten, schreibt in unsere
+    Datenbank und zeigt seine Seiten in unserer Oberfläche. Das ist gewollt —
+    und es ist nichts, was man nebenbei anklickt.
+
+    Deshalb steht hier alles vor dem Knopf: welche Rechte es in den Katalog
+    bringt, welche Bereiche sein Token lesen darf, welche Tabellen entstehen,
+    wohin es spricht — und ob es ins Internet darf. Der Knopf bleibt gesperrt, bis die Marke gesetzt ist.
+
+    Kein Browserdialog: derselbe Weg wie bei jeder anderen Bestätigung.
+#}
+{% extends 'settings/_page.html.twig' %}
+
+{% block section_body %}
+    {% set manifest = plugin.manifest %}
+
+    <h3 class="ib-plugin__name">{{ plugin.label(app.request.locale) }}</h3>
+    <p class="ib-plugin__meta">
+        <code>{{ plugin.name }}</code> · {{ 'plugin.version'|trans({'%version%': manifest.version}) }}
+    </p>
+
+    <div class="ib-note ib-note--warning">
+        <p><strong>{{ 'plugin.trust.heading'|trans }}</strong></p>
+        <p>{{ 'plugin.trust.body'|trans }}</p>
+    </div>
+
+    <section class="ib-plugin__section">
+        <h4>{{ 'plugin.confirm.permissions'|trans }}</h4>
+        {% if manifest.permissions is empty %}
+            <p class="ib-note">{{ 'plugin.confirm.none'|trans }}</p>
+        {% else %}
+            <ul class="ib-confirm__list">
+                {% for permission in manifest.permissions %}
+                    {% for each in permission.permissions %}
+                        <li><code>{{ each.key }}</code> — {{ permission.labels[app.request.locale] ?? permission.labels['en'] }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+
+    <section class="ib-plugin__section">
+        <h4>{{ 'plugin.confirm.reads'|trans }}</h4>
+        {% if manifest.reads is empty %}
+            <p class="ib-note">{{ 'plugin.confirm.reads_none'|trans }}</p>
+        {% else %}
+            <ul class="ib-confirm__list">
+                {% for key in manifest.reads %}
+                    <li><code>{{ key }}</code> — {{ ('permission.' ~ key ~ '.label')|permission_text }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+
+    <section class="ib-plugin__section">
+        <h4>{{ 'plugin.confirm.tables'|trans }}</h4>
+        {% if manifest.tables is empty %}
+            <p class="ib-note">{{ 'plugin.confirm.none'|trans }}</p>
+        {% else %}
+            <ul class="ib-confirm__list">
+                {% for table in manifest.tables %}
+                    <li>
+                        <code>plugin_{{ plugin.name }}.{{ table.name }}</code>
+                        <span class="ib-field__hint">
+                            {{ table.columns|map(column => column.name ~ ' ' ~ column.type.value)|join(', ') }}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+
+    <section class="ib-plugin__section">
+        <h4>{{ 'plugin.confirm.reach'|trans }}</h4>
+        <ul class="ib-confirm__list">
+            <li>{{ 'plugin.confirm.process'|trans }}</li>
+            {% if manifest.internet %}
+                <li><strong>{{ 'plugin.confirm.internet'|trans }}</strong></li>
+            {% else %}
+                <li>{{ 'plugin.confirm.no_internet'|trans }}</li>
+            {% endif %}
+            {% if manifest.events is not empty %}
+                <li>{{ 'plugin.confirm.events'|trans }}: <code>{{ manifest.events|join(', ') }}</code></li>
+            {% endif %}
+            {% for entry in manifest.nav %}
+                <li>{{ 'plugin.confirm.nav'|trans }}: {{ entry.labels[app.request.locale] ?? entry.labels['en'] }} (<code>{{ entry.path }}</code>)</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    {#
+        Der Knopf steht ohne JavaScript offen da — abgelehnt wird dann
+        serverseitig, mit einer Meldung. Ein Formular, das sich ohne Skript
+        gar nicht mehr abschicken lässt, wäre schlechter als ein Klick zu
+        viel.
+    #}
+    <form method="post" action="{{ path('app_plugin_activate', { name: plugin.name }) }}" data-plugin-trust>
+        <input type="hidden" name="_token" value="{{ csrf_token('plugins') }}">
+
+        <label class="ib-choice">
+            <input type="checkbox" name="trusted" value="1" data-plugin-trust-mark>
+            {{ 'plugin.trust.confirm'|trans }}
+        </label>
+
+        <div class="ib-form__actions">
+            <a class="ib-button ib-button--quiet" href="{{ path('app_plugin_settings') }}">
+                {{ 'confirm.cancel'|trans }}
+            </a>
+            <button class="ib-button" type="submit" data-plugin-trust-submit>
+                {{ (plugin.isInstalled ? 'plugin.action.update' : 'plugin.action.activate')|trans }}
+            </button>
+        </div>
+    </form>
+{% endblock %}

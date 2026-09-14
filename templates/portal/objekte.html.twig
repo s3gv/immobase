@@ -1,0 +1,32 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Objekte, in denen mir etwas gehört.
+
+    Abgeleitet aus den Einheiten: ein Objekt gehört niemandem, es gehört eine
+    Einheit darin.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {#
+        Der Knopf steht nur an Objekten, in denen mir heute etwas gehört. Wer
+        verkauft hat, sieht das Objekt weiter — es gehörte ihm, als die
+        Abrechnung entstand —, schlägt aber nichts mehr daran vor.
+    #}
+    {% include 'components/table.html.twig' with {
+        headers: [
+            'portal.field.number'|trans,
+            'portal.field.property'|trans,
+            'portal.field.address'|trans,
+            'portal.field.own_units'|trans
+        ],
+        rows: properties|map(p => {
+            cells: [p.number, p.name, p.address, p.units],
+            actions: p.id in myPropertyIds
+                ? [{ action: 'edit', url: path('app_portal_change', { type: 'objekt', id: p.id }) }]
+                : []
+        }),
+        empty: 'portal.no_properties'|trans
+    } only %}
+{% endblock %}

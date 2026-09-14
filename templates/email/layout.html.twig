@@ -1,0 +1,27 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Gerüst jeder E-Mail.
+
+    Bewusst schlicht und mit Stilen direkt am Element: E-Mail-Programme
+    verwerfen <style>-Blöcke, laden keine externen Dateien und kennen kein
+    modernes CSS. Was hier steht, muss auch dann noch lesbar sein, wenn davon
+    nichts ankommt.
+
+    Keine Bilder, kein Logo: sie werden in den meisten Programmen ohnehin
+    blockiert, und eine Nachricht, die ohne sie nicht funktioniert, ist keine
+    gute Nachricht.
+#}
+<!DOCTYPE html>
+<html lang="{{ app.request.locale|default('de') }}">
+<head><meta charset="utf-8"><title>{{ 'app.name'|trans }}</title></head>
+<body style="margin:0;padding:24px;background:#f4f5f7;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#111827;">
+    <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;padding:24px;line-height:1.6;">
+        <p style="margin:0 0 16px;font-weight:600;font-size:18px;">{{ 'app.name'|trans }}</p>
+
+        {% block body %}{% endblock %}
+
+        <p style="margin:24px 0 0;color:#6b7280;font-size:13px;">{{ 'email.signature'|trans }}</p>
+    </div>
+</body>
+</html>

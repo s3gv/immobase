@@ -1,0 +1,22 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Meldungen aus der letzten Handlung.
+
+    Steht als eigener Baustein da, weil es Seiten ohne Shell gibt — Anmeldung,
+    Einrichten, Bestätigen. Ohne ihn bleiben Meldungen dort ungelesen in der
+    Sitzung liegen und erscheinen irgendwann auf einer ganz anderen Seite. So
+    ist es passiert: "Ihre E-Mail-Adresse ist geändert" stand nach der
+    Weiterleitung auf die Anmeldung nirgends — und tauchte beim nächsten
+    Aufruf des Kontos wieder auf.
+
+    Gelesen werden nur die aufgezählten Arten und nicht alle: app.flashes ohne
+    Angabe *leert* auch, was es nicht anzeigt. Der Einladungslink liegt als
+    eigene Art daneben und hat seine eigene Darstellung mit Kopierfeld — er
+    würde hier sonst still verschwinden.
+#}
+{% for label, messages in app.flashes(['success', 'error', 'warning', 'info']) %}
+    {% for message in messages %}
+        <p class="ib-flash ib-flash--{{ label }}" role="status">{{ message|trans }}</p>
+    {% endfor %}
+{% endfor %}

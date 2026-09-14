@@ -1,0 +1,28 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/unit/_detail.html.twig' %}
+{% set edit_step = 'details' %}
+
+{% block panel %}
+    {% set blank = 'property.none'|trans %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            [unit.usage.areaLabelKey|trans, unit.measures.area ? unit.measures.area|decimal : blank],
+            ['property.unit.field.rooms'|trans, unit.measures.rooms ? unit.measures.rooms|decimal(false) : blank],
+            ['property.unit.field.parking_spaces'|trans, unit.measures.parkingSpaces ?: blank],
+            ['property.unit.field.note'|trans, unit.note ?: blank]
+        ],
+        empty: ''
+    } only %}
+
+    {#
+        Die Personenzahl steht hier und nicht im Bearbeiten-Ablauf: sie ist
+        eine Staffel, und ein Eintrag kommt einzeln dazu und verschwindet
+        einzeln — dasselbe wie am Mietverhältnis.
+    #}
+    {% include 'property/unit/_household.html.twig' with {
+        property: property, unit: unit, today: today,
+        editable: is_granted('properties.edit')
+    } only %}
+{% endblock %}

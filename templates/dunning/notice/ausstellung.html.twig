@@ -1,0 +1,41 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Prüfen, was beim Schuldner ankommt — und ausstellen.
+
+    Danach ändert sich daran nichts mehr: das Schreiben liegt beim Schuldner,
+    die Frist läuft, und die Zinsen laufen weiter.
+#}
+{% extends 'dunning/notice/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'dunning/_preview.html.twig' with {
+        notice: notice, recipients: recipients, iban: iban
+    } only %}
+{% endblock %}
+
+{% block forward %}
+    <button class="ib-button ib-button--quiet" type="submit" name="direction" value="forward">
+        {{ 'flow.finish'|trans }}
+    </button>
+{% endblock %}
+
+{% block outside_form %}
+    {% if missing is not empty %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'dunning.missing.heading'|trans }}</p>
+            <ul>
+                {% for gap in missing %}
+                    <li>{{ gap|trans }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <p class="ib-flow__hint">{{ 'dunning.issue_hint'|trans }}</p>
+
+        <form method="post" action="{{ path('app_dunning_notice_issue', { id: notice.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('dunning') }}">
+            <button class="ib-button" type="submit">{{ 'dunning.issue'|trans }}</button>
+        </form>
+    {% endif %}
+{% endblock %}

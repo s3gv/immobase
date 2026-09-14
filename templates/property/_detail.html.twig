@@ -1,0 +1,118 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Abschnitt der Objektseite.
+
+    Dieselbe Gestalt wie der Ablauf beim Anlegen — links die Abschnitte,
+    rechts einer davon. Nur ist hier nichts ein Weg: man springt, statt
+    weiterzugehen.
+
+    Ein Abschnitt füllt den Block `panel`.
+
+    Nicht `body`: so heißt schon der Block, in dem die ganze Hülle steckt —
+    Seitenleiste, Kopfzeile, Brotkrumen. Ein Abschnitt, der ihn überschreibt,
+    rendert eine Tabelle auf leerem Grund.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <div class="ib-index__actions">
+        {% if is_granted('properties.edit') %}
+            {% include 'components/action.html.twig' with {
+                action: 'edit',
+                url: path('app_property_edit', { number: property.number, step: edit_step|default('bezeichnung') }),
+                labelled: true
+            } only %}
+        {% endif %}
+
+        {#
+            Abwickeln statt löschen: der Verwaltervertrag läuft aus, und die
+            Abrechnung des laufenden Jahres steht noch aus.
+        #}
+        {% if is_granted('properties.edit') and not property.status.isDraft %}
+            <button class="ib-button ib-button--quiet" type="button"
+                    data-modal-open="property-closure-{{ property.number }}">
+                {{ (property.status.isPast ? 'property.action.reopen' : 'property.action.close')|trans }}
+            </button>
+        {% endif %}
+    </div>
+
+    {% if property.status.isDraft %}
+        <p class="ib-note">{{ 'property.draft.hint'|trans }}</p>
+    {% elseif property.status.isPast %}
+        <p class="ib-note">{{ 'property.past.hint'|trans({
+            '%date%': property.management.closure.day ? property.management.closure.day|date_local : ''
+        }) }}</p>
+    {% endif %}
+
+    {% block panel %}{% endblock %}
+
+    {% if is_granted('properties.edit') and property.status.isPast %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'property-closure-' ~ property.number,
+            title: 'property.reopen.title'|trans({'%name%': property.name}),
+            body: 'property.reopen.body'|trans,
+            consequences: [
+                'property.reopen.consequence_units'|trans,
+                'property.reopen.consequence_check'|trans
+            ],
+            url: path('app_property_reopen', { number: property.number }),
+            token: 'property_closure_' ~ property.number,
+            confirm_label: 'property.action.reopen'|trans,
+            danger: false
+        } only %}
+    {% endif %}
+
+    {#
+        Abwickeln fragt nach dem Stichtag und zeigt, was mitgeht — nicht nur
+        eine Warnung. Deshalb ein eigener Dialog mit Feld.
+    #}
+    {% if is_granted('properties.edit') and property.status.isActive %}
+        {% embed 'components/modal.html.twig' with {
+            id: 'property-closure-' ~ property.number,
+            title: 'property.close.title'|trans({'%name%': property.name}),
+            property: property,
+            closing: closing
+        } only %}
+            {% block body %}
+                <p>{{ 'property.close.body'|trans }}</p>
+
+                <form id="property-closure-form-{{ property.number }}" method="post"
+                      action="{{ path('app_property_close', { number: property.number }) }}">
+                    <input type="hidden" name="_token"
+                           value="{{ csrf_token('property_closure_' ~ property.number) }}">
+
+                    {% include 'components/field.html.twig' with {
+                        id: 'closedOn-' ~ property.number, name: 'closedOn', type: 'date',
+                        label: 'property.field.closed_on'|trans,
+                        hint: 'property.close.hint'|trans,
+                        value: 'now'|date('Y-m-d'),
+                        required: true
+                    } only %}
+                </form>
+
+                {% if closing is not empty %}
+                    <p class="ib-confirm__lead">{{ 'property.close.taken_with'|trans }}</p>
+                    <ul class="ib-confirm__list">
+                        {% for key, count in closing %}
+                            <li>{{ key|trans({'%count%': count}) }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                <p class="ib-field__hint">{{ 'property.close.consequence_history'|trans }}</p>
+            {% endblock %}
+
+            {% block actions %}
+                <button class="ib-button ib-button--quiet" type="button" data-modal-close autofocus>
+                    {{ 'confirm.cancel'|trans }}
+                </button>
+
+                <button class="ib-button ib-button--danger" type="submit"
+                        form="property-closure-form-{{ property.number }}">
+                    {{ 'property.action.close'|trans }}
+                </button>
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+{% endblock %}

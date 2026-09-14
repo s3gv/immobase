@@ -1,0 +1,36 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Seite eines Plugins, in unserer Shell.
+
+    Der Core hat sie serverseitig beim Plugin geholt; der Browser hat nie mit
+    ihm gesprochen. Navigation, Kopfzeile und Suche stehen an ihrem Platz, es
+    gibt kein zweites Passwort und keinen Rahmen im Rahmen.
+
+    Antwortet das Plugin nicht, steht hier ein ruhiger Satz. Der Rest der
+    Anwendung läuft weiter — ein Plugin ergänzt, es trägt nicht.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ title }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    {% if fragment is null %}
+        <h1 class="ib-heading">{{ title }}</h1>
+        {% include 'components/empty_state.html.twig' with {
+            message: 'plugin.unreachable.body'|trans({'%plugin%': plugin})
+        } only %}
+    {% else %}
+        {#
+            Der Inhalt kommt unverändert durch. Das ist der Preis dafür, dass
+            ein Plugin eigene Seiten liefern darf — und der Grund, warum das
+            Aktivieren eine ausdrückliche Vertrauensfrage ist und nicht das
+            bloße Ablegen einer Datei.
+
+            Skripte darin führt der Browser trotzdem nicht aus: die
+            Content-Security-Policy lässt nur die mit der Nonce dieser Anfrage
+            zu, und die bekommen nur die Stilblöcke.
+        #}
+        <div class="ib-plugin-page">{{ fragment|with_style_nonce|raw }}</div>
+    {% endif %}
+{% endblock %}

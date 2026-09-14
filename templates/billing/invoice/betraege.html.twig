@@ -1,0 +1,56 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Was monatlich fällig ist — gelesen, nicht eingetragen.
+
+    Die Miete steht im Mietverhältnis. Sie hier änderbar zu machen hieße, zwei
+    Wahrheiten über dieselbe Miete zu führen; wer einen anderen Betrag will,
+    ändert die Mietstufe und stellt eine Folgefassung aus.
+#}
+{% extends 'billing/invoice/_flow.html.twig' %}
+
+{% block fields %}
+    {% if step %}
+        <p class="ib-note">
+            {{ 'billing.invoice.from_step'|trans({'%date%': step.from|date_local}) }}
+        </p>
+    {% else %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'billing.invoice.missing.rent'|trans }}</p>
+        </div>
+    {% endif %}
+
+    {% include 'components/table.html.twig' with {
+        headers: ['billing.invoice.position'|trans, 'billing.invoice.amount'|trans],
+        rows: body.lines|map(l => [
+            ('billing.invoice.line.' ~ l.key)|trans,
+            l.amount|money
+        ])|merge(
+            body.taxation.isCharged
+                ? [
+                    ['billing.invoice.net'|trans, body.net|money],
+                    ['billing.invoice.vat'|trans({'%rate%': body.taxation.rateBps|percent}), body.tax|money],
+                    ['billing.invoice.gross'|trans, body.gross|money]
+                ]
+                : [['billing.invoice.total'|trans, body.net|money]]
+        ),
+        empty: ''
+    } only %}
+
+    {#
+        Woher der Satz kommt, steht dabei — und der Weg dorthin. Die
+        Umsatzsteuer gehört dem Vertrag, nicht diesem Schreiben.
+    #}
+    <p class="ib-field__hint">
+        {% if body.taxation.isCharged %}
+            {{ 'billing.invoice.vat_from_tenancy'|trans }}
+        {% else %}
+            {{ 'billing.invoice.vat_exempt'|trans }}
+        {% endif %}
+        {% if tenancy %}
+            <a href="{{ path('app_tenancy_show', { number: tenancy.number, abschnitt: 'miete' }) }}">
+                {{ 'billing.invoice.to_tenancy'|trans }}
+            </a>
+        {% endif %}
+    </p>
+{% endblock %}

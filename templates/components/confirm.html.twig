@@ -1,0 +1,78 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Rückfrage vor einer kritischen Aktion.
+
+    Erwartet: id      — eindeutig; der auslösende Knopf trägt
+                        data-modal-open mit derselben Kennung
+              title   — die Frage, zum Beispiel "Objekt löschen?"
+              url     — Ziel des Formulars
+              token   — Name des CSRF-Tokens
+    Optional: body          — erklärender Satz
+              consequences  — Liste dessen, was sich dadurch ändert
+              action        — Vokabularname für den bestätigenden Knopf
+                              (Vorgabe delete)
+              confirm_label — eigene Beschriftung statt der aus dem Vokabular,
+                              für Handlungen, die keine sind (Deaktivieren)
+              danger        — rot oder nicht (Vorgabe: rot)
+
+    Die Folgen stehen bewusst im Dialog und nicht erst hinterher in einer
+    Meldung: wer erst nach dem Klick erfährt, dass eine Abrechnung ungültig
+    wird, konnte die Entscheidung nicht treffen.
+
+    Der bestätigende Knopf steht rechts und ist rot. Vorausgewählt ist
+    Abbrechen — die Eingabetaste soll nichts löschen.
+
+    Nicht jede Rückfrage ist eine Warnung: etwas wieder aktiv zu setzen ist
+    kein Schaden, und ein roter Knopf dafür wäre eine Übertreibung, die die
+    roten Knöpfe anderswo entwertet.
+#}
+{% set confirmed = ui_action(action|default('delete')) %}
+
+{#
+    `danger|default(true)` wäre falsch: der Filter greift nicht nur bei
+    fehlenden Werten, sondern bei jedem leeren — und `false` ist leer. Ein
+    ausdrückliches „nicht gefährlich" käme so als rot heraus.
+#}
+{% set is_danger = danger is defined ? danger : true %}
+
+{# `only` schneidet den Kontext ab — was die Blöcke brauchen, muss mit. #}
+{% embed 'components/modal.html.twig' with {
+    id: id,
+    title: title,
+    body: body|default(null),
+    consequences: consequences|default([]),
+    confirmed: confirmed,
+    confirm_label: confirm_label|default(null),
+    danger: is_danger,
+    url: url,
+    token: token
+} only %}
+    {% block body %}
+        {% if body %}
+            <p>{{ body }}</p>
+        {% endif %}
+
+        {% if consequences is not empty %}
+            <p class="ib-confirm__lead">{{ 'confirm.consequences'|trans }}</p>
+            <ul class="ib-confirm__list">
+                {% for consequence in consequences %}
+                    <li>{{ consequence }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endblock %}
+
+    {% block actions %}
+        <button class="ib-button ib-button--quiet" type="button" data-modal-close autofocus>
+            {{ 'confirm.cancel'|trans }}
+        </button>
+
+        <form method="post" action="{{ url }}">
+            <input type="hidden" name="_token" value="{{ csrf_token(token) }}">
+            <button class="ib-button{{ danger ? ' ib-button--danger' : '' }}" type="submit">
+                {{ confirm_label ?? confirmed.labelKey|trans }}
+            </button>
+        </form>
+    {% endblock %}
+{% endembed %}

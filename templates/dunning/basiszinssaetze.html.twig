@@ -1,0 +1,84 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Basiszinssätze nach § 247 BGB.
+
+    Zweimal im Jahr eine Zeile — und nur, wenn sich etwas geändert hat. Fehlt
+    der Satz für das laufende Halbjahr, rechnete die Anwendung mit einem
+    veralteten weiter; das steht deshalb als Warnung da und hält die
+    Ausstellung auf.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'dunning.rate.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'dunning.rate.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'dunning.rate.subheading'|trans }}</p>
+
+    {% if missing %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'dunning.rate.missing'|trans({'%date%': latest ? latest|date_local : '—'}) }}</p>
+        </div>
+    {% endif %}
+
+    {% embed 'components/card.html.twig' with { title: 'dunning.rate.heading'|trans, rates: rates } only %}
+        {% block body %}
+            <p class="ib-field__hint">{{ 'dunning.rate.hint'|trans }}</p>
+
+            <div class="ib-table-scroll">
+                <table class="ib-table ib-table--compact">
+                    <thead>
+                        <tr>
+                            <th>{{ 'dunning.rate.valid_from'|trans }}</th>
+                            <th class="ib-table__number">{{ 'dunning.rate.value'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rate in rates.all %}
+                            <tr>
+                                <td>{{ rate.validFrom|date_local }}</td>
+                                <td class="ib-table__number">{{ rate.rateBps|percent }}</td>
+                                <td class="ib-table__number">
+                                    {% if is_granted('dunning.edit') %}
+                                        <form method="post"
+                                              action="{{ path('app_dunning_rate_remove', { id: rate.id }) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('dunning') }}">
+                                            <button class="ib-linkish" type="submit">{{ 'action.delete'|trans }}</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="ib-muted">{{ 'dunning.rate.source'|trans }}</p>
+        {% endblock %}
+    {% endembed %}
+
+    {% if is_granted('dunning.edit') %}
+        {% embed 'components/card.html.twig' with { title: 'dunning.rate.add'|trans } %}
+            {% block body %}
+                <form method="post" action="{{ path('app_dunning_rate_add') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('dunning') }}">
+
+                    {% include 'components/field.html.twig' with {
+                        id: 'validFrom', name: 'validFrom', type: 'date',
+                        label: 'dunning.rate.valid_from'|trans, value: 'now'|date('Y-m-d')
+                    } only %}
+
+                    {% include 'components/field.html.twig' with {
+                        id: 'rate', name: 'rate', label: 'dunning.rate.value'|trans
+                    } only %}
+
+                    <div class="ib-flow__actions">
+                        <button class="ib-button" type="submit">{{ 'dunning.rate.add'|trans }}</button>
+                    </div>
+                </form>
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+{% endblock %}

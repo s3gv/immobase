@@ -1,0 +1,102 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'party.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'party.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'party.subheading'|trans }}</p>
+
+    {#
+        Was jemand nicht darf, steht gar nicht erst da: ein Knopf, der
+        zuverlässig in eine Fehlermeldung führt, ist schlechter als keiner.
+        Der gesperrte „Löschen"-Knopf ist etwas anderes — er nennt seinen
+        Grund und bleibt deshalb stehen.
+
+        Der Kommentar steht hier und nicht unten im Hash: eine Twig-Notiz
+        innerhalb eines Array-Literals ist ein Syntaxfehler.
+    #}
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            'party.field.reference'|trans,
+            'party.field.name'|trans,
+            'party.field.roles'|trans,
+            'party.field.address'|trans,
+            'party.field.email'|trans,
+            'party.field.status'|trans
+        ],
+        rows: parties|map(p => {
+            cells: [
+                p.reference,
+                p.displayName,
+                p.roles.all|map(r => r.labelKey|trans)|join(', '),
+                p.addresses.primary.oneLine,
+                p.contact.primary,
+                p.status.labelKey|trans
+            ],
+            actions: [{ action: 'open', url: path('app_party_show', { reference: p.reference }) }]
+                |merge(is_granted('parties.edit')
+                    ? [{ action: 'edit', url: path('app_party_edit', { reference: p.reference }) }]
+                    : [])
+                |merge(is_granted('parties.delete')
+                    ? (links[p.id]|default([]) is empty
+                        ? [{ action: 'delete', modal: 'delete-' ~ p.reference }]
+                        : [{ action: 'delete', disabled: true, tooltip: links[p.id]|map(l => l|trans)|join(', ') }])
+                    : [])
+        }),
+        page: page,
+        action: path('app_party'),
+        url: url,
+        empty: 'party.empty'|trans ~ (filter.withPast ? '' : ' ' ~ 'index.past_hidden'|trans),
+        filter: filter,
+        roles: roles,
+        links: links,
+        past: past
+    } only %}
+        {% block actions %}
+            {% if is_granted('parties.edit') %}
+                {% include 'components/action.html.twig' with {
+                    action: 'add', url: path('app_party_new'), labelled: true
+                } only %}
+            {% endif %}
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'party.filter.search'|trans,
+                value: filter.search, placeholder: 'party.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'role', name: 'role', label: 'party.field.roles'|trans,
+                choices: roles|map(r => { value: r.value, label: r.labelKey|trans }),
+                value: filter.role ? filter.role.value : '',
+                blank: 'party.filter.all_roles'|trans
+            } only %}
+
+            {% include 'components/past_toggle.html.twig' with { shown: past.shown } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {#
+        Je Zeile eine Rückfrage. Sie trägt den Namen, die Referenznummer und
+        ihr eigenes Token — deshalb lässt sie sich nicht zu einer einzigen
+        zusammenfassen, ohne die Folgen unbestimmt zu machen.
+    #}
+    {% for p in parties %}
+        {% if links[p.id]|default([]) is empty and is_granted('parties.delete') %}
+            {% include 'components/confirm.html.twig' with {
+                id: 'delete-' ~ p.reference,
+                title: 'party.delete.title'|trans({'%name%': p.displayName}),
+                body: 'party.delete.body'|trans,
+                consequences: [
+                    'party.delete.consequence_reference'|trans({'%reference%': p.reference}),
+                    'party.delete.consequence_links'|trans
+                ],
+                url: path('app_party_delete', { reference: p.reference }),
+                token: 'party_delete_' ~ p.reference
+            } only %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}

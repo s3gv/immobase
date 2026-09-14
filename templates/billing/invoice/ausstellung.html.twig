@@ -1,0 +1,39 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Prüfen, was beim Mieter ankommt — und ausstellen.
+
+    Danach ändert sich daran nichts mehr: die Rechnung liegt beim Mieter und
+    trägt eine Nummer, mit der er Vorsteuer zieht.
+#}
+{% extends 'billing/invoice/_flow.html.twig' %}
+
+{% block fields %}
+    {% include 'billing/_invoice_preview.html.twig' with { invoice: invoice, body: body } only %}
+{% endblock %}
+
+{% block forward %}
+    <button class="ib-button ib-button--quiet" type="submit" name="direction" value="forward">
+        {{ 'flow.finish'|trans }}
+    </button>
+{% endblock %}
+
+{% block outside_form %}
+    {% if missing is not empty %}
+        <div class="ib-note ib-note--warning">
+            <p>{{ 'billing.invoice.missing.heading'|trans }}</p>
+            <ul>
+                {% for gap in missing %}
+                    <li>{{ gap|trans }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <p class="ib-flow__hint">{{ 'billing.invoice.issue_hint'|trans }}</p>
+
+        <form method="post" action="{{ path('app_billing_invoice_issue', { id: invoice.id }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('billing_invoice') }}">
+            <button class="ib-button" type="submit">{{ 'billing.invoice.issue'|trans }}</button>
+        </form>
+    {% endif %}
+{% endblock %}

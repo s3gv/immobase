@@ -1,0 +1,173 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine verfolgte Forderung.
+
+    Alles auf einer Seite, weil es zusammen gelesen wird: was offen ist, seit
+    wann, was das an Zinsen macht und was darüber schon hinausging.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ claim.subject }} · {{ 'dunning.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'dunning.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ claim.subject }}</p>
+
+    <div class="ib-index__actions">
+        {#
+            Nach der letzten Mahnung folgt kein Schreiben mehr, sondern das
+            Gericht. Ein Knopf dafür führte in eine Sackgasse: der Entwurf
+            entstünde und ließe sich nie ausstellen.
+        #}
+        {% if is_granted('dunning.edit') and claim.arrears.isOpen and not state.needsTheCourt %}
+            <form method="post" action="{{ path('app_dunning_notice_start', { id: claim.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('dunning') }}">
+                <button class="ib-button" type="submit">{{ 'dunning.dun'|trans }}</button>
+            </form>
+        {% endif %}
+
+        {# Erledigt gemeldet wird immer — auch beim Gericht kann Geld kommen. #}
+        {% if is_granted('dunning.edit') and claim.arrears.isOpen %}
+            <button class="ib-button ib-button--quiet" type="button" data-modal-open="claim-settle">
+                {{ 'dunning.settled_prompt'|trans }}
+            </button>
+        {% endif %}
+
+        {% if state.needsTheCourt %}
+            <a class="ib-button ib-button--quiet" href="{{ path('app_dunning_court_pdf', { id: claim.id }) }}">
+                {{ 'dunning.court'|trans }}
+            </a>
+        {% endif %}
+
+        {% if is_granted('dunning.edit') and notices is empty %}
+            <button class="ib-button ib-button--quiet" type="button" data-modal-open="claim-delete">
+                {{ 'action.delete'|trans }}
+            </button>
+        {% endif %}
+    </div>
+
+    {% if state.needsTheCourt %}
+        <div class="ib-note ib-note--warning"><p>{{ 'dunning.court_hint'|trans }}</p></div>
+    {% endif %}
+
+    {% set rows = [
+        ['dunning.subject'|trans, claim.subject],
+        ['dunning.creditor'|trans, creditor.name ~ (creditor.address ? ', ' ~ creditor.address : '')],
+        ['dunning.debtor'|trans, debtor.name ~ (debtor.address ? ', ' ~ debtor.address : '')],
+        ['dunning.due_on'|trans, claim.arrears.dueOn|date_local],
+        ['dunning.default_from'|trans, claim.arrears.beginsOn|date_local],
+        ['dunning.open'|trans, claim.open|money],
+        ['dunning.interest'|trans, state.interest|money],
+        ['dunning.origin_label'|trans, claim.source.origin.labelKey|trans]
+    ] %}
+
+    {% if not claim.arrears.isOpen %}
+        {% set rows = rows|merge([['dunning.settled_on'|trans, claim.arrears.settledOn|date_local]]) %}
+    {% endif %}
+
+    {#
+        Eine Tatsache, keine Folgerung: welche Folge ein Rückstand dieser
+        Höhe hat, hängt an Umständen, die keine Software beurteilt.
+    #}
+    {% if monthsOfRent %}
+        {% set rows = rows|merge([[
+            'dunning.rent_ratio'|trans,
+            'dunning.months_of_rent'|trans({'%count%': monthsOfRent|decimal})
+        ]]) %}
+    {% endif %}
+
+    {% embed 'components/card.html.twig' with { title: 'dunning.heading'|trans, rows: rows } only %}
+        {% block body %}
+            {% include 'components/table.html.twig' with {
+                headers: ['user.review.field'|trans, 'user.review.value'|trans],
+                rows: rows, empty: ''
+            } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'components/card.html.twig' with { title: 'dunning.steps'|trans, claim: claim } only %}
+        {% block body %}
+            <p class="ib-field__hint">{{ 'dunning.steps_hint'|trans }}</p>
+            {% include 'components/table.html.twig' with {
+                headers: ['dunning.rate.valid_from'|trans, 'dunning.open'|trans],
+                rows: claim.steps|map(s => [s.startsOn|date_local, s.open|money]),
+                empty: ''
+            } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'components/card.html.twig' with { title: 'dunning.schedule'|trans, schedule: schedule } only %}
+        {% block body %}
+            <p class="ib-field__hint">{{ 'dunning.schedule_hint'|trans }}</p>
+            {% include 'dunning/_schedule.html.twig' with { schedule: schedule } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'components/card.html.twig' with { title: 'dunning.notices'|trans, notices: notices } only %}
+        {% block body %}
+            {% if notices is empty %}
+                <p class="ib-muted">{{ 'dunning.no_notices'|trans }}</p>
+            {% else %}
+                {% include 'components/table.html.twig' with {
+                    headers: [
+                        'dunning.field.level'|trans,
+                        'billing.invoice.field.number'|trans,
+                        'billing.invoice.issued_on'|trans,
+                        'dunning.pay_by'|trans
+                    ],
+                    rows: notices|map(n => [
+                        n.level.labelKey|trans,
+                        n.reference,
+                        n.issuedOn ? n.issuedOn|date_local : 'billing.status.draft'|trans,
+                        n.payBy|date_local
+                    ]),
+                    empty: ''
+                } only %}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+
+    {% if is_granted('dunning.edit') and claim.arrears.isOpen %}
+        {#
+            Eigener Dialog statt der Rückfrage von der Stange: hier wird
+            nicht nur bestätigt, sondern ein Tag eingetragen — und der ist
+            das Wesentliche. Ohne ihn ließe sich nicht belegen, bis wann die
+            Zinsen liefen.
+        #}
+        {% embed 'components/modal.html.twig' with {
+            id: 'claim-settle', title: 'dunning.settled_title'|trans, claim: claim
+        } only %}
+            {% block body %}
+                <p>{{ 'dunning.settled_body'|trans }}</p>
+
+                <form method="post" action="{{ path('app_dunning_settle', { id: claim.id }) }}" id="claim-settle-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('dunning') }}">
+                    {% include 'components/field.html.twig' with {
+                        id: 'settledOn', name: 'settledOn', type: 'date',
+                        label: 'dunning.settled_on'|trans, value: 'now'|date('Y-m-d')
+                    } only %}
+                </form>
+            {% endblock %}
+
+            {% block actions %}
+                <button class="ib-button ib-button--quiet" type="button" data-modal-close>
+                    {{ 'modal.close'|trans }}
+                </button>
+                <button class="ib-button" type="submit" form="claim-settle-form">
+                    {{ 'dunning.settled_prompt'|trans }}
+                </button>
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+
+    {% if is_granted('dunning.edit') and notices is empty %}
+        {% include 'components/confirm.html.twig' with {
+            id: 'claim-delete',
+            title: 'dunning.delete.title'|trans,
+            body: 'dunning.delete.body'|trans,
+            url: path('app_dunning_delete', { id: claim.id }),
+            token: 'dunning'
+        } only %}
+    {% endif %}
+{% endblock %}

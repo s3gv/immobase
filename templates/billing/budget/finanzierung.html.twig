@@ -1,0 +1,170 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Woher das Geld kommt.
+
+    Vier Wege, und sie schließen sich nicht aus. Was sie gemeinsam haben: sie
+    müssen zusammen den Bedarf decken — eine Lücke ist kein Rundungsfehler,
+    sondern eine Finanzierung, die nicht trägt.
+
+    Die **Rücklage** trägt nur Erhaltungsmaßnahmen: sie ist zweckgebunden
+    (§ 19 Abs. 2 Nr. 4 WEG). Für eine bauliche Veränderung ist die Entnahme
+    streitig, und die Praxis nimmt die Sonderumlage.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    <div class="ib-stats">
+        {% include 'components/stat_tile.html.twig' with {
+            value: need|money, label: 'billing.budget.pdf.need_sum'|trans
+        } only %}
+        {% include 'components/stat_tile.html.twig' with {
+            value: proposal.funded|money, label: 'billing.budget.pdf.funding_sum'|trans
+        } only %}
+        {% include 'components/stat_tile.html.twig' with {
+            value: proposal.gap|money,
+            label: 'billing.budget.gap'|trans,
+            tone: proposal.isCovered ? 'success' : 'danger'
+        } only %}
+    </div>
+
+    <h3 class="ib-flow__title">{{ 'billing.budget.pdf.from_reserve'|trans }}</h3>
+    <p class="ib-field__hint">
+        {{ (budget.measure.kind.mayUseTheReserve
+            ? 'billing.budget.reserve_hint'
+            : 'billing.budget.reserve_warning')|trans({'%amount%': reserveBalance|money}) }}
+    </p>
+
+    {% include 'components/field.html.twig' with {
+        id: 'reserve', name: 'reserve', label: 'billing.budget.from_reserve'|trans,
+        value: budget.funding.reserve|money_number
+    } only %}
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.budget.pdf.levy'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.budget.levy_hint'|trans }}</p>
+
+    {#
+        Der Weg steht vor dem Betrag: er entscheidet, was das Geld später ist.
+        Bei einer baulichen Veränderung gibt es ihn nicht — dort ist die
+        Rücklage zweckgebunden, und der Satz darunter sagt warum.
+    #}
+    {% if budget.measure.kind.mayUseTheReserve %}
+        {% include 'components/select.html.twig' with {
+            id: 'levyPurpose', name: 'levyPurpose', label: 'billing.budget.levy_purpose.label'|trans,
+            choices: levyPurposes|map(p => { value: p.value, label: p.labelKey|trans }),
+            value: budget.funding.levyPurpose.value,
+            hint: 'billing.budget.levy_purpose.hint'|trans
+        } only %}
+    {% else %}
+        <p class="ib-field__hint">{{ 'billing.budget.levy_purpose.only_measure'|trans }}</p>
+    {% endif %}
+
+    <div class="ib-budget__group">
+        {% include 'components/field.html.twig' with {
+            id: 'levy', name: 'levy', label: 'billing.budget.levy_amount'|trans,
+            value: budget.funding.levy|money_number
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'levyDueOn', name: 'levyDueOn', type: 'date',
+            label: 'billing.budget.levy_due'|trans,
+            value: budget.funding.levyDueOn ? budget.funding.levyDueOn|date('Y-m-d') : ''
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'levyParts', name: 'levyParts', type: 'number',
+            label: 'billing.budget.levy_parts'|trans,
+            value: budget.funding.levyParts
+        } only %}
+
+        {% include 'components/select.html.twig' with {
+            id: 'levyInterval', name: 'levyInterval', label: 'billing.budget.levy_interval'|trans,
+            choices: intervals|map(i => { value: i.value, label: i.labelKey|trans }),
+            value: budget.funding.levyInterval.value
+        } only %}
+    </div>
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.budget.pdf.saving'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.budget.saving_hint'|trans }}</p>
+
+    <div class="ib-budget__group">
+        {% include 'components/field.html.twig' with {
+            id: 'saving', name: 'saving', label: 'billing.budget.saving_amount'|trans,
+            value: budget.funding.saving|money_number
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'savingYears', name: 'savingYears', type: 'number',
+            label: 'billing.budget.saving_years'|trans,
+            value: budget.funding.savingYears
+        } only %}
+
+        {% include 'components/select.html.twig' with {
+            id: 'savingFrom', name: 'savingFrom', label: 'billing.budget.saving_from'|trans,
+            choices: years|map(y => { value: y, label: y }),
+            value: budget.funding.savingFrom ?: budget.measure.firstYear
+        } only %}
+    </div>
+
+    {% if proposal.savingPerYear is not empty %}
+        <p class="ib-field__hint">
+            {{ 'billing.budget.saving_per_year'|trans({
+                '%amount%': proposal.savingPerYear|first|money,
+                '%years%': budget.funding.savingYears
+            }) }}
+        </p>
+    {% endif %}
+
+    <h3 class="ib-flow__title ib-flow__title--spaced">{{ 'billing.budget.pdf.loan'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'billing.budget.loan_hint'|trans }}</p>
+
+    <div class="ib-budget__group">
+        {% include 'components/field.html.twig' with {
+            id: 'loan', name: 'loan', label: 'billing.budget.loan_amount'|trans,
+            value: budget.funding.loan|money_number
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'loanRate', name: 'loanRate', label: 'billing.budget.loan_rate'|trans,
+            hint: 'billing.budget.loan_rate_hint'|trans,
+            value: budget.funding.loanRateBps ? (budget.funding.loanRateBps / 100)|number_format(2, ',', '.') : ''
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'loanPayment', name: 'loanPayment', label: 'billing.budget.loan_payment'|trans,
+            hint: 'billing.budget.loan_either'|trans,
+            value: budget.funding.loanPayment ? budget.funding.loanPayment|money_number : ''
+        } only %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'loanMonths', name: 'loanMonths', type: 'number',
+            label: 'billing.budget.loan_months'|trans,
+            value: budget.funding.loanMonths
+        } only %}
+    </div>
+
+    {#
+        Der Tilgungsplan ist die Rechnung und nicht ein Nebenprodukt: was hier
+        steht, kommt Monat für Monat aus ganzen Cent.
+    #}
+    {% if proposal.loan %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: [
+                'billing.budget.loan_payment'|trans,
+                'billing.budget.loan_months'|trans,
+                'billing.budget.loan_interest'|trans,
+                'billing.budget.loan_total'|trans
+            ],
+            rows: [[
+                proposal.loan.payment|money,
+                proposal.loan.months,
+                proposal.loan.totalInterest|money,
+                proposal.loan.total|money
+            ]],
+            empty: ''
+        } only %}
+
+        <p class="ib-field__hint">{{ 'billing.budget.pdf.risk'|trans }}</p>
+    {% endif %}
+{% endblock %}

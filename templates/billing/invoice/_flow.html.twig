@@ -1,0 +1,37 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Ein Schritt einer Dauermietrechnung.
+
+    Eigener Rahmen und nicht der der Abrechnung: dort heißt der Knopf
+    „Freigeben", hier „Ausstellen", und das Formular-Token ist ein anderes.
+    Ansonsten dieselbe Gestalt — links die Schritte, rechts einer davon.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    <form method="post" action="{{ action }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('billing_invoice') }}">
+
+        {% block fields %}{% endblock %}
+
+        <div class="ib-flow__actions">
+            <a class="ib-button ib-button--quiet" href="{{ cancel }}">{{ 'flow.cancel'|trans }}</a>
+
+            {% if hasPrevious %}
+                <button class="ib-button ib-button--quiet" type="submit"
+                        name="direction" value="back" formnovalidate>
+                    {{ 'flow.back'|trans }}
+                </button>
+            {% endif %}
+
+            {% block forward %}
+                <button class="ib-button" type="submit" name="direction" value="forward">
+                    {{ isLast ? 'flow.finish'|trans : 'flow.next'|trans }}
+                </button>
+            {% endblock %}
+        </div>
+    </form>
+
+    {% block outside_form %}{% endblock %}
+{% endblock %}

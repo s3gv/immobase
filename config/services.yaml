@@ -1,0 +1,333 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+# See also https://symfony.com/doc/current/service_container/import.html
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    # Ohne Schlüssel nimmt das Portal keine Dateien an — statt sie im Klartext
+    # abzulegen. Die Vorgabe steht hier und nicht in .env: dort läse Docker
+    # Compose sie mit und setzte eine leere Umgebungsvariable, die den echten
+    # Schlüssel aus .env.local überdeckte.
+    env(IMMOBASE_FILE_KEY): ''
+    env(TRUSTED_PROXIES): ''
+    immobase.region: '%env(string:IMMOBASE_REGION)%'
+    immobase.plugins_dir: '%kernel.project_dir%/plugins'
+    # Wie ein Plugin-Prozess den Core erreicht — von innen, im selben
+    # Container, ueber einen eigenen Listener, der nur die Schnittstelle kennt
+    # (docker/frankenphp/Caddyfile). Die Netzsperre laesst Plugins nur dorthin.
+    env(IMMOBASE_PLUGIN_CORE_URL): 'http://127.0.0.1:2080'
+    # Die Liste steht hier statt in einem Verzeichnis-Scan zur Laufzeit: sie
+    # ändert sich nur, wenn jemand tools/build-region-svgs.php ausführt.
+    immobase.regions:
+        - baden-wuerttemberg
+        - bayern
+        - berlin
+        - brandenburg
+        - bremen
+        - hamburg
+        - hessen
+        - mecklenburg-vorpommern
+        - niedersachsen
+        - nordrhein-westfalen
+        - rheinland-pfalz
+        - saarland
+        - sachsen
+        - sachsen-anhalt
+        - schleswig-holstein
+        - thueringen
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+
+    # Modul-Schnittstellen auf ihre Umsetzungen verdrahten. Die Zuordnung steht
+    # hier und nicht per Attribut in den Klassen, damit auf einen Blick
+    # sichtbar ist, welche Umsetzung hinter welcher Schnittstelle steckt.
+    App\Module\Auth\Domain\UserRepository: '@App\Module\Auth\Infrastructure\DoctrineUserRepository'
+    App\Module\Auth\Domain\TokenRepository: '@App\Module\Auth\Infrastructure\DoctrineTokenRepository'
+    App\Module\Auth\Domain\RecoveryCodeRepository: '@App\Module\Auth\Infrastructure\DoctrineRecoveryCodeRepository'
+    App\Module\Auth\Domain\Rbac\RoleRepository: '@App\Module\Auth\Infrastructure\DoctrineRoleRepository'
+    App\Module\Auth\Domain\Rbac\PermissionAssignments: '@App\Module\Auth\Infrastructure\DoctrinePermissionAssignments'
+    App\Module\Auth\Contract\UserDirectory: '@App\Module\Auth\Application\LookupUsers'
+    App\Module\Auth\Application\Notifier: '@App\Module\Auth\Infrastructure\MailNotifier'
+    App\Module\Auth\Application\InvitationLink: '@App\Module\Auth\Infrastructure\RoutedInvitationLink'
+    App\Module\Auth\Application\LeakedPasswords: '@App\Module\Auth\Infrastructure\PwnedPasswords'
+
+    # Der Mailer bekommt den DSN als Text, nicht nur als Verbindung: die
+    # Anwendung muss unterscheiden können, ob überhaupt ein Server eingerichtet
+    # ist — sonst zeigt sie keinen Einladungslink an und die Einladung
+    # verschwindet still.
+    # Der Schlüssel, mit dem einmalige Codes abgelegt werden. Aus APP_SECRET
+    # abgeleitet und nicht direkt genommen: ein Geheimnis, ein Zweck.
+    App\Module\Auth\Domain\TokenHasher:
+        arguments:
+            $secret: '%env(string:APP_SECRET)%'
+
+    App\Shared\Mail\OutgoingMail:
+        arguments:
+            $dsn: '%env(string:MAILER_DSN)%'
+            $from: '%env(string:MAILER_FROM)%'
+    App\Module\Finance\Domain\CostItemRepository: '@App\Module\Finance\Infrastructure\DoctrineCostItemRepository'
+    App\Module\Finance\Domain\HouseMoneyRepository: '@App\Module\Finance\Infrastructure\DoctrineHouseMoneyRepository'
+    App\Module\Finance\Domain\ReserveMovementRepository: '@App\Module\Finance\Infrastructure\DoctrineReserveMovementRepository'
+    App\Module\Finance\Domain\LoanRepository: '@App\Module\Finance\Infrastructure\DoctrineLoanRepository'
+    App\Module\Tenancy\Contract\TenancyDirectory: '@App\Module\Tenancy\Application\LookupTenancies'
+    App\Module\Tenancy\Contract\TenancySpans: '@App\Module\Tenancy\Application\LookupTenancySpans'
+    App\Module\Finance\Domain\CostKindRepository: '@App\Module\Finance\Infrastructure\DoctrineCostKindRepository'
+    App\Module\Finance\Domain\DistributionKeyRepository: '@App\Module\Finance\Infrastructure\DoctrineDistributionKeyRepository'
+    App\Module\Party\Domain\PartyRepository: '@App\Module\Party\Infrastructure\DoctrinePartyRepository'
+    App\Module\Party\Contract\PartyDirectory: '@App\Module\Party\Application\LookupParties'
+    App\Module\Property\Domain\PropertyRepository: '@App\Module\Property\Infrastructure\DoctrinePropertyRepository'
+    App\Module\Property\Domain\UnitRepository: '@App\Module\Property\Infrastructure\DoctrineUnitRepository'
+    App\Module\Finance\Contract\StatementSources: '@App\Module\Billing\Application\HeldSources'
+    App\Module\Billing\Domain\StatementRepository: '@App\Module\Billing\Infrastructure\DoctrineStatementRepository'
+    App\Module\Finance\Contract\AdvanceDirectory: '@App\Module\Finance\Application\SurveyPaymentsForBilling'
+    App\Module\Finance\Domain\AdvancePaymentRepository: '@App\Module\Finance\Infrastructure\DoctrineAdvancePaymentRepository'
+    App\Module\Finance\Contract\CostDirectory: '@App\Module\Finance\Application\SurveyCostsForBilling'
+    App\Module\Finance\Contract\LoanDirectory: '@App\Module\Finance\Application\SurveyLoans'
+    App\Module\Finance\Contract\DecidedLoans: '@App\Module\Finance\Application\RecordDecidedLoans'
+    App\Module\Finance\Contract\DistributionDirectory: '@App\Module\Finance\Application\SurveyDistributionForBilling'
+    App\Module\Property\Contract\UnitDirectory: '@App\Module\Property\Application\LookupUnits'
+    App\Module\Property\Contract\PropertyDirectory: '@App\Module\Property\Application\LookupProperties'
+    App\Module\Property\Contract\UnitOwnership: '@App\Module\Property\Application\LookupOwners'
+    App\Module\Settings\Domain\SettingRepository: '@App\Module\Settings\Infrastructure\DoctrineSettingRepository'
+    App\Module\Tenancy\Domain\TenancyRepository: '@App\Module\Tenancy\Infrastructure\DoctrineTenancyRepository'
+    App\Module\Settings\Contract\ApplicationSettings: '@App\Module\Settings\Application\Settings'
+    App\Shared\Pdf\SenderOfLetters: '@App\Module\Settings\Application\Settings'
+    App\Module\Dunning\Domain\ClaimRepository: '@App\Module\Dunning\Infrastructure\DoctrineClaimRepository'
+    App\Module\Dunning\Domain\NoticeRepository: '@App\Module\Dunning\Infrastructure\DoctrineNoticeRepository'
+    App\Module\Dunning\Domain\BaseRateRepository: '@App\Module\Dunning\Infrastructure\DoctrineBaseRateRepository'
+    App\Module\Dunning\Contract\DunningOverview: '@App\Module\Dunning\Application\LookupDunning'
+    App\Module\Portal\Domain\EnquiryRepository: '@App\Module\Portal\Infrastructure\DoctrineEnquiryRepository'
+    App\Module\Portal\Domain\AttachmentRepository: '@App\Module\Portal\Infrastructure\DoctrineAttachmentRepository'
+    App\Module\Portal\Domain\ProposalRepository: '@App\Module\Portal\Infrastructure\DoctrineProposalRepository'
+    App\Module\Portal\Domain\FileVault: '@App\Module\Portal\Infrastructure\SodiumFileVault'
+    App\Module\Portal\Application\Notifier: '@App\Module\Portal\Infrastructure\MailNotifier'
+    App\Module\Plugin\Domain\PluginRepository: '@App\Module\Plugin\Infrastructure\DoctrinePluginRepository'
+    App\Module\Plugin\Domain\PluginStorage: '@App\Module\Plugin\Infrastructure\PostgresPluginStorage'
+    App\Module\Plugin\Domain\ManifestSource: '@App\Module\Plugin\Infrastructure\FilesystemManifests'
+    App\Module\Plugin\Domain\DeliveryRepository: '@App\Module\Plugin\Infrastructure\DbalDeliveryRepository'
+    App\Module\Plugin\Domain\TileRepository: '@App\Module\Plugin\Infrastructure\DoctrineTileRepository'
+    App\Module\Plugin\Domain\PluginProcesses: '@App\Module\Plugin\Infrastructure\FrankenPhpProcesses'
+
+    App\Module\Plugin\Infrastructure\FrankenPhpProcesses:
+        arguments:
+            $pluginsDirectory: '%immobase.plugins_dir%'
+            $stateDirectory: '%kernel.project_dir%/var/plugins'
+            $caddyfile: '%kernel.project_dir%/docker/frankenphp/plugin.Caddyfile'
+
+    # Im Image gesetzt: der Helfer, der jedes Plugin unter seiner eigenen
+    # Kennung startet. Leer auf dem Entwicklungsrechner und in den Tests.
+    App\Module\Plugin\Infrastructure\PluginRunner:
+        arguments:
+            $helper: '%env(default::IMMOBASE_PLUGIN_RUNNER)%'
+
+    App\Module\Plugin\Infrastructure\PluginDependencies:
+        arguments:
+            $stateDirectory: '%kernel.project_dir%/var/plugins'
+
+    App\Module\Plugin\Application\KeepPluginsRunning:
+        arguments:
+            $coreUrl: '%env(string:IMMOBASE_PLUGIN_CORE_URL)%'
+
+    # Im Image gesetzt: der Helfer, der die Netzsperre der Plugins schreibt.
+    # Leer auf dem Entwicklungsrechner und in den Tests.
+    App\Module\Plugin\Infrastructure\NetfilterPluginNetwork:
+        arguments:
+            $helper: '%env(default::IMMOBASE_PLUGIN_FIREWALL)%'
+            $coreUrl: '%env(string:IMMOBASE_PLUGIN_CORE_URL)%'
+
+    # Plugins liegen neben der Anwendung und nicht in ihr. Der Pfad steht
+    # hier, damit ein Test ihn auf ein Prüfverzeichnis umbiegen kann — sonst
+    # ließe sich die Aktivierung nur mit einem echten Plugin prüfen.
+    App\Module\Plugin\Infrastructure\FilesystemManifests:
+        arguments:
+            $directory: '%immobase.plugins_dir%'
+
+    # Der Schlüssel, mit dem Anhänge versiegelt werden. Ein eigener und nicht
+    # APP_SECRET: das wird auch für Formular-Token benutzt, und wer es wechselt
+    # — was man tun soll, wenn es abhandengekommen ist — soll nicht nebenbei
+    # alle Anhänge unlesbar machen.
+    #
+    # Fehlt er, wird nicht hochgeladen, statt still im Klartext abzulegen.
+    App\Module\Portal\Infrastructure\SodiumFileVault:
+        arguments:
+            $key: '%env(string:IMMOBASE_FILE_KEY)%'
+
+    App\Shared\Attribution\AttributionReader:
+        arguments:
+            $file: '%kernel.project_dir%/assets/attributions.json'
+
+    App\Shared\Region\Background:
+        arguments:
+            $configured: '%immobase.region%'
+            $available: '%immobase.regions%'
+
+when@test:
+    parameters:
+        # Tests sehen ein Prüf-Plugin und nicht das ausgelieferte: die Zusagen
+        # der Grenze sollen sich ändern lassen, ohne dass ein echtes Plugin
+        # mitwandert — und ein Testlauf soll keine Fassung von „reporting"
+        # aktivieren.
+        immobase.plugins_dir: '%kernel.project_dir%/tests/Fixture/plugins'
+
+    services:
+        # Für Funktionstests aus dem Container holbar machen.
+        App\Module\Auth\Domain\UserRepository:
+            alias: App\Module\Auth\Infrastructure\DoctrineUserRepository
+            public: true
+        App\Module\Party\Domain\PartyRepository:
+            alias: App\Module\Party\Infrastructure\DoctrinePartyRepository
+            public: true
+        App\Module\Property\Domain\PropertyRepository:
+            alias: App\Module\Property\Infrastructure\DoctrinePropertyRepository
+            public: true
+        App\Module\Property\Domain\UnitRepository:
+            alias: App\Module\Property\Infrastructure\DoctrineUnitRepository
+            public: true
+        App\Module\Property\Application\AssignOwners:
+            autowire: true
+            public: true
+        App\Module\Tenancy\Domain\TenancyRepository:
+            alias: App\Module\Tenancy\Infrastructure\DoctrineTenancyRepository
+            public: true
+        App\Module\Finance\Domain\CostKindRepository:
+            alias: App\Module\Finance\Infrastructure\DoctrineCostKindRepository
+            public: true
+        App\Module\Finance\Domain\CostItemRepository:
+            alias: App\Module\Finance\Infrastructure\DoctrineCostItemRepository
+            public: true
+        App\Module\Finance\Domain\LoanRepository:
+            alias: App\Module\Finance\Infrastructure\DoctrineLoanRepository
+            public: true
+        App\Module\Finance\Application\SaveCostItem:
+            autowire: true
+            public: true
+        App\Module\Finance\Domain\HouseMoneyRepository:
+            alias: App\Module\Finance\Infrastructure\DoctrineHouseMoneyRepository
+            public: true
+        App\Module\Finance\Application\SaveHouseMoney:
+            autowire: true
+            public: true
+        App\Module\Finance\Domain\ReserveMovementRepository:
+            alias: App\Module\Finance\Infrastructure\DoctrineReserveMovementRepository
+            public: true
+        App\Module\Finance\Application\BookReserve:
+            autowire: true
+            public: true
+        App\Module\Finance\Domain\DistributionKeyRepository:
+            alias: App\Module\Finance\Infrastructure\DoctrineDistributionKeyRepository
+            public: true
+        App\Module\Tenancy\Application\SaveTenancy:
+            autowire: true
+            public: true
+        App\Module\Tenancy\Application\AssignTenants:
+            autowire: true
+            public: true
+        App\Module\Tenancy\Application\ScheduleRent:
+            autowire: true
+            public: true
+        App\Module\Auth\Domain\Rbac\RoleRepository:
+            alias: App\Module\Auth\Infrastructure\DoctrineRoleRepository
+            public: true
+        App\Module\Auth\Domain\Rbac\PermissionAssignments:
+            alias: App\Module\Auth\Infrastructure\DoctrinePermissionAssignments
+            public: true
+        # Für die Katalogtests und die Rechte-Fixtures aus dem Container
+        # holbar. Der Dienst bleibt derselbe, nur öffentlich.
+        App\Module\Auth\Application\Rbac\PermissionCatalogue:
+            autowire: true
+            public: true
+        App\Module\Auth\Application\Rbac\EffectivePermissions:
+            autowire: true
+            public: true
+        App\Module\Auth\Application\ManageUser:
+            autowire: true
+            public: true
+        App\Module\Auth\Application\Rbac\ManageRoles:
+            autowire: true
+            public: true
+        Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface:
+            alias: security.user_password_hasher
+            public: true
+        Doctrine\ORM\EntityManagerInterface:
+            alias: doctrine.orm.default_entity_manager
+            public: true
+
+        # Belegt, dass die Löschsperre greift. Es gibt noch kein Fachmodul,
+        # das auf Stammdaten verweist — ohne diese Attrappe bliebe die Sperre
+        # ungeprüft.
+        App\Tests\Module\Party\Fixture\StubPartyLinkSource:
+            public: true
+            tags:
+                - { name: party.link_source }
+
+        # Belegt, dass Rechtevergabe und Protokollzeile zusammen stehen oder
+        # zusammen fallen. Ob sie in derselben Transaktion liegen, zeigt sich
+        # erst, wenn das Schreiben der Zeile scheitert — gelingt beides, sieht
+        # man keinen Unterschied. Die Attrappe scheitert nur auf Kommando.
+        App\Tests\Module\Audit\Fixture\ProtocolThatCanFail:
+            decorates: App\Shared\Audit\RecordsActions
+            public: true
+            arguments:
+                $real: '@.inner'
+
+        # Der Proxy holt die Seite beim Plugin. Im Test antwortet statt eines
+        # Prozesses diese Attrappe — auch mit Schweigen, denn genau daran
+        # hängt die Zusage, dass ein totes Plugin nichts mitnimmt.
+        App\Tests\Module\Plugin\Fixture\PluginAnswers:
+            public: true
+
+        App\Module\Plugin\Application\AsksThePlugin:
+            arguments:
+                $client: '@App\Tests\Module\Plugin\Fixture\PluginAnswers'
+
+        # Dieselbe Attrappe stellt die Webhooks zu — und schweigt auf
+        # Kommando, weil genau daran die Zusage haengt, dass ein totes Plugin
+        # sich staut statt etwas mitzunehmen.
+        App\Module\Plugin\Application\DeliverEvents:
+            autowire: true
+            public: true
+            arguments:
+                $client: '@App\Tests\Module\Plugin\Fixture\PluginAnswers'
+
+        App\Module\Plugin\Domain\DeliveryRepository:
+            alias: App\Module\Plugin\Infrastructure\DbalDeliveryRepository
+            public: true
+
+        App\Module\Plugin\Domain\TileRepository:
+            alias: App\Module\Plugin\Infrastructure\DoctrineTileRepository
+            public: true
+
+        App\Module\Plugin\Application\SetPluginState:
+            autowire: true
+            public: true
+
+        App\Module\Plugin\Application\ActivatePlugin:
+            autowire: true
+            public: true
+
+        App\Module\Plugin\Application\IssueToken:
+            autowire: true
+            public: true
+
+        # Nur für den Nachweis, dass der Event-Bus Empfänger erreicht.
+        # Es gibt bewusst kein Produktions-Event: solange es nur ein Fachmodul
+        # gibt, kann es keinen Zyklus geben, den ein Event auflösen müsste.
+        App\Tests\Shared\Fixture\RecordingHandler:
+            public: true
+            tags:
+                - { name: messenger.message_handler, bus: domain.event.bus }

@@ -1,0 +1,45 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Meine Mietverhältnisse.
+
+    Nur lesend, und das bleibt so: ein Mietvertrag ändert sich durch eine
+    Vereinbarung, nicht durch ein Formular. Deshalb steht hier auch kein
+    Hinweis auf einen Änderungsvorschlag, sondern einer auf die Anfrage.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {% if tenancies is empty %}
+        <p class="ib-muted">{{ 'portal.no_tenancies'|trans }}</p>
+    {% else %}
+        {% for tenancy in tenancies %}
+            {% set step = tenancy.stepOn(today) %}
+            {% set rows = [
+                ['portal.field.number'|trans, tenancy.number],
+                ['portal.field.address'|trans, tenancy.address],
+                ['portal.field.from'|trans, tenancy.from ? tenancy.from|date_local : '—'],
+                ['portal.field.to'|trans, tenancy.to ? tenancy.to|date_local : 'portal.open_ended'|trans]
+            ] %}
+
+            {% if step %}
+                {% set rows = rows|merge([
+                    ['portal.field.base_rent'|trans, step.base|money],
+                    ['portal.field.operating_costs'|trans, step.operatingCosts|money],
+                    ['portal.field.heating'|trans, step.heating|money],
+                    ['portal.field.parking'|trans, step.parking|money],
+                    ['portal.field.total_rent'|trans, step.total|money]
+                ]) %}
+            {% endif %}
+
+            {% embed 'components/card.html.twig' with { title: tenancy.unitLabel, rows: rows } only %}
+                {% block body %}
+                    {% include 'components/table.html.twig' with {
+                        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+                        rows: rows, empty: ''
+                    } only %}
+                {% endblock %}
+            {% endembed %}
+        {% endfor %}
+    {% endif %}
+{% endblock %}

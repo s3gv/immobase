@@ -1,0 +1,358 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 s3gv
+#
+# Erzwingt die Modulgrenze aus den Projektkonventionen.
+#
+# Pro Modul zwei Schichten:
+#   <Modul>Public   = Contract + Application  -> für andere Module sichtbar
+#   <Modul>Internal = Domain + Infrastructure + UserInterface -> modulintern
+#
+# Ein neues Modul hinzufügen: beide Schichten anlegen, dann in ruleset
+# eintragen. <Modul>Public darf Shared und fremde *Public; <Modul>Internal
+# darf zusätzlich das eigene <Modul>Public.
+
+deptrac:
+  paths:
+    - ./src
+
+  layers:
+    - name: Shared
+      collectors:
+        - type: classLike
+          value: ^App\\Shared\\.*
+
+    - name: AuthPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Auth\\(Contract|Application)\\.*
+
+    - name: AuthInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Auth\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: PartyPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Party\\(Contract|Application)\\.*
+
+    - name: PartyInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Party\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: SettingsPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Settings\\(Contract|Application)\\.*
+
+    - name: SettingsInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Settings\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: PropertyPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Property\\(Contract|Application)\\.*
+
+    - name: PropertyInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Property\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: FinancePublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Finance\\(Contract|Application)\\.*
+
+    - name: FinanceInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Finance\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: TenancyPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Tenancy\\(Contract|Application)\\.*
+
+    - name: TenancyInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Tenancy\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: BillingPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Billing\\(Contract|Application)\\.*
+
+    - name: BillingInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Billing\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: DunningPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Dunning\\(Contract|Application)\\.*
+
+    - name: DunningInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Dunning\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: PortalPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Portal\\(Contract|Application)\\.*
+
+    - name: PortalInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Portal\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: AuditPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Audit\\(Contract|Application)\\.*
+
+    - name: AuditInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Audit\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: DashboardPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Dashboard\\(Contract|Application)\\.*
+
+    - name: DashboardInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Dashboard\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: ApiPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Api\\(Contract|Application)\\.*
+
+    - name: ApiInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Api\\(Domain|Infrastructure|UserInterface)\\.*
+
+    - name: PluginPublic
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Plugin\\(Contract|Application)\\.*
+
+    - name: PluginInternal
+      collectors:
+        - type: classLike
+          value: ^App\\Module\\Plugin\\(Domain|Infrastructure|UserInterface)\\.*
+
+  ruleset:
+    # Shared ist die Grundlage und darf kein Fachmodul kennen.
+    Shared: ~
+
+    # Auth liest eine Einstellung: ob Passwörter gegen bekannte Leaks
+    # geprüft werden. Nur über SettingsPublic — die Entity bleibt drinnen.
+    AuthPublic:
+      - Shared
+      - AuthInternal
+      - SettingsPublic
+
+    AuthInternal:
+      - Shared
+      - AuthPublic
+      - SettingsPublic
+
+    SettingsPublic:
+      - Shared
+      - SettingsInternal
+
+    SettingsInternal:
+      - Shared
+      - SettingsPublic
+
+    PartyPublic:
+      - Shared
+      - PartyInternal
+
+    # Die Stammdaten richten Portalzugaenge ein und fragen die Anmeldung
+    # danach — ueber AuthPublic, also ueber einen Vertrag. Von `Auth\Domain`
+    # wissen sie nichts, und die Anmeldung weiss nichts von Parteien: sie
+    # bekommt eine Kennung als Zeichenkette.
+    PartyInternal:
+      - Shared
+      - PartyPublic
+      - AuthPublic
+
+    # Objekte kennen Stammdaten — Eigentuemer sind Kontakte. Nur ueber
+    # PartyPublic: die Entity bleibt drinnen.
+    PropertyPublic:
+      - Shared
+      - PropertyInternal
+      - PartyPublic
+
+    PropertyInternal:
+      - Shared
+      - PropertyPublic
+      - PartyPublic
+
+    # Finanzen kennen Miete und Objekte — andersherum nicht: die Vorauszahlung
+    # steht im Mietvertrag, und ein Aufruf zurück wäre der Zyklus. Billing
+    # kennen sie ebenso wenig: ob eine Abrechnung oder ein Plan etwas hält,
+    # fragen sie über Verträge in Finance\Contract, die Billing erfüllt.
+    FinancePublic:
+      - Shared
+      - FinanceInternal
+      - PropertyPublic
+      - TenancyPublic
+
+    FinanceInternal:
+      - Shared
+      - FinancePublic
+      - PropertyPublic
+      - TenancyPublic
+
+    # Miete kennt Objekte und Stammdaten — eine Einheit und ihre Mieter.
+    # Nur ueber deren Contract-Flaechen; die Entities bleiben drinnen.
+    TenancyPublic:
+      - Shared
+      - TenancyInternal
+      - PropertyPublic
+      - PartyPublic
+
+    TenancyInternal:
+      - Shared
+      - TenancyPublic
+      - PropertyPublic
+      - PartyPublic
+
+    # Billing rechnet ab und besitzt selbst keine Stammdaten: es liest
+    # Objekte, Miete, Finanzen, Stammdaten und die Einstellungen — jeweils nur
+    # über deren Contract-Fläche. Zurück zeigt nichts: ob eine Quelle in einer
+    # Abrechnung steckt, beantwortet Billing über einen Vertrag der Finanzen.
+    BillingPublic:
+      - Shared
+      - BillingInternal
+      - PropertyPublic
+      - TenancyPublic
+      - FinancePublic
+      - PartyPublic
+      - SettingsPublic
+
+    BillingInternal:
+      - Shared
+      - BillingPublic
+      - PropertyPublic
+      - TenancyPublic
+      - FinancePublic
+      - PartyPublic
+      - SettingsPublic
+
+    # Das Mahnwesen liest, was nicht gezahlt wurde, und schreibt darueber.
+    # Es kennt die Finanzen, die Objekte, die Stammdaten und die Miete — die
+    # Richtung zurueck gibt es nicht: die Finanzen sind die Quelle, und ein
+    # Aufruf zurueck waere der Zyklus. Die Zahl am Menuepunkt entsteht darum
+    # in einer Twig-Funktion dieses Moduls, die fremde Vorlagen aufrufen.
+    DunningPublic:
+      - Shared
+      - DunningInternal
+      - FinancePublic
+      - PropertyPublic
+      - PartyPublic
+      - TenancyPublic
+      - SettingsPublic
+
+    DunningInternal:
+      - Shared
+      - DunningPublic
+      - FinancePublic
+      - PropertyPublic
+      - PartyPublic
+      - TenancyPublic
+      - SettingsPublic
+
+    # Das Portal zeigt einem Menschen von aussen seine eigenen Daten. Es liest
+    # bei Stammdaten, Objekten und Miete und fuehrt seine Konten ueber die
+    # Anmeldung — die Richtung zurueck gibt es nicht: **kein Modul haengt vom
+    # Portal ab.** Was beide Seiten brauchen, steht in Shared.
+    #
+    # Die Kontoseite im Portal gehoert der Anmeldung: Passwort und zweiter
+    # Faktor sind dieselben Ablaeufe wie im Verwalterbereich, nur in der
+    # Portalhuelle. Das Portal selbst kennt die Anmeldung nur ueber AuthPublic.
+    PortalPublic:
+      - Shared
+      - PortalInternal
+      - AuthPublic
+      - PartyPublic
+      - PropertyPublic
+      - TenancyPublic
+      - SettingsPublic
+
+    PortalInternal:
+      - Shared
+      - PortalPublic
+      - AuthPublic
+      - PartyPublic
+      - PropertyPublic
+      - TenancyPublic
+      - SettingsPublic
+
+    # Das Protokoll haengt an Doctrine und sieht damit jede Entitaet der
+    # Anwendung — es kennt aber keine einzige beim Namen. Es braucht nur die
+    # Anmeldung, um zu wissen, wer gerade handelt. Die Wege zu den
+    # Datensaetzen kommen aus den Modulen selbst, ueber `Shared\Audit`:
+    # **kein Modul haengt am Protokoll, und das Protokoll an keinem Modul.**
+    AuditPublic:
+      - Shared
+      - AuditInternal
+      - AuthPublic
+
+    AuditInternal:
+      - Shared
+      - AuditPublic
+      - AuthPublic
+
+    # Plugins stehen neben der Anwendung, nicht in ihr. Das Modul haelt die
+    # Manifeste, die Aktivierung, die Token und den Proxy — es kennt die
+    # Anmeldung (wer vertraut hat) und die Einstellungen (unter denen seine
+    # Seite haengt). **Kein Modul haengt vom Plugin-Modul ab**, und die Plugins
+    # selbst kennen ueberhaupt keine Klasse von hier: sie sprechen ueber HTTP.
+    PluginPublic:
+      - Shared
+      - PluginInternal
+      - AuthPublic
+      - SettingsPublic
+
+    PluginInternal:
+      - Shared
+      - PluginPublic
+      - AuthPublic
+      - SettingsPublic
+
+    # Die Datenschnittstelle haelt selbst keine Daten. Sie sammelt ein, was
+    # die Module veroeffentlichen, und fragt das Plugin-Modul, wer da anklopft.
+    # **Kein Fachmodul haengt von ihr ab** — sie kennt auch keines beim Namen:
+    # was sie ausliefert, kommt ueber `Shared\Api`.
+    ApiPublic:
+      - Shared
+      - ApiInternal
+
+    ApiInternal:
+      - Shared
+      - ApiPublic
+      - PluginPublic
+
+    # Dashboard darf AuthPublic benutzen, aber nicht AuthInternal.
+    DashboardPublic:
+      - Shared
+      - DashboardInternal
+      - AuthPublic
+
+    DashboardInternal:
+      - Shared
+      - DashboardPublic
+      - AuthPublic

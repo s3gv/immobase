@@ -1,0 +1,35 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Felder einer Mietstufe — einmal für das Ändern, einmal für das
+    Anlegen. Erwartet: step (RentStep oder null)
+#}
+{% include 'components/field.html.twig' with {
+    id: 'startsOn-' ~ (step ? step.id : 'neu'), name: 'startsOn', type: 'date',
+    label: 'tenancy.rent.from'|trans,
+    value: step ? step.startsOn|date('Y-m-d') : ''
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'base-' ~ (step ? step.id : 'neu'), name: 'base',
+    label: 'tenancy.rent.base'|trans,
+    value: step and not step.rent.base.isZero ? step.rent.base|money_number : ''
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'operatingCosts-' ~ (step ? step.id : 'neu'), name: 'operatingCosts',
+    label: 'tenancy.rent.operating_costs'|trans,
+    value: step and not step.rent.operatingCosts.isZero ? step.rent.operatingCosts|money_number : ''
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'heating-' ~ (step ? step.id : 'neu'), name: 'heating',
+    label: 'tenancy.rent.heating'|trans,
+    value: step and not step.rent.heating.isZero ? step.rent.heating|money_number : ''
+} only %}
+
+{% include 'components/field.html.twig' with {
+    id: 'parking-' ~ (step ? step.id : 'neu'), name: 'parking',
+    label: 'tenancy.rent.parking'|trans,
+    value: step and not step.rent.parking.isZero ? step.rent.parking|money_number : ''
+} only %}

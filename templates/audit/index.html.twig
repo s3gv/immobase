@@ -1,0 +1,70 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Das Änderungsprotokoll.
+
+    Wer wann was geschrieben, gelöscht oder sich angemeldet hat — im Stil
+    jeder anderen Übersicht, damit man sich nicht neu zurechtfinden muss.
+
+    Wo der Datensatz noch da ist, führt seine Bezeichnung hin. Wo nicht,
+    steht sie als Text: das ist der Fall, für den es das Protokoll gibt, und
+    ein Verweis ins Leere wäre schlimmer als keiner.
+#}
+{% extends 'shell.html.twig' %}
+
+{% block title %}{{ 'audit.heading'|trans }} · {{ 'app.name'|trans }}{% endblock %}
+
+{% block content %}
+    <h1 class="ib-heading">{{ 'audit.heading'|trans }}</h1>
+    <p class="ib-subheading">{{ 'audit.subheading'|trans({'%hours%': 48}) }}</p>
+
+    {% embed 'components/index_page.html.twig' with {
+        headers: [
+            'audit.field.when'|trans,
+            'audit.field.who'|trans,
+            'audit.field.what'|trans,
+            'audit.field.record'|trans,
+            'audit.field.id'|trans
+        ],
+        rows: lines|map(line => {
+            cells: [
+                line.entry.at|datetime_local,
+                line.entry.actor ~ ' · ' ~ line.entry.actorKind.labelKey|trans,
+                line.entry.action.labelKey|trans,
+                line.entry.record ? (line.entry.record ~ (line.entry.label ? ' · ' ~ line.entry.label : '')) : '—',
+                line.entry.recordId ?: '—'
+            ],
+            actions: line.url ? [{ action: 'open', url: line.url }] : []
+        }),
+        page: page,
+        action: path('app_audit'),
+        url: url,
+        empty: 'audit.empty'|trans,
+        filter: filter,
+        actions: actions
+    } only %}
+        {% block actions %}
+            {#
+                Der Abzug ist ungefiltert und vollständig — er ist der Weg,
+                etwas über die achtundvierzig Stunden hinaus zu behalten.
+            #}
+            <a class="ib-button ib-button--quiet" href="{{ path('app_audit_pdf') }}">
+                {{ 'audit.action.export'|trans }}
+            </a>
+        {% endblock %}
+
+        {% block filters %}
+            {% include 'components/field.html.twig' with {
+                id: 'q', name: 'q', label: 'audit.filter.search'|trans,
+                value: filter.search, placeholder: 'audit.filter.search_hint'|trans
+            } only %}
+
+            {% include 'components/select.html.twig' with {
+                id: 'aktion', name: 'aktion', label: 'audit.field.what'|trans,
+                choices: actions|map(action => { value: action.value, label: action.labelKey|trans }),
+                value: filter.action ? filter.action.value : '',
+                blank: 'audit.filter.all'|trans
+            } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

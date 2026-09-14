@@ -1,0 +1,175 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Wem die Einheit gehört — und zu welchem Anteil.
+
+    Der Anteil der Einheit steht oben, die Aufteilung darunter: „25/1000"
+    sagt erst etwas, wenn danebensteht, dass die Einheit 50/1000 hält.
+#}
+{% extends 'property/unit/_flow.html.twig' %}
+
+{% block fields %}
+    {% set denominator = property.shares.denominator.value %}
+    {# Nach einem Fehler steht wieder da, was abgeschickt wurde. #}
+    {% set posted = errors is not empty %}
+
+    {% if errors.owners is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.owners|trans }}</p>
+    {% endif %}
+
+    <div class="ib-mea">
+        {% include 'components/field.html.twig' with {
+            id: 'mea', name: 'mea', label: 'property.mea.unit_share'|trans,
+            value: posted ? submitted.mea|default('') : (unit.mea.isZero ? '' : unit.mea.numerator|decimal(false)),
+            error: errors.mea is defined ? errors.mea|trans : null
+        } only %}
+        <span class="ib-mea__denominator">/ {{ denominator }}</span>
+    </div>
+
+    {#
+        Von und Bis dürfen leer bleiben, und beide bedeuten dann etwas:
+        ohne Anfang gehörte die Einheit dieser Partei schon, als die
+        Verwaltung sie übernahm, ohne Ende gehört sie ihr noch. Ein Verkauf
+        sind zwei Angaben — beim bisherigen Eigentümer ein Ende, beim neuen
+        ein Anfang am Tag danach.
+    #}
+    <p class="ib-field__hint">{{ 'property.owner.held_hint'|trans }}</p>
+
+
+    {# Solange die Einheit selbst keinen Anteil trägt, gibt es nichts zu
+       verteilen — „0 von 0" wäre eine Auskunft über nichts. #}
+    {% if not unit.mea.isZero %}
+        {% include 'property/_balance.html.twig' with {
+            balance: balance, openPeriods: openPeriods, balanceDay: balanceDay
+        } only %}
+    {% endif %}
+
+    <div class="ib-picker"
+         data-party-picker
+         data-search-url="{{ path('app_property_owner_search') }}"
+         data-denominator="{{ denominator }}"
+         data-empty="{{ 'property.owner.no_results'|trans }}"
+         data-duplicate="{{ 'property.owner.already_added'|trans }}"
+         data-remove="{{ 'property.owner.remove'|trans }}"
+         data-reference="{{ 'user.field.number'|trans }}"
+         data-allow-repeat
+         data-row-name="owners[{id}][{field}]">
+
+        <ul class="ib-picker__list" data-party-list>
+            {% for owner in owners %}
+                {#
+                    Die Zeile ist der Eigentumszeitraum und nicht die Partei:
+                    wer verkauft und später zurückkauft, steht zweimal da.
+                    Darum der eigene Schlüssel und ein Feld für den Kontakt.
+                #}
+                <li class="ib-picker__row" data-party-row="{{ owner.key }}">
+                    <input type="hidden" name="owners[{{ owner.key }}][party]" value="{{ owner.partyId }}">
+                    <span class="ib-picker__name">
+                        {{ owner.brief ? owner.brief.displayName : owner.partyId }}
+                        {% if owner.brief %}
+                            <span class="ib-field__hint">
+                                {{ 'user.field.number'|trans }} {{ owner.brief.reference }}
+                                {{ owner.brief.address ? '· ' ~ owner.brief.address : '' }}
+                            </span>
+                        {% endif %}
+                    </span>
+                    <span class="ib-mea">
+                        <input class="ib-field__input" type="text" data-row-field="mea"
+                               name="owners[{{ owner.key }}][mea]"
+                               value="{{ owner.typed is not null ? owner.typed : (owner.mea.isZero ? '' : owner.mea.numerator|decimal(false)) }}"
+                               aria-label="{{ 'property.mea.owner_share'|trans }}">
+                        <span class="ib-mea__denominator">/ {{ denominator }}</span>
+                    </span>
+                    <span class="ib-picker__held">
+                        <input class="ib-field__input" type="date" data-row-field="von"
+                               name="owners[{{ owner.key }}][von]"
+                               value="{{ owner.heldFrom }}"
+                               aria-label="{{ 'property.owner.held_from'|trans }}"
+                               title="{{ 'property.owner.held_from'|trans }}">
+                        <input class="ib-field__input" type="date" data-row-field="bis"
+                               name="owners[{{ owner.key }}][bis]"
+                               value="{{ owner.heldTo }}"
+                               aria-label="{{ 'property.owner.held_to'|trans }}"
+                               title="{{ 'property.owner.held_to'|trans }}">
+                    </span>
+                    <button class="ib-action ib-action--danger" type="button" data-party-remove
+                            aria-label="{{ 'property.owner.remove'|trans }}"
+                            data-tooltip="{{ 'property.owner.remove'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% if owners is empty %}
+            <p class="ib-picker__empty" data-party-empty>{{ 'property.owner.none'|trans }}</p>
+        {% endif %}
+
+        {% include 'components/field.html.twig' with {
+            id: 'owner-search', name: 'ownerSearch',
+            label: 'property.owner.search'|trans,
+            hint: 'property.owner.search_hint'|trans,
+            autocomplete: 'off'
+        } only %}
+
+        <ul class="ib-picker__results" data-party-results hidden></ul>
+
+        <button class="ib-button ib-button--quiet" type="button" data-modal-open="owner-create">
+            {{ 'property.owner.create_new'|trans }}
+        </button>
+
+        {# Die Vorlage für eine neue Zeile steht im Picker, weil das Skript sie
+           dort sucht — und weil sie ohne ihn keinen Sinn ergibt. #}
+        <template data-party-template>
+            <li class="ib-picker__row" data-party-row="">
+                <input type="hidden" name="" data-row-field="party">
+                <span class="ib-picker__name"></span>
+                <span class="ib-mea">
+                    <input class="ib-field__input" type="text" name="" data-row-field="mea"
+                           aria-label="{{ 'property.mea.owner_share'|trans }}">
+                    <span class="ib-mea__denominator">/ {{ denominator }}</span>
+                </span>
+                <span class="ib-picker__held">
+                    <input class="ib-field__input" type="date" name="" data-row-field="von"
+                           aria-label="{{ 'property.owner.held_from'|trans }}"
+                           title="{{ 'property.owner.held_from'|trans }}">
+                    <input class="ib-field__input" type="date" name="" data-row-field="bis"
+                           aria-label="{{ 'property.owner.held_to'|trans }}"
+                           title="{{ 'property.owner.held_to'|trans }}">
+                </span>
+                <button class="ib-action ib-action--danger" type="button" data-party-remove
+                        aria-label="{{ 'property.owner.remove'|trans }}">
+                    {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                </button>
+            </li>
+        </template>
+    </div>
+
+    {#
+        Der Umweg über die Stammdaten. Das Objekt ist gespeichert, also geht
+        nichts verloren — und der neue Kontakt kommt über ?neu= gleich in die
+        Liste zurück.
+    #}
+    {% embed 'components/modal.html.twig' with {
+        id: 'owner-create', title: 'property.owner.create_title'|trans, action: action
+    } only %}
+        {% block body %}
+            <p>{{ 'property.owner.create_body'|trans }}</p>
+            <p class="ib-confirm__lead">{{ 'confirm.consequences'|trans }}</p>
+            <ul class="ib-confirm__list">
+                <li>{{ 'property.owner.create_consequence_saved'|trans }}</li>
+                <li>{{ 'property.owner.create_consequence_back'|trans }}</li>
+            </ul>
+        {% endblock %}
+
+        {% block actions %}
+            <button class="ib-button ib-button--quiet" type="button" data-modal-close autofocus>
+                {{ 'confirm.cancel'|trans }}
+            </button>
+            <a class="ib-button" href="{{ path('app_party_new', { weiter: action }) }}">
+                {{ 'property.owner.create_new'|trans }}
+            </a>
+        {% endblock %}
+    {% endembed %}
+
+{% endblock %}

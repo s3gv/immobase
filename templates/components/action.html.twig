@@ -1,0 +1,54 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Eine Standardaktion als Symbolschaltfläche mit Hinweis beim Überfahren.
+
+    Erwartet: action — ein Name aus dem Aktionsvokabular (src/Shared/Ui/Action):
+                       open, edit, delete, save, add, next, previous
+    Optional: url      — dann ein Link statt eines Knopfes
+              labelled — Beschriftung neben dem Symbol, für die Aktionszeile
+                         über einer Übersicht. Der Name kommt aus dem
+                         Vokabular, steht also auch hier überall gleich.
+              modal    — Kennung eines Dialogs, den der Knopf öffnet
+              type     — Knopfart (Vorgabe button)
+              name, value — für Knöpfe innerhalb eines Formulars
+              rel      — für Links (prev/next)
+              disabled
+              tooltip  — abweichender Hinweis, etwa die Begründung dafür,
+                         dass die Aktion gerade nicht möglich ist
+
+    Symbol und Beschriftung kommen aus dem Vokabular, nicht vom Aufrufort:
+    dieselbe Aktion sieht überall gleich aus und heißt überall gleich.
+
+    Die Beschriftung steht als aria-label am Element — der Hinweis ist eine
+    Bequemlichkeit für die Maus, kein Ersatz für einen Namen.
+#}
+{% set a = ui_action(action) %}
+{% set label = a.labelKey|trans %}
+{% set hint = tooltip|default(null) ?: label %}
+{% set classes = 'ib-action'
+    ~ (a.destructive ? ' ib-action--danger' : '')
+    ~ (labelled|default(false) ? ' ib-action--labelled' : '') %}
+
+{% if url|default(null) %}
+    <a class="{{ classes }}"
+       href="{{ url }}"
+       aria-label="{{ label }}"
+       data-tooltip="{{ hint }}"
+       {% if rel is defined %}rel="{{ rel }}"{% endif %}>
+        {% include 'components/icon.html.twig' with { name: a.icon } %}
+        {% if labelled|default(false) %}<span>{{ label }}</span>{% endif %}
+    </a>
+{% else %}
+    <button class="{{ classes }}"
+            type="{{ type|default('button') }}"
+            aria-label="{{ label }}"
+            data-tooltip="{{ hint }}"
+            {% if modal|default(null) %}data-modal-open="{{ modal }}"{% endif %}
+            {% if name is defined %}name="{{ name }}"{% endif %}
+            {% if value is defined %}value="{{ value }}"{% endif %}
+            {% if disabled|default(false) %}disabled{% endif %}>
+        {% include 'components/icon.html.twig' with { name: a.icon } %}
+        {% if labelled|default(false) %}<span>{{ label }}</span>{% endif %}
+    </button>
+{% endif %}

@@ -1,0 +1,65 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Meine Einheiten — die eigenen und die gemieteten.
+
+    Zwei Tabellen und nicht eine: „gehört mir" und „ich wohne darin" sind
+    verschiedene Verhältnisse zu derselben Wohnung, und wer beides hat, soll
+    sie nicht in einer Spalte auseinanderhalten müssen.
+
+    Verkaufte stehen mit dabei, mit ihrem Zeitraum. Wer verkauft hat, war
+    einmal Eigentümer — eine Wohnung, die einfach verschwindet, erweckt den
+    Eindruck, es habe sie nie gegeben.
+#}
+{% extends 'components/sections.html.twig' %}
+
+{% block section_body %}
+    {% embed 'components/card.html.twig' with {
+        title: 'portal.owned'|trans, owned: owned, today: today, myUnitIds: myUnitIds
+    } only %}
+        {% block body %}
+            {# Der Knopf steht nur an Einheiten, die mir heute gehören. #}
+            {% include 'components/table.html.twig' with {
+                headers: [
+                    'portal.field.unit'|trans,
+                    'portal.field.property'|trans,
+                    'portal.field.share'|trans,
+                    'portal.field.period'|trans
+                ],
+                rows: owned|map(o => {
+                    cells: [
+                        o.unit.label,
+                        o.unit.propertyName,
+                        o.share,
+                        (o.from ? o.from|date_local : 'portal.since_always'|trans)
+                            ~ ' – ' ~ (o.to ? o.to|date_local : 'portal.until_today'|trans)
+                    ],
+                    actions: o.unit.id in myUnitIds
+                        ? [{ action: 'edit', url: path('app_portal_change', { type: 'einheit', id: o.unit.id }) }]
+                        : []
+                }),
+                empty: 'portal.no_units'|trans
+            } only %}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'components/card.html.twig' with { title: 'portal.rented'|trans, tenancies: tenancies } only %}
+        {% block body %}
+            {# Die Bezeichnung trägt Objekt und Einheit schon in sich —
+               daneben noch einmal beides wäre dieselbe Angabe dreimal. #}
+            {% include 'components/table.html.twig' with {
+                headers: [
+                    'portal.field.unit'|trans,
+                    'portal.field.from'|trans,
+                    'portal.field.to'|trans
+                ],
+                rows: tenancies|map(t => [
+                    t.unitLabel,
+                    t.from ? t.from|date_local : '—',
+                    t.to ? t.to|date_local : 'portal.open_ended'|trans
+                ]),
+                empty: 'portal.no_rented'|trans
+            } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

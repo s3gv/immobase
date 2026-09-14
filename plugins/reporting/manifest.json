@@ -1,0 +1,279 @@
+{
+    "api": 1,
+    "name": "reporting",
+    "version": "1.1.0",
+    "label": {
+        "de": "Berichte",
+        "en": "Reports"
+    },
+    "permissions": [
+        {
+            "area": "reporting",
+            "actions": [
+                "view"
+            ],
+            "label": {
+                "de": "Berichte",
+                "en": "Reports"
+            }
+        }
+    ],
+    "reads": [
+        "properties.view",
+        "tenancies.view",
+        "finance.view",
+        "dunning.view"
+    ],
+    "nav": [
+        {
+            "path": "/berichte",
+            "label": {
+                "de": "Berichte",
+                "en": "Reports"
+            },
+            "permission": "reporting.view",
+            "icon": "chart"
+        }
+    ],
+    "tables": [
+        {
+            "name": "property",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "primary": true
+                },
+                {
+                    "name": "number",
+                    "type": "integer"
+                },
+                {
+                    "name": "name",
+                    "type": "text"
+                },
+                {
+                    "name": "city",
+                    "type": "text",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "unit",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "primary": true
+                },
+                {
+                    "name": "property_id",
+                    "type": "uuid",
+                    "index": true
+                },
+                {
+                    "name": "label",
+                    "type": "text"
+                },
+                {
+                    "name": "area",
+                    "type": "decimal",
+                    "nullable": true
+                },
+                {
+                    "name": "status",
+                    "type": "text"
+                }
+            ]
+        },
+        {
+            "name": "tenancy",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "primary": true
+                },
+                {
+                    "name": "unit_id",
+                    "type": "uuid",
+                    "index": true
+                },
+                {
+                    "name": "status",
+                    "type": "text"
+                },
+                {
+                    "name": "starts_on",
+                    "type": "timestamp",
+                    "nullable": true
+                },
+                {
+                    "name": "ends_on",
+                    "type": "timestamp",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "cost_year",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "text",
+                    "primary": true
+                },
+                {
+                    "name": "cost_id",
+                    "type": "uuid",
+                    "index": true
+                },
+                {
+                    "name": "property_id",
+                    "type": "uuid",
+                    "index": true
+                },
+                {
+                    "name": "cost_kind",
+                    "type": "text"
+                },
+                {
+                    "name": "apportionable",
+                    "type": "boolean"
+                },
+                {
+                    "name": "fiscal_year",
+                    "type": "integer",
+                    "index": true
+                },
+                {
+                    "name": "amount",
+                    "type": "decimal"
+                }
+            ]
+        },
+        {
+            "name": "claim",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "primary": true
+                },
+                {
+                    "name": "property_id",
+                    "type": "uuid",
+                    "index": true
+                },
+                {
+                    "name": "party_id",
+                    "type": "uuid"
+                },
+                {
+                    "name": "subject",
+                    "type": "text"
+                },
+                {
+                    "name": "due_on",
+                    "type": "timestamp",
+                    "nullable": true
+                },
+                {
+                    "name": "settled_on",
+                    "type": "timestamp",
+                    "nullable": true
+                },
+                {
+                    "name": "open_amount",
+                    "type": "decimal"
+                },
+                {
+                    "name": "steps",
+                    "type": "integer"
+                }
+            ]
+        },
+        {
+            "name": "reserve",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "primary": true
+                },
+                {
+                    "name": "property_id",
+                    "type": "uuid",
+                    "index": true
+                },
+                {
+                    "name": "occurred_on",
+                    "type": "timestamp"
+                },
+                {
+                    "name": "effect",
+                    "type": "decimal"
+                },
+                {
+                    "name": "reversed",
+                    "type": "boolean"
+                }
+            ]
+        },
+        {
+            "name": "loan",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "primary": true
+                },
+                {
+                    "name": "property_id",
+                    "type": "uuid",
+                    "index": true
+                },
+                {
+                    "name": "label",
+                    "type": "text"
+                },
+                {
+                    "name": "lender",
+                    "type": "text"
+                },
+                {
+                    "name": "amount",
+                    "type": "decimal"
+                },
+                {
+                    "name": "rate_bps",
+                    "type": "integer"
+                },
+                {
+                    "name": "starts_on",
+                    "type": "timestamp",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "name": "sync",
+            "columns": [
+                {
+                    "name": "name",
+                    "type": "text",
+                    "primary": true
+                },
+                {
+                    "name": "at",
+                    "type": "timestamp"
+                }
+            ]
+        }
+    ],
+    "events": [
+        "*.*"
+    ],
+    "webhook_path": "/webhook"
+}

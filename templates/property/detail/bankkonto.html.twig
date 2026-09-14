@@ -1,0 +1,24 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_detail.html.twig' %}
+{% set edit_step = 'bankkonto' %}
+
+{% block panel %}
+    {% set blank = 'property.none'|trans %}
+    {% set account = property.accounting.account %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['property.bank.iban'|trans, account.ibanInGroups ?: blank],
+            ['property.bank.bic'|trans, account.bic ?: blank],
+            ['property.bank.holder'|trans, account.holder ?: blank],
+            ['property.bank.creditor_id'|trans, account.creditorId ?: blank],
+            ['property.bank.label'|trans, account.label ?: blank]
+        ],
+        empty: ''
+    } only %}
+
+    {% if not account.isKnown %}
+        <p class="ib-field__hint">{{ 'property.bank.none_yet'|trans }}</p>
+    {% endif %}
+{% endblock %}

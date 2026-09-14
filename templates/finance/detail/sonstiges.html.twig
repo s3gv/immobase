@@ -1,0 +1,35 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'finance/_detail.html.twig' %}
+{% set edit_step = 'sonstiges' %}
+
+{% block panel %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            [
+                'finance.item.field.apportionable'|trans,
+                (item.isApportionable ? 'finance.kind.apportionable_yes' : 'finance.kind.apportionable_no')|trans
+                    ~ (item.overridesApportionability
+                        ? ' · ' ~ 'finance.item.overridden'|trans
+                        : ' · ' ~ 'finance.item.as_the_kind'|trans)
+            ],
+            [
+                'finance.item.field.split'|trans,
+                (item.splitsByDay ? 'finance.item.split.by_day' : 'finance.item.split.on_the_day')|trans
+            ]
+        ]|merge(item.decidedMeasure.isChosen ? [[
+            'finance.item.field.budget_measure'|trans,
+            item.decidedMeasure.reference ~ ' · ' ~ item.decidedMeasure.label
+        ]] : []),
+        empty: ''
+    } only %}
+
+    {% if item.note %}
+        <p class="ib-note-text">{{ item.note|nl2br }}</p>
+    {% else %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'finance.item.no_note'|trans
+        } only %}
+    {% endif %}
+{% endblock %}

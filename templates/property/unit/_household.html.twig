@@ -1,0 +1,75 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die Personenzahl der Einheit über die Zeit.
+
+    Erwartet: property, unit, today
+    Optional: editable — mit Formularen zum Ändern und Ergänzen
+
+    Dieselbe Gestalt wie die Personenstaffel am Mietverhältnis, weil es
+    dieselbe Sache ist: ein Wert, der ab einem Tag gilt. Hier gilt er für die
+    Tage, an denen **kein** Mietverhältnis läuft — selbst bewohnt oder leer
+    stehend. Damit gibt es zu keinem Tag zwei Zahlen.
+#}
+{% set household = unit.household %}
+{% set current = household.on(today) %}
+
+<div class="ib-rents">
+    <h3 class="ib-flow__title">{{ 'property.unit.household.heading'|trans }}</h3>
+    <p class="ib-field__hint">{{ 'property.unit.household.hint'|trans }}</p>
+
+    {% if household.isEmpty %}
+        {% include 'components/empty_state.html.twig' with {
+            message: 'property.unit.household.empty'|trans
+        } only %}
+    {% elseif editable|default(false) %}
+        {% for step in household.steps %}
+            <form class="ib-rents__row{{ step is same as(current) ? ' is-current' : '' }}" method="post"
+                  action="{{ path('app_unit_household_change', {
+                      number: property.number, unit: unit.number, step: step.id
+                  }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('unit_household_' ~ unit.id) }}">
+
+                {% include 'property/unit/_household_fields.html.twig' with { step: step } only %}
+
+                <div class="ib-rents__actions">
+                    {% if step is same as(current) %}
+                        <span class="ib-badge ib-badge--success">{{ 'tenancy.rent.current'|trans }}</span>
+                    {% endif %}
+                    <button class="ib-action" type="submit" name="save" value="1"
+                            aria-label="{{ 'settings.save'|trans }}"
+                            data-tooltip="{{ 'settings.save'|trans }}">
+                        {% include 'components/icon.html.twig' with { name: 'save' } only %}
+                    </button>
+                    <button class="ib-action ib-action--danger" type="submit" name="remove" value="1"
+                            aria-label="{{ 'property.unit.household.remove'|trans }}"
+                            data-tooltip="{{ 'property.unit.household.remove'|trans }}" formnovalidate>
+                        {% include 'components/icon.html.twig' with { name: 'trash' } only %}
+                    </button>
+                </div>
+            </form>
+        {% endfor %}
+    {% else %}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: ['tenancy.rent.from'|trans, 'property.unit.household.people'|trans],
+            rows: household.steps|map(step => [step.startsOn|date_local, step.people]),
+            empty: ''
+        } only %}
+    {% endif %}
+
+    {% if editable|default(false) %}
+        <form class="ib-rents__row ib-rents__add" method="post"
+              action="{{ path('app_unit_household_add', { number: property.number, unit: unit.number }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('unit_household_' ~ unit.id) }}">
+
+            {% include 'property/unit/_household_fields.html.twig' with { step: null } only %}
+
+            <div class="ib-rents__actions">
+                <button class="ib-button ib-button--quiet" type="submit">
+                    {{ 'property.unit.household.add'|trans }}
+                </button>
+            </div>
+        </form>
+    {% endif %}
+</div>

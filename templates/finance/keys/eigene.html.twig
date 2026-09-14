@@ -1,0 +1,29 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Die eigenen Schlüssel, je Objekt.
+
+    Sie tragen feste Anteile — „Anteile Tiefgarage" gehört zu dem Haus, das
+    eine hat. Ein Klick öffnet die Anteile.
+#}
+{% extends 'finance/keys/_page.html.twig' %}
+
+{% block section_body %}
+    {% include 'components/table.html.twig' with {
+        compact: true,
+        headers: [
+            'finance.key.name'|trans,
+            'finance.key.property'|trans,
+            'finance.key.source'|trans
+        ],
+        rows: own|map(key => {
+            cells: [
+                key.name,
+                names[key.propertyId]|default('—'),
+                key.kind.labelKey|trans
+            ],
+            actions: [{ action: 'open', url: path('app_finance_key_show', { id: key.id }) }]
+        }),
+        empty: 'finance.key.own_empty'|trans
+    } only %}
+{% endblock %}

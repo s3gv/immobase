@@ -1,0 +1,29 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_flow.html.twig' %}
+
+{% block fields %}
+    {% set posted = errors is not empty %}
+
+    {% if errors.address is defined %}
+        <p class="ib-field__error" role="alert">{{ errors.address|trans }}</p>
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'street', name: 'street', label: 'property.field.street'|trans,
+        value: posted ? submitted.street|default('') : property.address.street,
+        required: true, autofocus: true
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'postalCode', name: 'postalCode', label: 'property.field.postal_code'|trans,
+        value: posted ? submitted.postalCode|default('') : property.address.postalCode,
+        required: true
+    } only %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'city', name: 'city', label: 'property.field.city'|trans,
+        value: posted ? submitted.city|default('') : property.address.city,
+        required: true
+    } only %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_detail.html.twig' %}
+{% set edit_step = 'heizung' %}
+
+{% block panel %}
+    {% set blank = 'property.yes_no.unknown'|trans %}
+    {% include 'components/table.html.twig' with {
+        headers: ['user.review.field'|trans, 'user.review.value'|trans],
+        rows: [
+            ['property.heating.field.type'|trans, property.heating.type ? property.heating.type.labelKey|trans : blank],
+            ['property.heating.field.system'|trans, property.heating.system ? property.heating.system.labelKey|trans : blank],
+            ['property.heating.field.water'|trans, property.heating.hotWater ? property.heating.hotWater.labelKey|trans : blank]
+        ],
+        empty: ''
+    } only %}
+
+    {% if property.heating.needsSplitBilling %}
+        <p class="ib-note">{{ 'property.heating.split_hint'|trans }}</p>
+    {% endif %}
+{% endblock %}

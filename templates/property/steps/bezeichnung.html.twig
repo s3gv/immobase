@@ -1,0 +1,36 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{% extends 'property/_flow.html.twig' %}
+
+{% block fields %}
+    {# Nach einem Fehler zeigt das Formular das Abgeschickte, sonst den Stand. #}
+    {% set posted = errors is not empty %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'name', name: 'name', label: 'property.field.name'|trans,
+        hint: 'property.field.name_hint'|trans,
+        value: posted ? submitted.name|default('') : (property ? property.name : ''),
+        error: errors.name is defined ? errors.name|trans : null,
+        required: true, autofocus: true
+    } only %}
+
+    <fieldset class="ib-choices{{ errors.modes is defined ? ' is-invalid' : '' }}">
+        <legend class="ib-field__label">{{ 'property.field.modes'|trans }}</legend>
+        <p class="ib-field__hint">{{ 'property.field.modes_hint'|trans }}</p>
+        {% for mode in modes %}
+            <label class="ib-choice">
+                <input type="checkbox" name="modes[]" value="{{ mode.value }}"
+                       {{ (posted ? mode.value in submitted.modes|default([]) : (property and property.modes.has(mode))) ? 'checked' : '' }}>
+                {{ mode.labelKey|trans }}
+            </label>
+        {% endfor %}
+        {% if errors.modes is defined %}
+            <p class="ib-field__error" role="alert">{{ errors.modes|trans }}</p>
+        {% endif %}
+    </fieldset>
+
+    {% include 'components/textarea.html.twig' with {
+        id: 'note', name: 'note', label: 'property.field.note'|trans,
+        value: posted ? submitted.note|default('') : (property ? property.note : '')
+    } only %}
+{% endblock %}

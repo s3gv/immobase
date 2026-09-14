@@ -1,0 +1,60 @@
+{# SPDX-License-Identifier: AGPL-3.0-or-later #}
+{# SPDX-FileCopyrightText: 2026 s3gv #}
+{#
+    Objekt, Arten, Bezeichnung, Wirtschaftsjahr.
+
+    Die Arten sind zwei Häkchen, beide gesetzt — „beide" deckt jeden Fall ab.
+    Wer nur eine will, nimmt eine heraus.
+#}
+{% extends 'billing/flow/_flow.html.twig' %}
+
+{% block fields %}
+    {% if statement %}
+        {# Objekt und Jahr stehen fest, sobald der Lauf existiert: sie stecken
+           in der Referenz jedes Schreibens. #}
+        {% include 'components/table.html.twig' with {
+            compact: true,
+            headers: ['user.review.field'|trans, 'user.review.value'|trans],
+            rows: [
+                ['billing.statement.property'|trans, statement.propertyNumber],
+                ['billing.statement.fiscal_year'|trans, statement.fiscalYear]
+            ],
+            empty: ''
+        } only %}
+    {% else %}
+        {% include 'components/select.html.twig' with {
+            id: 'property', name: 'property', label: 'billing.statement.property'|trans,
+            choices: properties|map(p => { value: p.number, label: p.number ~ ' · ' ~ p.name }),
+            value: submitted.property|default(''),
+            blank: 'billing.statement.choose_property'|trans
+        } only %}
+
+        {% include 'components/select.html.twig' with {
+            id: 'fiscalYear', name: 'fiscalYear', label: 'billing.statement.fiscal_year'|trans,
+            choices: years|map(y => { value: y, label: y }),
+            value: submitted.fiscalYear|default(years|first)
+        } only %}
+    {% endif %}
+
+    {% include 'components/field.html.twig' with {
+        id: 'label', name: 'label', label: 'billing.statement.label'|trans,
+        hint: 'billing.statement.label_hint'|trans,
+        value: statement ? statement.label : submitted.label|default('')
+    } only %}
+
+    <fieldset class="ib-choices">
+        <legend class="ib-field__label">{{ 'billing.statement.kinds'|trans }}</legend>
+        <p class="ib-field__hint">{{ 'billing.statement.kinds_hint'|trans }}</p>
+
+        <label class="ib-choice">
+            <input type="checkbox" name="forOwners" value="1"
+                   {{ (statement ? statement.kinds.forOwners : true) ? 'checked' : '' }}>
+            {{ 'billing.kind.house_money'|trans }}
+        </label>
+        <label class="ib-choice">
+            <input type="checkbox" name="forTenants" value="1"
+                   {{ (statement ? statement.kinds.forTenants : true) ? 'checked' : '' }}>
+            {{ 'billing.kind.operating_costs'|trans }}
+        </label>
+    </fieldset>
+{% endblock %}
