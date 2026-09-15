@@ -33,6 +33,11 @@
   <a href="#installation">Installation</a>
 </p>
 
+<p align="center">
+  ☕ Hilft dir ImmoBase? Dann kannst du mir gern <a href="https://ko-fi.com/s3gvdev">einen Kaffee auf Ko-fi ausgeben</a> — ganz ohne Gegenleistung, einfach als kleines Dankeschön.<br>
+  <em>Finding ImmoBase useful? Feel free to <a href="https://ko-fi.com/s3gvdev">buy me a coffee on Ko-fi</a> — no perks, no strings, just a small thank-you.</em>
+</p>
+
 ---
 
 ## Deutsch
