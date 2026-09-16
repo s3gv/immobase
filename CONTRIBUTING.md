@@ -32,7 +32,7 @@ Do not report vulnerabilities in public issues. See [SECURITY.md](SECURITY.md).
 
 ### Project status
 
-ImmoBase is being rebuilt from scratch and is not yet usable. Until the first release, external pull requests are unlikely to be merged — the architecture is still moving. Issues and discussion are welcome regardless.
+ImmoBase is released and usable (see the [latest release](https://github.com/s3gv/immobase/releases/latest)). It is maintained in spare time, so reviews can take a while — issues and discussion are welcome regardless.
 
 ---
 
@@ -58,4 +58,4 @@ Dasselbe gilt für Code, den du für einen Arbeitgeber oder Kunden geschrieben h
 
 ### Projektstatus
 
-ImmoBase wird gerade von Grund auf neu gebaut und ist noch nicht benutzbar. Bis zum ersten Release werden externe Pull Requests eher nicht gemergt — die Architektur bewegt sich noch. Issues und Diskussion sind trotzdem willkommen.
+ImmoBase ist veröffentlicht und einsatzbereit (siehe [aktuelles Release](https://github.com/s3gv/immobase/releases/latest)). Das Projekt wird in der Freizeit gepflegt, Rückmeldungen können also dauern — Issues und Diskussion sind trotzdem willkommen.

@@ -1,13 +1,12 @@
 # Dependency license policy
 
-ImmoBase is AGPLv3 and follows an open-core model: commercial licenses are
-intended to be offered alongside the open source version, including licenses
-under which a customer may build and keep closed-source derivatives.
+ImmoBase is AGPLv3. That is a deliberate choice for the project's own code —
+but it should not be forced on it by accident through a dependency.
 
-**That plan is not limited by the Contributor License Agreement. It is limited
-by our dependencies.** A single strong-copyleft package in the core makes the
-commercial license unsellable, because we cannot grant rights to code we do not
-own and whose license forbids proprietary redistribution.
+Keeping the runtime dependencies permissive has two benefits. It keeps the
+licensing picture simple for anyone self-hosting or auditing the software, and
+it keeps the project's own options open: a single strong-copyleft package in the
+core would permanently rule out ever offering ImmoBase under different terms.
 
 This document is the rule that keeps that from happening by accident.
 
@@ -26,7 +25,7 @@ LGPL sits in the "not in the core" row deliberately. LGPL permits use by
 proprietary software on the condition that the library remains replaceable by
 the user — a condition written for dynamic linking, which PHP does not have in
 that sense. Reasonable lawyers disagree about what LGPL means for a Composer
-package. We do not want a commercial license to rest on that disagreement.
+package, and the core should not rest on that disagreement.
 
 ## Data and media assets
 
@@ -39,8 +38,8 @@ rule: **attribution licenses are fine, copyleft and non-commercial licenses are 
 | **Not allowed** | CC BY-SA and other ShareAlike variants, CC NC (non-commercial), and anything without a stated license |
 
 ShareAlike is the trap here. Most German state outlines and map graphics on Wikipedia are CC BY-SA,
-which would impose ShareAlike obligations on a commercial licensee — at the most visible surface of
-the product.
+which would impose ShareAlike obligations on anyone redistributing the software — at the most
+visible surface of the product.
 
 **Currently in use:** the state outlines used as the application background derive from the BKG
 VG250 dataset under dl-de/by-2-0. Attribution is required and lives in `NOTICE` and in the

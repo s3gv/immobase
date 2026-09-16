@@ -180,10 +180,9 @@ v1 bleibt innerhalb von 1.x stabil.
 ### Lizenz und Mitwirken
 
 ImmoBase steht unter der **GNU Affero General Public License v3.0 oder später**,
-siehe [LICENSE](LICENSE). Beiträge sind willkommen. Vor dem ersten Pull Request
-bitte [CONTRIBUTING.md](CONTRIBUTING.md) lesen: Beiträge setzen eine
-Contributor License Agreement voraus, die den Maintainer verpflichtet, jeden
-Beitrag weiter unter der AGPLv3 anzubieten.
+siehe [LICENSE](LICENSE). Beiträge sind willkommen und gehen unter derselben
+Lizenz ein — es gibt keine Contributor License Agreement zu unterschreiben. Vor
+dem ersten Pull Request bitte [CONTRIBUTING.md](CONTRIBUTING.md) lesen.
 
 - [Verhaltenskodex](CODE_OF_CONDUCT.md)
 - [Sicherheitslücken melden](SECURITY.md)
@@ -340,10 +339,9 @@ throughout 1.x.
 ### License and contributing
 
 ImmoBase is licensed under the **GNU Affero General Public License v3.0 or
-later**, see [LICENSE](LICENSE). Contributions are welcome. Please read
-[CONTRIBUTING.md](CONTRIBUTING.md) before your first pull request: contributions
-require a Contributor License Agreement, which binds the maintainer to keep
-offering every contribution under the AGPLv3.
+later**, see [LICENSE](LICENSE). Contributions are welcome and come in under
+that same license — there is no contributor license agreement to sign. Please
+read [CONTRIBUTING.md](CONTRIBUTING.md) before your first pull request.
 
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security policy](SECURITY.md)
