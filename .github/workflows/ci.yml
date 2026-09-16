@@ -15,8 +15,6 @@ name: CI
 
 on:
   push:
-    # The signature register holds no code; the CLA bot commits to it.
-    branches-ignore: [cla-signatures]
   pull_request:
   workflow_dispatch:
 

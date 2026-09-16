@@ -24,7 +24,6 @@
   <img alt="PHPStan level max" src="https://img.shields.io/badge/PHPStan-level%20max-brightgreen">
   <img alt="Deutsch und English" src="https://img.shields.io/badge/i18n-Deutsch%20%7C%20English-lightgrey">
   <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-yes-success">
-  <a href="CONTRIBUTING.md"><img alt="Contributions: CLA" src="https://img.shields.io/badge/contributions-CLA-orange"></a>
 </p>
 
 <p align="center">

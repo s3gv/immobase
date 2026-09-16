@@ -34,7 +34,7 @@ every edit and do not maintain year ranges. Git already records who changed
 what and when; a hand-maintained year range only ever goes stale.
 
 **Contributors do not add their own name to the header.** Contributors keep the
-copyright in their contributions — see [CLA.md](../../CLA.md) — but the header
+copyright in their contributions, but the header
 names the party that licenses the combined work outward. Authorship is recorded
 in git history, which is the accurate record.
 

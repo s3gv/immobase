@@ -17,4 +17,4 @@
 - [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md).
 - [ ] I own the copyright in everything in this PR, or I have flagged the parts I do not — see [Contributions you do not fully own](../CONTRIBUTING.md#contributions-you-do-not-fully-own).
 - [ ] New source files carry the SPDX header described in [docs/licensing/header-policy.md](../docs/licensing/header-policy.md).
-- [ ] I am ready to accept the [Contributor License Agreement](../CLA.md) — a bot will ask on this PR if I have not signed it before.
+- [ ] I contribute this work under AGPL-3.0-or-later, the project's license.
